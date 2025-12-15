@@ -1,0 +1,43 @@
+:host {
+  flex: 1;
+  display: flex;
+}
+
+.map {
+  flex: 1;
+  background: var(--color-bg-lighter);
+  border-radius: var(--radius-lg);
+  margin: var(--spacing-lg) var(--spacing-lg) var(--spacing-lg) 0;
+  overflow: hidden;
+  border: 0.125rem solid var(--color-border);
+}
+
+#map {
+  width: 95%;
+  height: 95%;
+}
+
+/* Tablet */
+@media (max-width: 1024px) {
+  .map {
+    margin: var(--spacing-md);
+    border-radius: var(--radius-md);
+    min-height: 400px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .map {
+    margin: var(--spacing-sm);
+    border-radius: var(--radius-md);
+    min-height: 300px;
+  }
+}
+
+@media (max-width: 480px) {
+  .map {
+    margin: var(--spacing-xs);
+    min-height: 250px;
+  }
+}
