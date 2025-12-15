@@ -1,0 +1,449 @@
+.booking-section {
+  width: 30rem;
+  background: var(--color-white);
+  padding: var(--spacing-2xl) var(--spacing-xl);
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-lg);
+  margin: var(--spacing-lg);
+  box-shadow: var(--shadow-sm);
+  max-height: calc(100vh - 2.5rem);
+  overflow: hidden;
+  border: 0.125rem solid var(--color-border);
+}
+
+h1 {
+  padding-bottom: var(--spacing-md);
+  text-align: center;
+  border-bottom: 0.125rem solid var(--color-border-light);
+}
+
+.booking-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-2xl);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: var(--spacing-xs);
+}
+
+/* Input Group */
+.input-wrapper {
+  position: relative;
+}
+
+.input-group {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) 1.125rem;
+  border: 0.0625rem solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-white);
+  box-shadow: var(--shadow-sm);
+}
+
+.input-icon {
+  font-size: 1rem;
+  color: var(--color-gray);
+  flex-shrink: 0;
+}
+
+.location-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+  background: transparent;
+}
+
+.location-input::placeholder {
+  color: var(--color-gray-light);
+}
+
+.stop-group {
+  background: var(--color-bg-gray);
+  border-color: var(--color-border-light);
+}
+
+.remove-stop-btn {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: none;
+  background: var(--color-bg-lighter);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-gray);
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.remove-stop-btn:hover {
+  background: #d0d0d0;
+  color: var(--color-black);
+}
+
+/* Add Stop Button */
+.add-stop-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: 0.875rem 1.125rem;
+  border: 0.0625rem dashed var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-white);
+  cursor: pointer;
+  font-size: 1rem;
+  color: var(--color-gray);
+  transition: all 0.2s;
+}
+
+.add-stop-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.plus-icon {
+  font-size: 1.25rem;
+  font-weight: bold;
+}
+
+/* Buttons */
+.button-group {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-xs);
+}
+
+.button-group button {
+  flex: 1;
+}
+
+.book-ride-btn {
+  padding: 1.125rem;
+  background: var(--gradient-primary);
+  color: var(--color-text);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 1.125rem;
+  font-weight: 600;
+  cursor: pointer;
+  height: 3.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.book-ride-btn:hover {
+  background: var(--gradient-primary-hover);
+}
+
+.refresh-btn {
+  padding: 1.125rem;
+  background: var(--color-bg-lighter);
+  color: var(--color-dark);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 1.125rem;
+  font-weight: 600;
+  cursor: pointer;
+  height: 3.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.refresh-btn:hover {
+  background: #d0d0d0;
+}
+
+/* Secondary Buttons */
+.secondary-button-group {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
+}
+
+.secondary-button-group button {
+  flex: 1;
+}
+
+.schedule-btn,
+.favorites-btn {
+  padding: var(--spacing-md);
+  background: var(--color-white);
+  color: var(--color-gray);
+  border: 0.0625rem solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  transition: all 0.2s;
+}
+
+.schedule-btn:hover {
+  background: var(--color-bg-gray);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.favorites-btn:hover {
+  background: #fff5f5;
+  border-color: var(--color-red-accent);
+  color: var(--color-red-accent);
+}
+
+/* Ride Info */
+.ride-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.125rem;
+  background: var(--color-white);
+  border: 0.0625rem solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+  margin-top: var(--spacing-md);
+}
+
+.time, .price {
+  color: var(--color-dark);
+}
+
+.time::before {
+  content: '⏱️ ';
+}
+
+.price::before {
+  content: '💰 ';
+}
+
+/* Favorites */
+.favorites-list {
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-lg);
+  border: 0.0625rem solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-gray);
+}
+
+.favorites-list h3 {
+  margin: 0 0 var(--spacing-md) 0;
+  font-size: 1.25rem;
+  color: var(--color-black);
+  text-align: left;
+  border: none;
+  padding: 0;
+}
+
+.no-favorites {
+  text-align: center;
+  color: var(--color-gray-light);
+  padding: var(--spacing-xl) var(--spacing-md);
+  font-size: 0.9rem;
+}
+
+.favorite-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md);
+  background: var(--color-white);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--spacing-sm);
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+}
+
+.favorite-item:last-child {
+  margin-bottom: 0;
+}
+
+.favorite-info {
+  flex: 1;
+}
+
+.favorite-name {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--color-black);
+  margin-bottom: 0.25rem;
+}
+
+.favorite-route {
+  font-size: 0.875rem;
+  color: var(--color-gray);
+}
+
+.favorite-actions {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+.use-btn {
+  padding: var(--spacing-xs) var(--spacing-md);
+  background: var(--color-black);
+  color: var(--color-white);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.use-btn:hover {
+  background: var(--color-dark);
+}
+
+.delete-btn {
+  width: 2rem;
+  height: 2rem;
+  background: var(--color-red-light);
+  color: var(--color-red-accent);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.delete-btn:hover {
+  background: #ffcccc;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .booking-section {
+    width: 100%;
+    max-width: 40rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .booking-section {
+    width: 100%;
+    padding: var(--spacing-lg) var(--spacing-md);
+    overflow-y: auto;
+    max-height: 100vh;
+  }
+  
+  .booking-form {
+    margin-top: var(--spacing-lg);
+    gap: var(--spacing-sm);
+  }
+  
+  .input-group {
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+  
+  .book-ride-btn,
+  .refresh-btn {
+    height: 3rem;
+    padding: 0.875rem;
+    font-size: 1rem;
+  }
+  
+  .schedule-btn,
+  .favorites-btn {
+    padding: var(--spacing-sm);
+    font-size: 0.9rem;
+  }
+  
+  .add-stop-btn {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: 0.9rem;
+  }
+  
+  .ride-info {
+    padding: 0.875rem;
+    font-size: 0.9rem;
+    margin-top: var(--spacing-sm);
+  }
+  
+  .favorites-list {
+    padding: var(--spacing-md);
+    margin-top: var(--spacing-sm);
+  }
+  
+  .favorite-item {
+    padding: var(--spacing-sm);
+    margin-bottom: var(--spacing-xs);
+  }
+  
+  .favorite-name {
+    font-size: 0.9rem;
+  }
+  
+  .favorite-route {
+    font-size: 0.8rem;
+  }
+  
+  .use-btn {
+    padding: 0.4rem var(--spacing-sm);
+    font-size: 0.8rem;
+  }
+  
+  .delete-btn {
+    width: 1.75rem;
+    height: 1.75rem;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .booking-section {
+    padding: var(--spacing-md) var(--spacing-sm);
+  }
+  
+  .booking-form {
+    margin-top: var(--spacing-md);
+    gap: 0.6rem;
+  }
+  
+  .input-group {
+    padding: 0.6rem 0.875rem;
+  }
+  
+  .book-ride-btn,
+  .refresh-btn {
+    height: 2.75rem;
+    font-size: 0.95rem;
+    padding: var(--spacing-sm);
+  }
+  
+  .schedule-btn,
+  .favorites-btn {
+    padding: 0.65rem;
+    font-size: 0.85rem;
+  }
+  
+  .add-stop-btn {
+    padding: 0.65rem 0.875rem;
+    font-size: 0.85rem;
+  }
+  
+  .ride-info {
+    padding: var(--spacing-sm);
+    font-size: 0.85rem;
+  }
+  
+  .favorites-list {
+    padding: var(--spacing-sm);
+  }
+}
