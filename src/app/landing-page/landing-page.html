@@ -1,0 +1,12 @@
+<div class="container">
+  <app-sidebar></app-sidebar>
+  
+  @if (currentView === 'home') {
+    <app-ride-booking></app-ride-booking>
+    <app-map mode="booking"></app-map>
+  }
+  
+  @if (currentView === 'profile') {
+    <app-profile></app-profile>
+  }
+</div>
