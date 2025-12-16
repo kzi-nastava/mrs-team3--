@@ -1,0 +1,156 @@
+.auth-shell {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+}
+
+.sidebar {
+  width: 72px;
+  background: var(--color-primary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 18px 0;
+  gap: 14px;
+}
+
+.side-btn {
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: transparent;
+  border-radius: 12px;
+  cursor: pointer;
+  color: rgba(0, 0, 0, 0.75);
+  display: grid;
+  place-items: center;
+}
+
+.side-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.ico {
+  width: 22px;
+  height: 22px;
+}
+
+.side-spacer {
+  flex: 1;
+}
+
+.main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  height: 100%;
+}
+
+/* Left form side */
+.left {
+  background: var(--color-white);
+  display: grid;
+  place-items: center;
+}
+
+.form-wrap {
+  width: min(420px, 80%);
+}
+
+.title {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.field {
+  position: relative;
+}
+
+.label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-gray);
+  margin-bottom: 8px;
+}
+
+.forgot {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 0.85rem;
+  color: var(--color-gray);
+  text-decoration: none;
+  float: right;
+}
+
+.forgot:hover {
+  text-decoration: underline;
+}
+
+.btn-login {
+  margin-top: 6px;
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.btn-login:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.hint {
+  margin-top: 6px;
+  text-align: center;
+  color: var(--color-gray);
+  font-size: 0.9rem;
+}
+
+.link {
+  color: var(--color-black);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+/* Right promo side */
+.right {
+  background: #111;
+  display: grid;
+  place-items: center;
+}
+
+.promo {
+  text-align: center;
+  color: var(--color-white);
+}
+
+.brand {
+  font-size: 2.1rem;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+
+.tagline {
+  font-size: 1.1rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .main {
+    grid-template-columns: 1fr;
+  }
+  .right {
+    display: none;
+  }
+}
