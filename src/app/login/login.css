@@ -1,142 +1,57 @@
-.auth-shell {
-  width: 100vw;
-  height: 100vh;
+/* Login Page - Split Screen Layout */
+
+.app-content {
   display: flex;
-}
-
-.sidebar {
-  width: 72px;
-  background: var(--color-primary);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 18px 0;
-  gap: 14px;
-}
-
-.side-btn {
-  width: 44px;
-  height: 44px;
-  border: none;
-  background: transparent;
-  border-radius: 12px;
-  cursor: pointer;
-  color: rgba(0, 0, 0, 0.75);
-  display: grid;
-  place-items: center;
-}
-
-.side-btn:hover {
-  background: rgba(255, 255, 255, 0.25);
-}
-
-.ico {
-  width: 22px;
-  height: 22px;
-}
-
-.side-spacer {
-  flex: 1;
-}
-
-.main {
-  flex: 1;
-  display: grid;
-  grid-template-columns: 1fr 1.1fr;
   height: 100%;
+  width: 100%;
+  overflow: hidden; /* only internal scrolling */
+  box-sizing: border-box;
 }
 
-/* Left form side */
+/* Left: Login Form */
 .left {
+  flex: 1; /* take 50% of remaining width */
   background: var(--color-white);
-  display: grid;
-  place-items: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: var(--spacing-2xl);
+  box-sizing: border-box;
 }
 
 .form-wrap {
-  width: min(420px, 80%);
+  width: 100%;
+  max-width: 420px;
 }
 
 .title {
   text-align: center;
-  margin-bottom: 28px;
+  margin-bottom: var(--spacing-lg);
 }
 
 .form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--spacing-md);
 }
 
-.field {
-  position: relative;
-}
-
-.label {
-  display: block;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--color-gray);
-  margin-bottom: 8px;
-}
-
-.forgot {
-  display: inline-block;
-  margin-top: 10px;
-  font-size: 0.85rem;
-  color: var(--color-gray);
-  text-decoration: none;
-  float: right;
-}
-
-.forgot:hover {
-  text-decoration: underline;
-}
-
-.btn-login {
-  margin-top: 6px;
-  border-radius: 10px;
-  padding: 14px;
-}
-
-.btn-login:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.hint {
-  margin-top: 6px;
-  text-align: center;
-  color: var(--color-gray);
-  font-size: 0.9rem;
-}
-
-.link {
-  color: var(--color-black);
-  text-decoration: none;
-  font-weight: 600;
-}
-
-.link:hover {
-  text-decoration: underline;
-}
-
-/* Right promo side */
+/* Right: Promo Section */
 .right {
+  flex: 1; /* take the other 50% */
   background: #111;
-  display: grid;
-  place-items: center;
-}
-
-.promo {
-  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: var(--spacing-2xl);
   color: var(--color-white);
+  box-sizing: border-box;
+  text-align: center;
 }
 
 .brand {
-  font-size: 2.1rem;
+  font-size: 2rem;
   font-weight: 600;
-  margin-bottom: 14px;
+  margin-bottom: var(--spacing-md);
 }
 
 .tagline {
@@ -145,12 +60,45 @@
   color: rgba(255, 255, 255, 0.85);
 }
 
-/* Responsive */
+/* Gray links for forgot password and signup */
+.forgot,
+.hint .link {
+  color: var(--color-gray); /* gray color */
+  text-decoration: none; /* remove underline */
+}
+
+.forgot:hover,
+.hint .link:hover {
+  color: var(--color-dark); /* slightly darker on hover */
+  text-decoration: underline; /* optional hover effect */
+}
+
+
+/* Responsive: stack on smaller screens */
 @media (max-width: 900px) {
-  .main {
-    grid-template-columns: 1fr;
+  .app-content {
+    flex-direction: column;
   }
+
   .right {
-    display: none;
+    display: none; /* hide promo on mobile */
+  }
+}
+
+@media (max-width: 480px) {
+  .left {
+    padding: var(--spacing-lg) var(--spacing-md);
+  }
+
+  .title {
+    font-size: 1.5rem;
+  }
+
+  .brand {
+    font-size: 1.75rem;
+  }
+
+  .tagline {
+    font-size: 1rem;
   }
 }
