@@ -1,13 +1,14 @@
 .ride-history-container {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  justify-content: top;
   align-items: flex-start;
   padding: var(--spacing-xl);
   background: var(--gradient-background);
   overflow-x: hidden;
   overflow-y: auto;
-  height: 100vh;
-  width: 100vw;
+  height: 100%;
+  width: 100%;
   box-sizing: border-box;
 }
 
@@ -126,28 +127,6 @@ table.ride-table {
   color: var(--color-gray);
 }
 
-.badge {
-  padding: 0.25rem 0.75rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.8rem;
-  font-weight: 600;
-  display: inline-block;
-}
-
-.badge-success {
-  background: rgba(76, 175, 80, 0.15);
-  color: var(--color-green);
-}
-
-.badge-warning {
-  background: rgba(255, 193, 7, 0.2);
-  color: #856404;
-}
-
-.badge-danger {
-  background: rgba(244, 67, 54, 0.15);
-  color: var(--color-red-dark);
-}
 
 @media (max-width: 768px) {
   .ride-history-container {
