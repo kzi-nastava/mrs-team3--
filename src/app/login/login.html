@@ -15,7 +15,6 @@
     <div class="side-spacer"></div>
 
     <button class="side-btn" type="button" aria-label="Profile">
-      <!-- user icon -->
       <svg viewBox="0 0 24 24" class="ico" aria-hidden="true">
         <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4z" fill="none" stroke="currentColor" stroke-width="1.8" />
         <path d="M4 21a8 8 0 0 1 16 0" fill="none" stroke="currentColor" stroke-width="1.8" />
@@ -32,14 +31,14 @@
 
         <form class="form" [formGroup]="form" (ngSubmit)="onSubmit()">
           <div class="field">
-            <label class="label" for="username">Username</label>
+            <label class="label" for="email">email</label>
             <input
-              id="username"
+              id="email"
               class="input-field"
               type="text"
-              placeholder="Enter your username"
-              formControlName="username"
-              autocomplete="username"
+              placeholder="Enter your email"
+              formControlName="email"
+              autocomplete="email"
             />
           </div>
 
@@ -69,7 +68,6 @@
       </div>
     </section>
 
-    <!-- Right: promo -->
     <section class="right">
       <div class="promo">
         <div class="brand">Uber</div>

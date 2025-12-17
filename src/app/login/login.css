@@ -46,7 +46,6 @@
   height: 100%;
 }
 
-/* Left form side */
 .left {
   background: var(--color-white);
   display: grid;
@@ -121,7 +120,6 @@
   text-decoration: underline;
 }
 
-/* Right promo side */
 .right {
   background: #111;
   display: grid;
@@ -145,7 +143,6 @@
   color: rgba(255, 255, 255, 0.85);
 }
 
-/* Responsive */
 @media (max-width: 900px) {
   .main {
     grid-template-columns: 1fr;
