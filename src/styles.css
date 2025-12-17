@@ -15,6 +15,34 @@ html {
   scroll-behavior: smooth;
 }
 
+.app-layout {
+  display: flex;
+  width: 100%;
+  height: 100vh; 
+  overflow: hidden; 
+}
+
+.app-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto; 
+  padding: var(--spacing-xl); 
+  box-sizing: border-box;
+  background: var(--gradient-background); 
+}
+
+
+@media (max-width: 1024px) {
+  .app-layout {
+    flex-direction: column;
+  }
+
+  .app-content {
+    padding: var(--spacing-md);
+  }
+}
+
+
 
 :root {
   /* Primary Colors */

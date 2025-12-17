@@ -1,6 +1,21 @@
 <div class="icon-sidebar">
-  <button class="icon-btn" (click)="onHome()">🏠</button>
-  <button class="icon-btn" (click)="onMessages()">💬</button>
+  <button class="icon-btn" (click)="goHome()">🏠</button>
+
+
+  <button 
+  *ngIf="role !== 'GUEST'"
+  class="icon-btn" (click)="goMessages()">💬</button>
+
+  <button 
+  *ngIf="role !== 'GUEST'"
+  class="icon-btn" (click)="goHistory()">🚗</button>
   <div class="spacer"></div>
-  <button class="icon-btn" (click)="onProfile()">👤</button>
+  <button 
+  *ngIf="role !== 'GUEST'"
+  class="icon-btn" (click)="goProfile()">👤</button>
+
+  <button 
+  *ngIf="role === 'GUEST'"
+  class="icon-btn" (click)="goLogin()">🔐</button>
+  
 </div>
