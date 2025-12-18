@@ -1,3 +1,5 @@
+@import 'primeflex/primeflex.css';
+
 * {
   margin: 0;
   padding: 0;
@@ -18,17 +20,17 @@ html {
 .app-layout {
   display: flex;
   width: 100%;
-  height: 100vh; 
-  overflow: hidden; 
+  height: 100vh;
+  overflow: hidden;
 }
 
 .app-content {
   flex: 1;
   min-height: 0;
-  overflow-y: auto; 
-  padding: var(--spacing-xl); 
+  overflow-y: auto;
+  padding: var(--spacing-xl);
   box-sizing: border-box;
-  background: var(--gradient-background); 
+  background: var(--gradient-background);
 }
 
 
@@ -42,21 +44,19 @@ html {
   }
 }
 
-
-
 :root {
   /* Primary Colors */
   --color-primary: #9b7fc9;
   --color-primary-dark: #8566b3;
   --color-primary-light: #E5D4FF;
   --color-primary-lighter: #F0E8FF;
-  
+
   /* Gradients */
   --gradient-primary: linear-gradient(180deg, #E5D4FF 0%, #F0E8FF 100%);
   --gradient-primary-hover: linear-gradient(180deg, #B294E6 0%, #CBB9F0 100%);
   --gradient-purple: linear-gradient(135deg, #9b7fc9 0%, #8566b3 100%);
   --gradient-background: linear-gradient(135deg, #E5D4FF 0%, #F0E8FF 100%);
-  
+
   /* Neutral Colors */
   --color-black: #000;
   --color-dark: #333;
@@ -69,7 +69,7 @@ html {
   --color-bg-light: #f5f5f5;
   --color-bg-lighter: #e0e0e0;
   --color-white: #fff;
-  
+
   /* Accent Colors */
   --color-red: #f44336;
   --color-red-dark: #d32f2f;
@@ -79,7 +79,7 @@ html {
   --color-yellow: #ffc107;
   --color-yellow-light: #fff3cd;
   --color-green: #4caf50;
-  
+
   /* Spacing */
   --spacing-xs: 0.5rem;
   --spacing-sm: 0.75rem;
@@ -87,13 +87,13 @@ html {
   --spacing-lg: 1.5rem;
   --spacing-xl: 2rem;
   --spacing-2xl: 2.5rem;
-  
+
   /* Border Radius */
   --radius-sm: 0.5rem;
   --radius-md: 0.75rem;
   --radius-lg: 1.25rem;
   --radius-full: 50%;
-  
+
   /* Shadows */
   --shadow-sm: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.05);
   --shadow-md: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.1);
@@ -101,24 +101,24 @@ html {
   --shadow-xl: 0 0.5rem 2rem rgba(0, 0, 0, 0.3);
 }
 
-h1 {
-  font-size: 3rem;
-  font-weight: bold;
-  margin: 0;
-  color: var(--color-black);
-}
+/*h1 {*/
+/*  font-size: 3rem;*/
+/*  font-weight: bold;*/
+/*  margin: 0;*/
+/*  color: var(--color-black);*/
+/*}*/
 
-h2 {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: var(--color-black);
-}
+/*h2 {*/
+/*  font-size: 1.5rem;*/
+/*  font-weight: 600;*/
+/*  color: var(--color-black);*/
+/*}*/
 
-h3 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--color-gray);
-}
+/*h3 {*/
+/*  font-size: 1.25rem;*/
+/*  font-weight: 600;*/
+/*  color: var(--color-gray);*/
+/*}*/
 
 /* Buttons */
 
@@ -242,17 +242,17 @@ h3 {
   text-align: center;
 }
 
-.flex {
-  display: flex;
-}
+/*.flex {*/
+/*  display: flex;*/
+/*}*/
 
-.flex-column {
-  flex-direction: column;
-}
+/*.flex-column {*/
+/*  flex-direction: column;*/
+/*}*/
 
-.flex-1 {
-  flex: 1;
-}
+/*.flex-1 {*/
+/*  flex: 1;*/
+/*}*/
 
 .gap-sm {
   gap: var(--spacing-sm);
@@ -497,15 +497,15 @@ h3 {
   body {
     font-size: 14px;
   }
-  
-  h1 {
-    font-size: 2rem;
-  }
-  
-  h2 {
-    font-size: 1.25rem;
-  }
-  
+
+  /*h1 {*/
+  /*  font-size: 2rem;*/
+  /*}*/
+
+  /*h2 {*/
+  /*  font-size: 1.25rem;*/
+  /*}*/
+
   .grid-2 {
     grid-template-columns: 1fr;
   }
@@ -515,10 +515,10 @@ h3 {
   body {
     font-size: 13px;
   }
-  
-  h1 {
-    font-size: 1.75rem;
-  }
+
+  /*h1 {*/
+  /*  font-size: 1.75rem;*/
+  /*}*/
 }
 
 button, a {

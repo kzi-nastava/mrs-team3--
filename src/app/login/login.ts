@@ -1,31 +1,27 @@
 import { Component } from '@angular/core';
-import {ReactiveFormsModule,  FormBuilder, Validators, FormGroup } from '@angular/forms';
 import { AuthService } from '../services/auth.service';
+import {ButtonModule} from 'primeng/button';
+import { CardModule } from 'primeng/card';
+import { SplitterModule } from 'primeng/splitter';
+import { InputTextModule } from 'primeng/inputtext';
+import { FormsModule} from '@angular/forms';
 
 @Component({
   selector: 'app-login',
   templateUrl: './login.html',
   styleUrls: ['./login.css'],
-  imports: [ReactiveFormsModule],
+  imports: [FormsModule, ButtonModule, CardModule, SplitterModule, InputTextModule],
 })
 export class Login {
-  form: FormGroup;
+  email: string = '';
+  password: string = '';
 
-  constructor(private fb: FormBuilder, private authService: AuthService) {
-    this.form = this.fb.group({
-      email: ['', Validators.required],
-      password: ['', Validators.required],
-    });
+  constructor(private authService: AuthService) {
   }
 
-
-
   onSubmit() {
-    if (this.form.invalid) return;
-    // console.log('LOGIN', this.form.value);
-    const { email, password } = this.form.value;
 
-    this.authService.login(email, password).subscribe({
+    this.authService.login(this.email, this.password).subscribe({
       next: (res) => {
         console.log('LOGIN SUCCESS', res);
         alert("Login successful!");

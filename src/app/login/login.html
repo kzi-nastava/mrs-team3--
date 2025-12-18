@@ -1,53 +1,45 @@
-<div class="app-content">
-  <section class="left">
-    <div class="form-wrap">
-      <h1 class="title">Login</h1>
-      <form class="form" [formGroup]="form" (ngSubmit)="onSubmit()">
-        <div class="field">
-          <label class="label" for="email">email</label>
-          <input
-            id="email"
-            class="input-field"
-            type="text"
-            placeholder="Enter your email"
-            formControlName="email"
-            autocomplete="email"
-          />
+<!--<div class="app-content">-->
+  <p-splitter [style]="{ height: '100%'}" >
+    <ng-template #panel>
+      <div class="flex flex-column justify-content-center align-items-center h-full">
+        <div class="card-wrapper" [style]="{width: '90%'}">
+          <p-card>
+            <ng-template #header>
+              <div class="text-center mb-2">
+                <div class="text-900 text-3xl font-medium mb-3">Welcome Back</div>
+                <span class="text-600 font-medium line-height-3">Don't have an account?</span>
+                <a class="font-medium no-underline ml-2 text-blue-500 cursor-pointer">Create today!</a>
+              </div>
+            </ng-template>
+
+            <div class="flex flex-column gap-2 mb-2">
+              <div class="flex flex-column gap-2">
+                <label for="email">Email</label>
+                <input pInputText id="email" type="email" aria-describedby="email-help" [(ngModel)]="email" />
+              </div>
+
+              <div class="flex flex-column gap-2">
+                <label for="password">Password</label>
+                <input pInputText id="password" type="password" aria-describedby="password-help" [(ngModel)]="password" />
+              </div>
+            </div>
+
+            <ng-template #footer>
+              <div class="flex gap-4 mt-1">
+                <p-button label="Login" class="w-full" styleClass="w-full" size="large" />
+              </div>
+            </ng-template>
+
+          </p-card>
         </div>
-
-        <div class="field">
-          <label class="label" for="password">Password</label>
-          <input
-            id="password"
-            class="input-field"
-            type="password"
-            placeholder="Enter your password"
-            formControlName="password"
-            autocomplete="current-password"
-          />
-          <a class="forgot" href="#" (click)="$event.preventDefault()">Forgot password?</a>
-        </div>
-
-        <button class="btn btn-black btn-login" type="submit" [disabled]="form.invalid">
-          Login
-        </button>
-
-        <p class="hint">
-          Don’t have an account?
-          <a class="link" href="#" (click)="$event.preventDefault()">Sign up</a>
-        </p>
-      </form>
-    </div>
-  </section>
-
-  <!-- Optional promo on the right -->
-  <section class="right">
-    <div class="promo">
-      <div class="brand">Uber</div>
-      <div class="tagline">
-        Let’s get you moving.<br />
-        Walking is overrated anyway.
       </div>
-    </div>
-  </section>
-</div>
+    </ng-template>
+    <ng-template #panel>
+      <div class="flex flex-column justify-content-center bg-primary h-full align-items-center">
+        <div>
+          <h1 style="text-align: center">Uber</h1>
+          <h3>Let’s get you moving. Walking is overrated anyway.</h3>
+        </div>
+      </div>
+    </ng-template>
+  </p-splitter>
