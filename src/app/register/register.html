@@ -1,0 +1,70 @@
+<div class="auth-page">
+  <div class="auth-card">
+
+    <section class="auth-left">
+      <h1 class="mb-md">Register</h1>
+
+      <form class="flex flex-column gap-md" [formGroup]="form" (ngSubmit)="submit()">
+
+        <input class="input-field" type="email" placeholder="Email"
+               formControlName="email" />
+
+        <div class="grid-2">
+          <input class="input-field" type="text" placeholder="First name"
+                 formControlName="name" />
+          <input class="input-field" type="text" placeholder="Last name"
+                 formControlName="surname" />
+        </div>
+
+        <input class="input-field" type="text" placeholder="Address"
+               formControlName="address" />
+
+        <input class="input-field" type="text" placeholder="Phone number"
+               formControlName="phoneNumber" />
+
+        <div class="grid-2">
+          <input class="input-field" type="password" placeholder="Password"
+                 formControlName="password" />
+          <input class="input-field" type="password" placeholder="Confirm password"
+                 formControlName="confirmPassword" />
+        </div>
+
+        <div class="text-center text-red" *ngIf="passwordMismatch">
+          Passwords do not match.
+        </div>
+
+        <input class="input-field" type="text"
+               placeholder="Profile image URL (optional)"
+               formControlName="profileImage" />
+
+        <button class="btn btn-black mt-md"
+                type="submit"
+                [disabled]="form.invalid || submitting">
+          {{ submitting ? 'Creating account…' : 'Create account' }}
+        </button>
+
+        <div class="text-center mt-md" style="color: green;" *ngIf="success">
+          {{ success }}
+        </div>
+
+        <div class="text-center mt-md" style="color: red;" *ngIf="error">
+          {{ error }}
+        </div>
+      </form>
+    </section>
+
+    <section class="auth-right">
+      <div class="promo">
+        <div class="brand">Uber</div>
+        <div class="tagline">
+          Create an account.<br />
+          Walking was never the plan.
+        </div>
+        <div class="sub">
+          We know you checked the distance.
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
