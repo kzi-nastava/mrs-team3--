@@ -4,14 +4,14 @@
       <h1 class="title">Login</h1>
       <form class="form" [formGroup]="form" (ngSubmit)="onSubmit()">
         <div class="field">
-          <label class="label" for="username">Username</label>
+          <label class="label" for="email">email</label>
           <input
-            id="username"
+            id="email"
             class="input-field"
             type="text"
-            placeholder="Enter your username"
-            formControlName="username"
-            autocomplete="username"
+            placeholder="Enter your email"
+            formControlName="email"
+            autocomplete="email"
           />
         </div>
 
