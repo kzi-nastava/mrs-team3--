@@ -11,6 +11,7 @@ import {SplitterModule} from 'primeng/splitter';
 import {InputTextModule} from 'primeng/inputtext';
 import {RegisterRequest} from './register.model';
 import {FileSelectEvent, FileUpload} from 'primeng/fileupload';
+import {MessageService} from 'primeng/api';
 
 function passwordsMatch(control: AbstractControl) {
   const p = control.get('password')?.value;
@@ -35,7 +36,6 @@ function passwordsMatch(control: AbstractControl) {
 })
 export class RegisterComponent {
   submitting = false;
-  success = '';
   error = '';
 
   selectedImage: File | null = null;
@@ -47,7 +47,8 @@ export class RegisterComponent {
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private messageService: MessageService
   ) {
     this.form = this.fb.group(
       {
@@ -117,7 +118,6 @@ export class RegisterComponent {
   }
   submit() {
     this.error = '';
-    this.success = '';
 
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -145,11 +145,11 @@ export class RegisterComponent {
     this.authService.registerPassenger(registerRequest).subscribe({
       next: () => {
         this.submitting = false;
-        this.success = 'Registration successful. Check your email to activate your account.';
         this.form.reset();
         this.selectedImage = null;
         this.base64Image = null;
         this.imagePreview = null;
+        this.messageService.add({severity:'success', summary: 'Success', detail: 'Registration successful. Please check your email to activate your account.'});
       },
       error: (err) => {
         this.submitting = false;
