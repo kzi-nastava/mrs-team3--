@@ -49,4 +49,8 @@ export class Login {
       },
     });
   }
+
+  changePassword() {
+    this.router.navigate(['/change-password']).then();
+  }
 }
