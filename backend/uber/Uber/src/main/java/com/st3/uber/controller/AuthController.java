@@ -9,29 +9,23 @@ import java.time.LocalDateTime;
 
 @CrossOrigin(origins = "http://localhost:4200")
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("api/auth")
 public class AuthController {
-  private final UserService userService;
+    private final UserService userService;
 
-  public AuthController(UserService userService) {
-    this.userService = userService;
-  }
+    public AuthController(UserService userService) {
+        this.userService = userService;
+    }
 
-  @PostMapping("/register")
-  public Passenger registerPassenger(@RequestBody RegisterPassengerRequest req) {
-    return userService.createPassenger(req);
-  }
+    @PostMapping("/register")
+    public Passenger registerPassenger(@RequestBody RegisterPassengerRequest req) {
+        return userService.createPassenger(req);
+    }
 
-  @PostMapping("/login")
-  public LoginResponse login(@RequestBody LoginRequest req) {
-    return userService.login(req);
-  }
-
-  @GetMapping("/hello")
-  public String hello() {
-    return "Hello, world!";
-  }
-
+    @PostMapping("/login")
+    public LoginResponse login(@RequestBody LoginRequest req) {
+        return userService.login(req);
+    }
 
     // POST /api/auth/email-validation - Validate email availability
     @PostMapping("/email-validation")

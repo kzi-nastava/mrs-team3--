@@ -6,7 +6,14 @@ import com.st3.uber.dto.auth.LoginRequest;
 import com.st3.uber.dto.auth.LoginResponse;
 import com.st3.uber.dto.auth.RegisterPassengerRequest;
 import com.st3.uber.repository.UserRepository;
+import lombok.SneakyThrows;
 import org.springframework.stereotype.Service;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.UUID;
+
+import static java.util.Base64.getDecoder;
 
 @Service
 public class UserService {
@@ -16,21 +23,29 @@ public class UserService {
         this.userRepository = userRepository;
     }
 
+    @SneakyThrows
     public Passenger createPassenger(RegisterPassengerRequest req) {
-        if (userRepository.existsByEmail(req.email())) {
+        if (userRepository.existsByEmail(req.getEmail())) {
             throw new RuntimeException("Email already exists");
         }
 
         Passenger p = new Passenger();
-        p.setEmail(req.email());
-        p.setPassword(req.password());
-        p.setName(req.firstName());
-        p.setSurname(req.lastName());
-        p.setPhoneNumber(req.phoneNumber());
-        p.setAddress(req.address());
-        p.setBlocked(false);
+        p.setEmail(req.getEmail());
+        p.setPassword(req.getPassword());
+        p.setName(req.getName());
+        p.setSurname(req.getSurname());
+        p.setPhoneNumber(req.getPhoneNumber());
+        p.setAddress(req.getAddress());
 
-        return userRepository.save(p);
+        if (req.getBase64Image() != null) {
+          String fileName = UUID.randomUUID() + "." + req.getExtension();
+
+          p.setImagePath("uploads/" + fileName);
+
+          byte[] imageBytes = getDecoder().decode(req.getBase64Image());
+          Files.write(Path.of("uploads/" + fileName), imageBytes);
+        }
+      return userRepository.save(p);
     }
 
     public LoginResponse login(LoginRequest req) {
