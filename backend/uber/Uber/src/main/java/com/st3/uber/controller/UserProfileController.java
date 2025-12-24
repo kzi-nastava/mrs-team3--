@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 @CrossOrigin(origins = "http://localhost:4200")
 @RestController
-@RequestMapping("/api/users/profile")
+@RequestMapping("/api/profile")
 public class UserProfileController {
 
 
