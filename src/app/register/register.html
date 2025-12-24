@@ -1,70 +1,119 @@
-<div class="auth-page">
-  <div class="auth-card">
+<p-splitter [style]="{ height: '100%' }">
+  <ng-template #panel>
+    <div class="left-scroll">
+      <div class="content-wrapper">
+        <div class="card-wrapper">
+          <p-card>
 
-    <section class="auth-left">
-      <h1 class="mb-md">Register</h1>
+            <ng-template #header>
+              <div class="text-center mb-4">
+                <div class="text-900 text-3xl font-medium mb-2">
+                  Create Account
+                </div>
+                <span class="text-600 font-medium line-height-3">
+                  Already have an account?
+                </span>
+                <a
+                  class="font-medium no-underline ml-2 text-blue-500 cursor-pointer"
+                  (click)="goLogin()"
+                >
+                  Login
+                </a>
+              </div>
+            </ng-template>
 
-      <form class="flex flex-column gap-md" [formGroup]="form" (ngSubmit)="submit()">
+            <form [formGroup]="form" (ngSubmit)="submit()">
+              <div class="flex flex-column gap-3">
 
-        <input class="input-field" type="email" placeholder="Email"
-               formControlName="email" />
+                <div class="flex flex-column gap-1">
+                  <label>Email</label>
+                  <input pInputText type="email" formControlName="email" />
+                </div>
 
-        <div class="grid-2">
-          <input class="input-field" type="text" placeholder="First name"
-                 formControlName="name" />
-          <input class="input-field" type="text" placeholder="Last name"
-                 formControlName="surname" />
-        </div>
+                <div class="flex flex-column gap-1">
+                  <label>First name</label>
+                  <input pInputText type="text" formControlName="name" />
+                </div>
 
-        <input class="input-field" type="text" placeholder="Address"
-               formControlName="address" />
+                <div class="flex flex-column gap-1">
+                  <label>Last name</label>
+                  <input pInputText type="text" formControlName="surname" />
+                </div>
 
-        <input class="input-field" type="text" placeholder="Phone number"
-               formControlName="phoneNumber" />
+                <div class="flex flex-column gap-1">
+                  <label>Address</label>
+                  <input pInputText type="text" formControlName="address" />
+                </div>
 
-        <div class="grid-2">
-          <input class="input-field" type="password" placeholder="Password"
-                 formControlName="password" />
-          <input class="input-field" type="password" placeholder="Confirm password"
-                 formControlName="confirmPassword" />
-        </div>
+                <div class="flex flex-column gap-1">
+                  <label>Phone number</label>
+                  <input pInputText type="text" formControlName="phoneNumber" />
+                </div>
 
-        <div class="text-center text-red" *ngIf="passwordMismatch">
-          Passwords do not match.
-        </div>
+                <div class="flex flex-column gap-1">
+                  <label>Password</label>
+                  <input pInputText type="password" formControlName="password" />
+                </div>
 
-        <input class="input-field" type="text"
-               placeholder="Profile image URL (optional)"
-               formControlName="profileImage" />
+                <div class="flex flex-column gap-1">
+                  <label>Confirm password</label>
+                  <input
+                    pInputText
+                    type="password"
+                    formControlName="confirmPassword"
+                  />
+                </div>
 
-        <button class="btn btn-black mt-md"
-                type="submit"
-                [disabled]="form.invalid || submitting">
-          {{ submitting ? 'Creating account…' : 'Create account' }}
-        </button>
+                <small class="text-red" *ngIf="passwordMismatch">
+                  Passwords do not match.
+                </small>
 
-        <div class="text-center mt-md" style="color: green;" *ngIf="success">
-          {{ success }}
-        </div>
+                <div class="flex flex-column gap-1">
+                  <label>Profile image (optional)</label>
+<!--                  <input-->
+<!--                    type="file"-->
+<!--                    accept="image/*"-->
+<!--                    (change)="onFileSelected($event)"-->
+<!--                  />-->
+                  <p-fileupload #fu mode="basic" chooseLabel="Choose" chooseIcon="pi pi-upload" accept="image/*" maxFileSize="1000000" (onSelect)="onFileSelected($event)" />
 
-        <div class="text-center mt-md" style="color: red;" *ngIf="error">
-          {{ error }}
-        </div>
-      </form>
-    </section>
 
-    <section class="auth-right">
-      <div class="promo">
-        <div class="brand">Uber</div>
-        <div class="tagline">
-          Create an account.<br />
-          Walking was never the plan.
-        </div>
-        <div class="sub">
-          We know you checked the distance.
+                  <img
+                    *ngIf="imagePreview"
+                    [src]="imagePreview"
+                    class="image-preview"
+                  />
+                </div>
+
+                <small class="text-green" *ngIf="success">{{ success }}</small>
+                <small class="text-red" *ngIf="error">{{ error }}</small>
+
+                <div class="footer-space">
+                  <p-button
+                    [label]="submitting ? 'Creating account…' : 'Create account'"
+                    class="w-full"
+                    styleClass="w-full"
+                    size="large"
+                    type="submit"
+                    [disabled]="form.invalid || submitting"
+                  ></p-button>
+                </div>
+
+              </div>
+            </form>
+
+          </p-card>
         </div>
       </div>
-    </section>
+    </div>
+  </ng-template>
 
-  </div>
-</div>
+  <ng-template #panel>
+    <div class="flex flex-column justify-content-center bg-primary h-full align-items-center">
+      <div>
+        <h1 style="text-align: center">Uber</h1>
+        <h3>Create an account. We know you checked the distance twice.</h3>
+      </div>
+    </div>
+  </ng-template>
+</p-splitter>

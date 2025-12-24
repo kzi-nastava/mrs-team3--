@@ -1,10 +1,9 @@
 <p-splitter [style]="{ height: '100%' }">
-  <!-- LEFT PANEL -->
   <ng-template #panel>
     <div class="flex flex-column justify-content-center align-items-center h-full">
       <div class="card-wrapper" [style]="{ width: '90%' }">
         <p-card>
-          <ng-template #header>
+          <ng-template pTemplate="header">
             <div class="text-center mb-2">
               <div class="text-900 text-3xl font-medium mb-3">Welcome Back</div>
               <span class="text-600 font-medium line-height-3">Don't have an account?</span>
@@ -17,7 +16,6 @@
             </div>
           </ng-template>
 
-          <!-- FORM -->
           <form (ngSubmit)="onSubmit()">
             <div class="flex flex-column gap-2 mb-2">
               <div class="flex flex-column gap-2">
@@ -45,24 +43,26 @@
               </div>
             </div>
 
-            <ng-template #footer>
-              <div class="flex gap-4 mt-1">
-                <p-button
-                  label="Login"
-                  class="w-full"
-                  styleClass="w-full"
-                  size="large"
-                  type="submit"
-                ></p-button>
-              </div>
-            </ng-template>
+            <button type="submit" style="display:none"></button>
           </form>
+
+          <ng-template pTemplate="footer">
+            <div class="flex gap-4 mt-1">
+              <p-button
+                label="Login"
+                class="w-full"
+                styleClass="w-full"
+                size="large"
+                type="submit"
+                (onClick)="onSubmit()"
+              ></p-button>
+            </div>
+          </ng-template>
         </p-card>
       </div>
     </div>
   </ng-template>
 
-  <!-- RIGHT PANEL -->
   <ng-template #panel>
     <div class="flex flex-column justify-content-center bg-primary h-full align-items-center">
       <div>
