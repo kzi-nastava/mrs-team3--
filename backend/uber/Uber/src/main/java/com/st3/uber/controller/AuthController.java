@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 @CrossOrigin(origins = "http://localhost:4200")
 @RestController
-//@RequestMapping()
+@RequestMapping("api/auth")
 public class AuthController {
     private final UserService userService;
 
@@ -17,7 +17,7 @@ public class AuthController {
         this.userService = userService;
     }
 
-    @PostMapping("/register/passenger")
+    @PostMapping("/register")
     public Passenger registerPassenger(@RequestBody RegisterPassengerRequest req) {
         return userService.createPassenger(req);
     }

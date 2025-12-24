@@ -19,4 +19,7 @@ public class Passenger extends User {
             inverseJoinColumns = @JoinColumn(name = "ride_id")
     )
     private List<Ride> favoriteRides = new ArrayList<>();
+
+  @Column(nullable = false)
+  private boolean verified = false;
 }
