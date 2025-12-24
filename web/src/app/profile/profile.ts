@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 
+
+// Podaci o korisniku u odnosu na ulogu
 interface User {
   id: number;
   firstName: string;
@@ -11,7 +13,7 @@ interface User {
   address: string;
   role: 'passenger' | 'driver' | 'admin';
   profileImage: string;
-  // Driver specific
+  // Specificno za vozace
   activeHours?: number;
   vehicle?: {
     model: string;
@@ -20,6 +22,7 @@ interface User {
   };
 }
 
+//Interfejs za zahteve za promenu podataka
 interface ChangeRequest {
   id: number;
   field: string;
@@ -29,6 +32,7 @@ interface ChangeRequest {
   requestedAt: Date;
 }
 
+// Glavna komponenta profila
 @Component({
   selector: 'app-profile',
   standalone: true,
@@ -36,6 +40,12 @@ interface ChangeRequest {
   templateUrl: './profile.html',
   styleUrl: './profile.css'
 })
+
+/* Klasa komponente profila - mockup podaci
+  Na osnovu uloge korisnika (passenger, driver, admin), prikazuju se razliciti podaci i opcije.
+  Vozaci mogu da salju zahteve za promenu podataka koji moraju biti odobreni od strane admina.
+  Svi korisnici mogu da menjaju lozinku i uploaduju profilnu sliku.
+*/
 export class ProfileComponent implements OnInit {
   user: User = {
     id: 1,
@@ -58,13 +68,13 @@ export class ProfileComponent implements OnInit {
   editMode = false;
   editedUser: User = { ...this.user };
 
-  // Change password
+  // Promena lozinke
   showPasswordModal = false;
   oldPassword = '';
   newPassword = '';
   confirmPassword = '';
 
-  // Pending changes (za vozače)
+  // Zahtevi za promenu (za vozače)
   pendingChanges: ChangeRequest[] = [];
   hasPendingChanges = false;
 
@@ -72,19 +82,20 @@ export class ProfileComponent implements OnInit {
   selectedFile: File | null = null;
   imagePreview: string = '';
 
+  // Inicijalizacija podataka
   ngOnInit(): void {
     this.loadUserData();
     this.loadPendingChanges();
   }
 
   loadUserData(): void {
-    // Mock data but later can be fetched from API
+    // Mock - u realnom slucaju bi se povukli podaci sa servera
     this.editedUser = { ...this.user };
     this.imagePreview = this.user.profileImage;
   }
 
   loadPendingChanges(): void {
-    // Mock data for drivers
+    // Mock up podaci za vozace
     if (this.user.role === 'driver') {
       this.pendingChanges = [
         {
@@ -102,18 +113,19 @@ export class ProfileComponent implements OnInit {
 
   toggleEditMode(): void {
     if (this.editMode) {
-      // Cancel - revert changes
+      // Cancel - vraca se na originalne podatke
       this.editedUser = { ...this.user };
       this.imagePreview = this.user.profileImage;
     }
     this.editMode = !this.editMode;
   }
 
+  // Rukovanje izborom slike
   onImageSelected(event: any): void {
     const file = event.target.files[0];
     if (file) {
       this.selectedFile = file;
-      
+
       // Preview
       const reader = new FileReader();
       reader.onload = (e: any) => {
@@ -131,10 +143,10 @@ export class ProfileComponent implements OnInit {
 
   saveChanges(): void {
     if (this.user.role === 'driver') {
-      // driver sends change request
+      // driver saljes zahteve za promenu
       this.submitChangeRequest();
     } else {
-      // passenger/admin saves directly
+      // passenger/admin cuvaju odmah izmene
       this.user = { ...this.editedUser };
       if (this.imagePreview !== this.user.profileImage) {
         this.user.profileImage = this.imagePreview;
@@ -145,17 +157,19 @@ export class ProfileComponent implements OnInit {
   }
 
   submitChangeRequest(): void {
-    // Mock but here would send API request
+    // Mock up - u realnom slucaju bi se poslao zahtev na server
     console.log('Submitting change request for approval...');
     this.hasPendingChanges = true;
     this.editMode = false;
     alert('Change request submitted! Waiting for admin approval.');
   }
 
+  // Promena lozinke
   openChangePassword(): void {
     this.showPasswordModal = true;
   }
 
+  // Zatvaranje modula za promenu lozinke
   closePasswordModal(): void {
     this.showPasswordModal = false;
     this.oldPassword = '';
