@@ -8,6 +8,7 @@ import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { SplitterModule } from 'primeng/splitter';
 import { InputTextModule } from 'primeng/inputtext';
+import {MessageService} from 'primeng/api';
 
 @Component({
   selector: 'app-login',
@@ -22,7 +23,8 @@ export class Login {
 
   constructor(
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private messageService: MessageService
   ) {}
 
   goRegister() {
@@ -30,27 +32,25 @@ export class Login {
   }
 
   onSubmit() {
-    // basic guard
     if (!this.email.trim() || !this.password) {
-      alert('Please enter email and password.');
+      console.log('Please enter email and password.');
       return;
     }
 
     this.authService.login(this.email.trim(), this.password).subscribe({
       next: (res) => {
         console.log('LOGIN SUCCESS', res);
-        alert('Login successful!');
-        // TODO: cuvanje tokena i redirect
-        // npr: this.router.navigateByUrl('/');
+        this.messageService.add({severity:'success', summary: 'Login Successful', detail: 'Welcome back!'});
       },
       error: (err) => {
         console.error('LOGIN ERROR', err);
-        alert('Invalid credentials');
+        this.messageService.add({severity:'error', summary: 'Login Failed', detail: 'Invalid email or password.'});
+
       },
     });
   }
 
   changePassword() {
-    this.router.navigate(['/change-password']).then();
+    this.router.navigate(['/forgot-password']).then();
   }
 }

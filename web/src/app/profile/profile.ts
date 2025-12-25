@@ -54,7 +54,7 @@ export class ProfileComponent implements OnInit {
     email: 'marko@example.com',
     phoneNumber: '+381 64 123 4567',
     address: 'Bulevar oslobođenja 46, Novi Sad',
-    role: 'passenger',
+    role: 'admin',
     profileImage: '',
     activeHours: 18.5,
     vehicle: {
