@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Uber3</string>
+    <string name="uber3">Uber3</string>
+    <string name="profile_avatar">Profile avatar</string>
 </resources>
