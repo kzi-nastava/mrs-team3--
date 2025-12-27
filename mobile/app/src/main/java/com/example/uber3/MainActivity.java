@@ -21,7 +21,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        //Ucitati glavnu ulogu
         drawerLayout = findViewById(R.id.drawerLayout);
         topAppBar = findViewById(R.id.topAppBar);
         NavigationView navigationView = findViewById(R.id.navigationView);
@@ -34,7 +33,7 @@ public class MainActivity extends AppCompatActivity {
 
             if (id == R.id.nav_home) {
                 topAppBar.setTitle("Home");
-
+                loadFragment(HomeFragment.newInstance(currentUserRole));
 
             } else if (id == R.id.nav_chat) {
                 topAppBar.setTitle("Chat");
@@ -51,28 +50,17 @@ public class MainActivity extends AppCompatActivity {
             return true;
         });
 
+        // DEFAULT SCREEN
         if (savedInstanceState == null) {
-            topAppBar.setTitle("Profile");
-            loadFragment(ProfileFragment.newInstance(currentUserRole));
+            topAppBar.setTitle("Home");
+            loadFragment(HomeFragment.newInstance(currentUserRole));
         }
     }
-
-
 
     private void loadFragment(Fragment fragment) {
-        if (fragment != null) {
-            getSupportFragmentManager()
-                    .beginTransaction()
-                    .replace(R.id.fragmentContainer, fragment)
-                    .commit();
-        }
-    }
-
-    public String getCurrentUserRole() {
-        return currentUserRole;
-    }
-
-    public void setCurrentUserRole(String role) {
-        this.currentUserRole = role;
+        getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.fragmentContainer, fragment)
+                .commit();
     }
 }

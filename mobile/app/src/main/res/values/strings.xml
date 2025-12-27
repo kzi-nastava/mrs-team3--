@@ -33,4 +33,12 @@
     <string name="pending">Pending</string>
     <string name="request_number_mock">+381 64 123 4567 → +381 65 999 8888</string>
     <string name="mock_date_request">12/10/2025, 01:00 AM</string>
+    <string name="mock_price">💰 850 RSD</string>
+    <string name="mock_time">⏱ 12 min</string>
+    <string name="mock_reset">Reset</string>
+    <string name="book_ride">Book Ride</string>
+    <string name="destination">Destination</string>
+    <string name="add_stop">+ Add stop</string>
+    <string name="pickup_location">Pickup location</string>
+    <string name="let_s_ride">Let’s ride!</string>
 </resources>
