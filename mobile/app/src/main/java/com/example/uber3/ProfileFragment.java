@@ -1,6 +1,7 @@
 package com.example.uber3;
 
 import android.annotation.SuppressLint;
+import android.app.AlertDialog;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -8,6 +9,7 @@ import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -35,8 +37,9 @@ public class ProfileFragment extends Fragment {
     private boolean editMode = false;
     private boolean isDriver = false;
 
-
     private MaterialButton btnEdit;
+    private MaterialButton btnChangePassword;
+
     private TextView tvFirstName, tvLastName, tvEmail, tvPhone, tvAddress;
     private EditText etFirstName, etLastName, etEmail, etPhone, etAddress;
     private TextView tvVehicleModel, tvLicensePlate, tvSeats;
@@ -75,10 +78,12 @@ public class ProfileFragment extends Fragment {
         }
 
         setupEditButton();
+        setupChangePasswordButton();
     }
 
     private void initializeViews(View view) {
         btnEdit = view.findViewById(R.id.btnEdit);
+        btnChangePassword = view.findViewById(R.id.btnChangePassword);
 
         tvFirstName = view.findViewById(R.id.tvFirstName);
         etFirstName = view.findViewById(R.id.etFirstName);
@@ -107,13 +112,49 @@ public class ProfileFragment extends Fragment {
     private void setupEditButton() {
         btnEdit.setOnClickListener(v -> {
             editMode = !editMode;
-
-            if (editMode) {
-                enterEditMode();
-            } else {
-                exitEditMode();
-            }
+            if (editMode) enterEditMode();
+            else exitEditMode();
         });
+    }
+
+    private void setupChangePasswordButton() {
+        btnChangePassword.setOnClickListener(v -> showChangePasswordDialog());
+    }
+
+    private void showChangePasswordDialog() {
+        View dialogView = LayoutInflater.from(getContext())
+                .inflate(R.layout.dialog_change_password, null);
+
+        EditText etCurrent = dialogView.findViewById(R.id.etCurrentPassword);
+        EditText etNew = dialogView.findViewById(R.id.etNewPassword);
+        EditText etConfirm = dialogView.findViewById(R.id.etConfirmPassword);
+
+        new AlertDialog.Builder(getContext())
+                .setView(dialogView)
+                .setPositiveButton("Save", (dialog, which) -> {
+                    String current = etCurrent.getText().toString().trim();
+                    String newPass = etNew.getText().toString().trim();
+                    String confirm = etConfirm.getText().toString().trim();
+
+                    if (current.isEmpty() || newPass.isEmpty() || confirm.isEmpty()) {
+                        Toast.makeText(getContext(), "All fields are required", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    if (!newPass.equals(confirm)) {
+                        Toast.makeText(getContext(), "Passwords do not match", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    if (newPass.length() < 6) {
+                        Toast.makeText(getContext(), "Password must be at least 6 characters", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    Toast.makeText(getContext(), "Password changed successfully", Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     @SuppressLint("SetTextI18n")
@@ -159,7 +200,6 @@ public class ProfileFragment extends Fragment {
             tvEmail.setText(etEmail.getText().toString());
             tvPhone.setText(etPhone.getText().toString());
             tvAddress.setText(etAddress.getText().toString());
-
         } else {
             createChangeRequest();
         }
@@ -209,11 +249,7 @@ public class ProfileFragment extends Fragment {
         }
 
         if (changeCount > 0) {
-            if (changeCount == 1) {
-                tvChangeField.setText("Change Request");
-            } else {
-                tvChangeField.setText(changeCount + " Change Requests");
-            }
+            tvChangeField.setText(changeCount == 1 ? "Change Request" : changeCount + " Change Requests");
             tvChangeValues.setText(changes.toString().trim());
             tvChangeStatus.setText("Pending");
             changeRequestCard.setVisibility(View.VISIBLE);
@@ -225,11 +261,8 @@ public class ProfileFragment extends Fragment {
         String newValue = et.getText().toString();
 
         if (!oldValue.equals(newValue)) {
-            if (builder.length() > 0) {
-                builder.append("\n");
-            }
-            builder.append(fieldName).append(": ")
-                    .append(oldValue).append("  →  ").append(newValue);
+            if (builder.length() > 0) builder.append("\n");
+            builder.append(fieldName).append(": ").append(oldValue).append("  →  ").append(newValue);
             return 1;
         }
         return 0;
@@ -240,7 +273,6 @@ public class ProfileFragment extends Fragment {
         super.onSaveInstanceState(outState);
 
         outState.putBoolean(STATE_EDIT_MODE, editMode);
-
         outState.putString(STATE_FIRST_NAME, etFirstName.getText().toString());
         outState.putString(STATE_LAST_NAME, etLastName.getText().toString());
         outState.putString(STATE_EMAIL, etEmail.getText().toString());
@@ -263,38 +295,22 @@ public class ProfileFragment extends Fragment {
     private void restoreState(Bundle savedState) {
         editMode = savedState.getBoolean(STATE_EDIT_MODE, false);
 
-        String firstName = savedState.getString(STATE_FIRST_NAME);
-        String lastName = savedState.getString(STATE_LAST_NAME);
-        String email = savedState.getString(STATE_EMAIL);
-        String phone = savedState.getString(STATE_PHONE);
-        String address = savedState.getString(STATE_ADDRESS);
-
-        if (firstName != null) etFirstName.setText(firstName);
-        if (lastName != null) etLastName.setText(lastName);
-        if (email != null) etEmail.setText(email);
-        if (phone != null) etPhone.setText(phone);
-        if (address != null) etAddress.setText(address);
+        etFirstName.setText(savedState.getString(STATE_FIRST_NAME));
+        etLastName.setText(savedState.getString(STATE_LAST_NAME));
+        etEmail.setText(savedState.getString(STATE_EMAIL));
+        etPhone.setText(savedState.getString(STATE_PHONE));
+        etAddress.setText(savedState.getString(STATE_ADDRESS));
 
         if (isDriver) {
-            String vehicleModel = savedState.getString(STATE_VEHICLE_MODEL);
-            String licensePlate = savedState.getString(STATE_LICENSE_PLATE);
-            String seats = savedState.getString(STATE_SEATS);
-
-            if (vehicleModel != null) etVehicleModel.setText(vehicleModel);
-            if (licensePlate != null) etLicensePlate.setText(licensePlate);
-            if (seats != null) etSeats.setText(seats);
+            etVehicleModel.setText(savedState.getString(STATE_VEHICLE_MODEL));
+            etLicensePlate.setText(savedState.getString(STATE_LICENSE_PLATE));
+            etSeats.setText(savedState.getString(STATE_SEATS));
         }
 
-        boolean changeVisible = savedState.getBoolean(STATE_CHANGE_VISIBLE, false);
-        if (changeVisible) {
-            String changeField = savedState.getString(STATE_CHANGE_FIELD);
-            String changeValues = savedState.getString(STATE_CHANGE_VALUES);
-            String changeStatus = savedState.getString(STATE_CHANGE_STATUS);
-
-            if (changeField != null) tvChangeField.setText(changeField);
-            if (changeValues != null) tvChangeValues.setText(changeValues);
-            if (changeStatus != null) tvChangeStatus.setText(changeStatus);
-
+        if (savedState.getBoolean(STATE_CHANGE_VISIBLE, false)) {
+            tvChangeField.setText(savedState.getString(STATE_CHANGE_FIELD));
+            tvChangeValues.setText(savedState.getString(STATE_CHANGE_VALUES));
+            tvChangeStatus.setText(savedState.getString(STATE_CHANGE_STATUS));
             changeRequestCard.setVisibility(View.VISIBLE);
         }
 
