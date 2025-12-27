@@ -2,4 +2,35 @@
     <string name="app_name">Uber3</string>
     <string name="uber3">Uber3</string>
     <string name="profile_avatar">Profile avatar</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="mock_name">Marko Marković</string>
+    <string name="mock_mail">marko@email.com</string>
+    <string name="my_profile">My Profile</string>
+    <string name="edit">✏️ Edit</string>
+    <string name="basic_information">Basic Information</string>
+    <string name="first_name">First Name</string>
+    <string name="mock_ime">Marko</string>
+    <string name="mock_prezime">Last Name</string>
+    <string name="email">Email</string>
+    <string name="mock_email">marko@example.com</string>
+    <string name="phone_number">Phone Number</string>
+    <string name="mock_phone">+381 64 123 4567</string>
+    <string name="address">Address</string>
+    <string name="mock_address">Bulevar oslobođenja 46, Novi Sad</string>
+    <string name="change_password">🔒 Change Password</string>
+    <string name="driver_information">Driver Information</string>
+    <string name="mock_active_hours">Active Hours (24h)</string>
+    <string name="mock_hours">18.5 hours</string>
+    <string name="vehicle_model">Vehicle Model</string>
+    <string name="mock_model">Toyota Corolla</string>
+    <string name="license_plate">License Plate</string>
+    <string name="mock_license_plate">NS-123-AB</string>
+    <string name="seats">Seats</string>
+    <string name="mock_seats">4</string>
+    <string name="change_requests">Change Requests</string>
+    <string name="phone_number_2">Phone Number</string>
+    <string name="pending">Pending</string>
+    <string name="request_number_mock">+381 64 123 4567 → +381 65 999 8888</string>
+    <string name="mock_date_request">12/10/2025, 01:00 AM</string>
 </resources>

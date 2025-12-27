@@ -54,7 +54,7 @@ export class ProfileComponent implements OnInit {
     email: 'marko@example.com',
     phoneNumber: '+381 64 123 4567',
     address: 'Bulevar oslobođenja 46, Novi Sad',
-    role: 'passenger',
+    role: 'driver',
     profileImage: '',
     activeHours: 18.5,
     vehicle: {
@@ -125,7 +125,7 @@ export class ProfileComponent implements OnInit {
     const file = event.target.files[0];
     if (file) {
       this.selectedFile = file;
-
+      
       // Preview
       const reader = new FileReader();
       reader.onload = (e: any) => {
