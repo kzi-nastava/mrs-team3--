@@ -69,7 +69,7 @@ export class ProfileComponent implements OnInit {
   editedUser: User = { ...this.user };
 
   // Promena lozinke
-  showPasswordModal = false;
+  showPasswordModal = Create and implement a mobile view that displays the user's basic information.false;
   oldPassword = '';
   newPassword = '';
   confirmPassword = '';
@@ -125,7 +125,7 @@ export class ProfileComponent implements OnInit {
     const file = event.target.files[0];
     if (file) {
       this.selectedFile = file;
-
+      
       // Preview
       const reader = new FileReader();
       reader.onload = (e: any) => {

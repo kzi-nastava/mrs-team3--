@@ -17,7 +17,7 @@
 
     <TextView
         android:layout_marginTop="8dp"
-        android:text="Marko Marković"
+        android:text="@string/mock_name"
         android:textColor="@android:color/white"
         android:textSize="18sp"
         android:textStyle="bold"
@@ -25,7 +25,7 @@
         android:layout_height="wrap_content"/>
 
     <TextView
-        android:text="marko@email.com"
+        android:text="@string/mock_mail"
         android:textColor="@android:color/white"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"/>
