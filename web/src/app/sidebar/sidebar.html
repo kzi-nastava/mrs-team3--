@@ -2,21 +2,21 @@
   <button class="icon-btn" (click)="goHome()">🏠</button>
 
 
-  <button 
+  <button
   *ngIf="role !== 'GUEST'"
   class="icon-btn" (click)="goMessages()">💬</button>
 
-  <button 
+  <button
   *ngIf="role !== 'GUEST'"
   class="icon-btn" (click)="goHistory()">🚗</button>
   <div class="spacer"></div>
-  <button 
+  <button
   *ngIf="role !== 'GUEST'"
   class="icon-btn" (click)="goProfile()">👤</button>
 
-  <!-- POSLE PROMENI DA IDE SAMO ZA GOSTE -->
-  <button 
-  *ngIf="role !== 'GUEST'"    
+  <!-- POSLE PROMENITI DA IDE SAMO ZA GOSTE -->
+  <button
+  *ngIf="role !== 'GUEST'"
   class="icon-btn" (click)="goLogin()">🔐</button>
 
 </div>

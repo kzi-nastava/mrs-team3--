@@ -154,6 +154,7 @@ export class RegisterComponent {
       error: (err) => {
         this.submitting = false;
         this.error = err?.error?.message || 'Registration failed.';
+        this.messageService.add({severity:'error', summary: 'Error', detail: this.error});
       },
     });
   }

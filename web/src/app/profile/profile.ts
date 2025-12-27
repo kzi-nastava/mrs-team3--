@@ -54,7 +54,7 @@ export class ProfileComponent implements OnInit {
     email: 'marko@example.com',
     phoneNumber: '+381 64 123 4567',
     address: 'Bulevar oslobođenja 46, Novi Sad',
-    role: 'driver',
+    role: 'admin',
     profileImage: '',
     activeHours: 18.5,
     vehicle: {
@@ -69,7 +69,7 @@ export class ProfileComponent implements OnInit {
   editedUser: User = { ...this.user };
 
   // Promena lozinke
-  showPasswordModal = false;
+  showPasswordModal = Create and implement a mobile view that displays the user's basic information.false;
   oldPassword = '';
   newPassword = '';
   confirmPassword = '';
