@@ -148,7 +148,7 @@ export class MapComponent implements OnInit, OnDestroy {
       const startLatLng = this.startMarker.getLatLng();
       const endLatLng = this.endMarker.getLatLng();
 
-      const apiKey = 'nnn'; //Add you key here
+      const apiKey = 'add you own openrouteservice api key here'; //Add you key here
       const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${apiKey}&start=${startLatLng.lng},${startLatLng.lat}&end=${endLatLng.lng},${endLatLng.lat}`;
 
       fetch(url)
@@ -311,7 +311,7 @@ export class MapComponent implements OnInit, OnDestroy {
   }
 
   private drawRouteBetween(start: Location, end: Location, segmentIndex: number): void {
-    const apiKey = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImVmYzJkNjg5Zjc1NWE3YjdjZTY5YTVjYjI4ZTEyNGIxYjcxMjcxMmU1YzcxNGEzNjQ0OGJjMWExIiwiaCI6Im11cm11cjY0In0=';
+    const apiKey = 'Add also here=';
     const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${apiKey}&start=${start.lng},${start.lat}&end=${end.lng},${end.lat}`;
 
     fetch(url)

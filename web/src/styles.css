@@ -101,6 +101,15 @@ html {
   --shadow-xl: 0 0.5rem 2rem rgba(0, 0, 0, 0.3);
 }
 
+.bg-primary {
+  background: #9B7FC9 !important;
+}
+
+.p-button {
+  background: #9B7FC9 !important;
+
+}
+
 /*h1 {*/
 /*  font-size: 3rem;*/
 /*  font-weight: bold;*/

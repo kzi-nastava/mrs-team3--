@@ -2,12 +2,15 @@ package com.st3.uber.service;
 
 import com.st3.uber.domain.Passenger;
 import com.st3.uber.domain.User;
+import com.st3.uber.dto.auth.ForgotPasswordRequest;
 import com.st3.uber.dto.auth.LoginRequest;
 import com.st3.uber.dto.auth.LoginResponse;
 import com.st3.uber.dto.auth.RegisterPassengerRequest;
 import com.st3.uber.repository.UserRepository;
 import lombok.SneakyThrows;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,7 +29,7 @@ public class UserService {
     @SneakyThrows
     public Passenger createPassenger(RegisterPassengerRequest req) {
         if (userRepository.existsByEmail(req.getEmail())) {
-            throw new RuntimeException("Email already exists");
+            throw new ResponseStatusException(HttpStatusCode.valueOf(400), "Email already in use");
         }
 
         Passenger p = new Passenger();
@@ -63,4 +66,5 @@ public class UserService {
         String role = u.getClass().getSimpleName().toUpperCase();
         return new LoginResponse(u.getId(), u.getEmail(), role);
     }
+
 }

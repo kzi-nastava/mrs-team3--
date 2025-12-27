@@ -5,6 +5,7 @@ import { Login } from './login/login';
 import { RideHistoryComponent } from './ride-history/ride-history';
 import { RegisterComponent } from './register/register';
 import {ChangePasswordComponent} from './change-password/change-password';
+import {ForgotPassword} from './forgot-password/forgot-password';
 
 export const routes: Routes = [
   { path: '', component: LandingPageComponent },
@@ -13,5 +14,6 @@ export const routes: Routes = [
   {path: "register", component: RegisterComponent},
   { path: 'ride-history', component: RideHistoryComponent },
   {path: "change-password", component: ChangePasswordComponent},
+  {path: 'forgot-password', component: ForgotPassword},
   { path: '**', redirectTo: '' }
 ];
