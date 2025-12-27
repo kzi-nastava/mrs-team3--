@@ -57,7 +57,6 @@ public class Ride {
     })
     private Location endLocation;
 
-    // Popunjava se na kraju (ili kod FINISHED_EARLY)
     @Embedded
     @AttributeOverrides({
             @AttributeOverride(name = "lat", column = @Column(name = "actual_end_lat")),
@@ -66,7 +65,6 @@ public class Ride {
     })
     private Location actualEndLocation;
 
-    // Planirane međustanice
     @ElementCollection
     @CollectionTable(name = "ride_stops", joinColumns = @JoinColumn(name = "ride_id"))
     @OrderColumn(name = "stop_order")
@@ -133,4 +131,8 @@ public class Ride {
     private String reviewComment;
 
     private LocalDateTime reviewedAt;
+
+    // 2.6.2 - Inconsistency reports
+    @OneToMany(mappedBy = "ride", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<InconsistencyReport> inconsistencyReports = new ArrayList<>();
 }
