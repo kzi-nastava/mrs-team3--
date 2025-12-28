@@ -40,13 +40,14 @@ public class MainActivity extends AppCompatActivity {
                 topAppBar.setTitle("Chat");
 
             } else if (id == R.id.nav_ride) {
-                topAppBar.setTitle("Ride");
+                topAppBar.setTitle("Ride History");
+                loadFragment(DriverHistoryFragment.newInstance());
 
             } else if (id == R.id.nav_profile) {
                 topAppBar.setTitle("Profile");
                 loadFragment(ProfileFragment.newInstance(currentUserRole));
-            }
 
+            }
             drawerLayout.close();
             return true;
         });
