@@ -29,7 +29,7 @@ public class AuthController {
 
     @PostMapping("/forgot-password")
     public void forgotPassword(@RequestBody ForgotPasswordRequest req) {
-        userService.forgotPassword(req);
+       // userService.forgotPassword(req);
     }
 
     // POST /api/auth/email-validation - Validate email availability

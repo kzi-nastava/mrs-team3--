@@ -40,7 +40,7 @@
                 android:id="@+id/tvLoginLink"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/login"
+                android:text="@string/email"
                 android:textSize="14sp"
                 android:textColor="#9B7FC9"
                 android:textStyle="bold"
@@ -52,7 +52,7 @@
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="@string/login"
+            android:hint="@string/email"
             android:layout_marginBottom="12dp"
             app:boxStrokeColor="#9B7FC9"
             app:hintTextColor="#9B7FC9"

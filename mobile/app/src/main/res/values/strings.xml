@@ -11,7 +11,7 @@
     <string name="basic_information">Basic Information</string>
     <string name="first_name">First Name</string>
     <string name="mock_ime">Marko</string>
-    <string name="mock_prezime">Last Name</string>
+    <string name="mock_prezime">Milutin</string>
     <string name="email">Email</string>
     <string name="mock_email">marko@example.com</string>
     <string name="phone_number">Phone Number</string>
@@ -79,4 +79,8 @@
     <string name="price_din">Price (din)</string>
     <string name="cancelled">Cancelled</string>
     <string name="panic">PANIC</string>
+    <string name="home">Home</string>
+    <string name="chat">Chat</string>
+    <string name="ride">Ride</string>
+    <string name="profile">Profile</string>
 </resources>
