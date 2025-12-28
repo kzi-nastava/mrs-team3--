@@ -21,7 +21,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        //Ucitati glavnu ulogu
         drawerLayout = findViewById(R.id.drawerLayout);
         topAppBar = findViewById(R.id.topAppBar);
         NavigationView navigationView = findViewById(R.id.navigationView);
@@ -41,7 +40,6 @@ public class MainActivity extends AppCompatActivity {
 
             } else if (id == R.id.nav_ride) {
                 topAppBar.setTitle("Register");
-                loadFragment(new RegisterFragment());
 
             } else if (id == R.id.nav_profile) {
                 topAppBar.setTitle("Profile");
@@ -67,26 +65,27 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // Called from RegisterFragment after successful registration
     public void loadDefaultFragment() {
         topAppBar.setTitle("Profile");
         loadFragment(ProfileFragment.newInstance(currentUserRole));
 
-        // Unlock drawer (in case it was locked)
         drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
         topAppBar.setNavigationIcon(R.drawable.ic_menu);
     }
 
-    // Called from LoginFragment to open RegisterFragment
     public void loadRegisterFragment() {
         topAppBar.setTitle("Register");
         loadFragment(new RegisterFragment());
     }
 
-    // Called from RegisterFragment to open LoginFragment
     public void loadLoginFragment() {
         topAppBar.setTitle("Login");
         loadFragment(new LoginFragment());
+    }
+
+    public void loadForgotPasswordFragment() {
+        topAppBar.setTitle("Forgot Password");
+        loadFragment(new ForgotPasswordFragment());
     }
 
     public String getCurrentUserRole() {
