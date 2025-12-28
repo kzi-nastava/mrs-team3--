@@ -14,7 +14,7 @@
             android:id="@+id/homeMapContainer"
             android:name="com.example.uber3.MapFragment"
             android:layout_width="match_parent"
-            android:layout_height="240dp"
+            android:layout_height="300dp"
             android:layout_margin="16dp"
             android:layout_marginBottom="8dp"/>
 
