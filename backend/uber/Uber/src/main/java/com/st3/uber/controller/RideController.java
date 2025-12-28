@@ -96,6 +96,26 @@ public class RideController {
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
+
+    // POST /api/rides/{id}/complete-detailed - Complete ride with full details
+    @PostMapping(
+            value = "/{id}/complete-detailed",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<CompleteRideResponse> completeRideDetailed(@PathVariable Long id) {
+      CompleteRideResponse response = new CompleteRideResponse(
+              id,
+              RideStatus.COMPLETED,
+              LocalDateTime.now().minusMinutes(15),
+              LocalDateTime.now(),
+              "Bulevar oslobođenja 46",
+              "Futoška 10",
+              450.0,
+              8.5
+      );
+      return ResponseEntity.ok(response);
+    }
+
     // POST /api/rides/{id}/cancel - Cancel specific ride
     @PostMapping(
             value = "/{id}/cancel",
@@ -143,6 +163,35 @@ public class RideController {
               id,
               "Inconsistency report submitted successfully",
               LocalDateTime.now()
+      );
+      return ResponseEntity.ok(response);
+    }
+
+    // POST /api/rides/{id}/rating - Submit rating for completed ride
+    @PostMapping(
+            value = "/{id}/rating",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<SubmitRatingResponse> submitRating(
+            @PathVariable Long id,
+            @RequestBody SubmitRatingRequest request
+    ) {
+      // Service layer will:
+      // 1. Verify ride exists and is COMPLETED
+      // 2. Verify passenger is part of this ride
+      // 3. Verify ride was completed within last 3 days
+      // 4. Verify ride hasn't been rated yet (reviewedAt == null)
+      // 5. Update ride: driverRating, vehicleRating, reviewComment, reviewedAt
+      // 6. Save and return response
+
+      SubmitRatingResponse response = new SubmitRatingResponse(
+              id,
+              request.driverRating(),
+              request.vehicleRating(),
+              request.comment(),
+              LocalDateTime.now(),
+              "Rating submitted successfully"
       );
       return ResponseEntity.ok(response);
     }

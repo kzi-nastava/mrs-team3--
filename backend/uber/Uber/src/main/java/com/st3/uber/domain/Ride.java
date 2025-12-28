@@ -132,7 +132,6 @@ public class Ride {
 
     private LocalDateTime reviewedAt;
 
-    // 2.6.2 - Inconsistency reports
     @OneToMany(mappedBy = "ride", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<InconsistencyReport> inconsistencyReports = new ArrayList<>();
 }
