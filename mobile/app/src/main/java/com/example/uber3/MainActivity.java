@@ -14,7 +14,7 @@ public class MainActivity extends AppCompatActivity {
     private DrawerLayout drawerLayout;
     private MaterialToolbar topAppBar;
 
-    private String currentUserRole = "DRIVER";
+    private String currentUserRole = "PASSENGER";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

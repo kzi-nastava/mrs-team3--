@@ -4,22 +4,22 @@
     <group android:id="@+id/group_main">
         <item
             android:id="@+id/nav_home"
-            android:title="Home"
+            android:title="@string/home"
             android:icon="@drawable/ic_home" />
 
         <item
             android:id="@+id/nav_chat"
-            android:title="Chat"
+            android:title="@string/chat"
             android:icon="@drawable/ic_chat" />
 
         <item
             android:id="@+id/nav_ride"
-            android:title="Ride"
+            android:title="@string/ride"
             android:icon="@drawable/ic_uber" />
 
         <item
             android:id="@+id/nav_profile"
-            android:title="Profile"
+            android:title="@string/profile"
             android:icon="@drawable/ic_person" />
     </group>
 
@@ -28,7 +28,7 @@
             <group android:id="@+id/group_bottom">
                 <item
                     android:id="@+id/nav_login"
-                    android:title="Login"
+                    android:title="@string/login"
                     android:icon="@android:drawable/ic_lock_idle_lock" />
             </group>
         </menu>
