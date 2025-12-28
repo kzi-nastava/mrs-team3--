@@ -11,13 +11,12 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Ride History"
+        android:text="@string/ride_history"
         android:textSize="32sp"
         android:textStyle="bold"
         android:textColor="#333333"
         android:layout_marginBottom="24dp"/>
 
-    <!-- Date Filter Card -->
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -32,7 +31,6 @@
             android:padding="16dp"
             android:gravity="center_vertical">
 
-            <!-- From Date -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -43,7 +41,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="From:"
+                    android:text="@string/from"
                     android:textSize="14sp"
                     android:textColor="#666666"
                     android:layout_marginBottom="4dp"/>
@@ -52,7 +50,7 @@
                     android:id="@+id/tvFromDate"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="mm/dd/yyyy"
+                    android:text="@string/mm_dd_yyyy"
                     android:textSize="16sp"
                     android:textColor="#333333"
                     android:padding="12dp"
@@ -63,7 +61,6 @@
 
             </LinearLayout>
 
-            <!-- To Date -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -75,7 +72,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="To:"
+                    android:text="@string/to"
                     android:textSize="14sp"
                     android:textColor="#666666"
                     android:layout_marginBottom="4dp"/>
@@ -84,7 +81,7 @@
                     android:id="@+id/tvToDate"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="mm/dd/yyyy"
+                    android:text="@string/mm_dd_yyyy"
                     android:textSize="16sp"
                     android:textColor="#333333"
                     android:padding="12dp"
@@ -95,12 +92,11 @@
 
             </LinearLayout>
 
-            <!-- View Report Button -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnViewReport"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="View report"
+                android:text="@string/view_report"
                 android:textSize="14sp"
                 app:backgroundTint="#9B7FC9"
                 android:layout_marginStart="8dp"
@@ -110,7 +106,6 @@
 
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- History Table Card -->
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -123,7 +118,6 @@
             android:layout_height="match_parent"
             android:orientation="vertical">
 
-            <!-- WRAP EVERYTHING IN ONE HORIZONTAL SCROLL -->
             <HorizontalScrollView
                 android:id="@+id/horizontalScrollView"
                 android:layout_width="match_parent"
@@ -136,7 +130,6 @@
                     android:layout_height="match_parent"
                     android:orientation="vertical">
 
-                    <!-- Table Header -->
                     <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -157,7 +150,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="ID"
+                                android:text="@string/id"
                                 android:textStyle="bold"
                                 android:textSize="14sp"
                                 android:textColor="#333333"/>
@@ -165,7 +158,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text=" ▲"
+                                android:text="@string/triangle"
                                 android:textSize="10sp"
                                 android:textColor="#9B7FC9"/>
                         </LinearLayout>
@@ -184,7 +177,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Start"
+                                android:text="@string/start"
                                 android:textStyle="bold"
                                 android:textSize="14sp"
                                 android:textColor="#333333"/>
@@ -204,7 +197,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="End"
+                                android:text="@string/end"
                                 android:textStyle="bold"
                                 android:textSize="14sp"
                                 android:textColor="#333333"/>
@@ -224,7 +217,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="From"
+                                android:text="@string/from"
                                 android:textStyle="bold"
                                 android:textSize="14sp"
                                 android:textColor="#333333"/>
@@ -244,7 +237,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="To"
+                                android:text="@string/to"
                                 android:textStyle="bold"
                                 android:textSize="14sp"
                                 android:textColor="#333333"/>
@@ -261,7 +254,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Passengers"
+                                android:text="@string/passengers"
                                 android:textStyle="bold"
                                 android:textSize="14sp"
                                 android:textColor="#333333"/>
@@ -281,7 +274,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Price (din)"
+                                android:text="@string/price_din"
                                 android:textStyle="bold"
                                 android:textSize="14sp"
                                 android:textColor="#333333"/>
@@ -301,7 +294,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Cancelled"
+                                android:text="@string/cancelled"
                                 android:textStyle="bold"
                                 android:textSize="14sp"
                                 android:textColor="#333333"/>
@@ -321,7 +314,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="PANIC"
+                                android:text="@string/panic"
                                 android:textStyle="bold"
                                 android:textSize="14sp"
                                 android:textColor="#333333"/>
@@ -334,7 +327,6 @@
                         android:layout_height="1dp"
                         android:background="#E0E0E0"/>
 
-                    <!-- RecyclerView for rides -->
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/recyclerViewHistory"
                         android:layout_width="wrap_content"
