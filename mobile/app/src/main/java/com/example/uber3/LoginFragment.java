@@ -16,6 +16,8 @@ import androidx.fragment.app.Fragment;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 
+import java.util.Objects;
+
 public class LoginFragment extends Fragment {
 
     private TextInputEditText etEmail, etPassword;
@@ -32,7 +34,6 @@ public class LoginFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Initialize views
         etEmail = view.findViewById(R.id.etEmail);
         etPassword = view.findViewById(R.id.etPassword);
         btnLogin = view.findViewById(R.id.btnLogin);
@@ -46,12 +47,12 @@ public class LoginFragment extends Fragment {
         btnLogin.setOnClickListener(v -> onLoginClick());
 
         tvForgotPassword.setOnClickListener(v -> {
-            // TODO: Navigate to forgot password screen
-            Toast.makeText(requireContext(), "Forgot password clicked", Toast.LENGTH_SHORT).show();
+            if (getActivity() != null) {
+                ((MainActivity) getActivity()).loadForgotPasswordFragment();
+            }
         });
 
         tvCreateAccount.setOnClickListener(v -> {
-            // Navigate to RegisterFragment
             if (getActivity() != null) {
                 ((MainActivity) getActivity()).loadRegisterFragment();
             }
@@ -59,21 +60,8 @@ public class LoginFragment extends Fragment {
     }
 
     private void onLoginClick() {
-        String email = etEmail.getText().toString().trim();
-        String password = etPassword.getText().toString();
-
-        // Validation
-        if (TextUtils.isEmpty(email)) {
-            etEmail.setError("Email is required");
-            etEmail.requestFocus();
-            return;
-        }
-
-        if (TextUtils.isEmpty(password)) {
-            etPassword.setError("Password is required");
-            etPassword.requestFocus();
-            return;
-        }
+        String email = Objects.requireNonNull(etEmail.getText()).toString().trim();
+        String password = Objects.requireNonNull(etPassword.getText()).toString();
 
         if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
             etEmail.setError("Please enter a valid email");
@@ -81,16 +69,12 @@ public class LoginFragment extends Fragment {
             return;
         }
 
-        // TODO: Implement actual login logic with API call
         performLogin(email, password);
     }
 
     private void performLogin(String email, String password) {
-        // Mock login - replace with actual API call
         Toast.makeText(requireContext(), "Logging in...", Toast.LENGTH_SHORT).show();
 
-        // Simulate successful login
-        // After successful login, navigate to MainActivity
         Intent intent = new Intent(requireActivity(), MainActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);

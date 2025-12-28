@@ -1,5 +1,6 @@
 package com.example.uber3;
 
+import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
@@ -24,8 +25,19 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 
 import java.io.ByteArrayOutputStream;
+import java.util.Objects;
 
 public class RegisterFragment extends Fragment {
+
+    private static final String STATE_EMAIL = "email";
+    private static final String STATE_FIRST_NAME = "first_name";
+    private static final String STATE_LAST_NAME = "last_name";
+    private static final String STATE_ADDRESS = "address";
+    private static final String STATE_PHONE = "phone";
+    private static final String STATE_PASSWORD = "password";
+    private static final String STATE_CONFIRM_PASSWORD = "confirm_password";
+    private static final String STATE_BASE64_IMAGE = "base64_image";
+    private static final String STATE_IMAGE_VISIBLE = "image_visible";
 
     private TextInputEditText etEmail, etFirstName, etLastName, etAddress, etPhone, etPassword, etConfirmPassword;
     private MaterialButton btnChooseImage, btnRegister;
@@ -47,6 +59,11 @@ public class RegisterFragment extends Fragment {
 
         initializeViews(view);
         setupImagePicker();
+
+        if (savedInstanceState != null) {
+            restoreState(savedInstanceState);
+        }
+
         setupListeners();
     }
 
@@ -117,75 +134,26 @@ public class RegisterFragment extends Fragment {
     private void onRegisterClick() {
         tvPasswordError.setVisibility(View.GONE);
 
-        String email = etEmail.getText().toString().trim();
-        String firstName = etFirstName.getText().toString().trim();
-        String lastName = etLastName.getText().toString().trim();
-        String address = etAddress.getText().toString().trim();
-        String phone = etPhone.getText().toString().trim();
-        String password = etPassword.getText().toString();
-        String confirmPassword = etConfirmPassword.getText().toString();
+        String email = Objects.requireNonNull(etEmail.getText()).toString().trim();
+        String firstName = Objects.requireNonNull(etFirstName.getText()).toString().trim();
+        String lastName = Objects.requireNonNull(etLastName.getText()).toString().trim();
+        String address = Objects.requireNonNull(etAddress.getText()).toString().trim();
+        String phone = Objects.requireNonNull(etPhone.getText()).toString().trim();
+        String password = Objects.requireNonNull(etPassword.getText()).toString();
+        String confirmPassword = Objects.requireNonNull(etConfirmPassword.getText()).toString();
 
-        if (!validateInputs(email, firstName, lastName, address, phone, password, confirmPassword)) {
+        if (!checkPasswords(password, confirmPassword)){
             return;
         }
 
         performRegistration(email, firstName, lastName, address, phone, password);
     }
 
-    private boolean validateInputs(String email, String firstName, String lastName,
-                                   String address, String phone, String password, String confirmPassword) {
-
-        if (TextUtils.isEmpty(email)) {
-            etEmail.setError("Email is required");
-            etEmail.requestFocus();
-            return false;
-        }
-
-        if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            etEmail.setError("Please enter a valid email");
-            etEmail.requestFocus();
-            return false;
-        }
-
-        if (TextUtils.isEmpty(firstName)) {
-            etFirstName.setError("First name is required");
-            etFirstName.requestFocus();
-            return false;
-        }
-
-        if (TextUtils.isEmpty(lastName)) {
-            etLastName.setError("Last name is required");
-            etLastName.requestFocus();
-            return false;
-        }
-
-        if (TextUtils.isEmpty(address)) {
-            etAddress.setError("Address is required");
-            etAddress.requestFocus();
-            return false;
-        }
-
-        if (TextUtils.isEmpty(phone)) {
-            etPhone.setError("Phone number is required");
-            etPhone.requestFocus();
-            return false;
-        }
-
-        if (TextUtils.isEmpty(password)) {
-            etPassword.setError("Password is required");
-            etPassword.requestFocus();
-            return false;
-        }
-
+    @SuppressLint("SetTextI18n")
+    private boolean checkPasswords(String password, String confirmPassword){
         if (password.length() < 6) {
             etPassword.setError("Password must be at least 6 characters");
             etPassword.requestFocus();
-            return false;
-        }
-
-        if (TextUtils.isEmpty(confirmPassword)) {
-            etConfirmPassword.setError("Please confirm your password");
-            etConfirmPassword.requestFocus();
             return false;
         }
 
@@ -208,6 +176,54 @@ public class RegisterFragment extends Fragment {
 
         if (getActivity() != null) {
             ((MainActivity) getActivity()).loadLoginFragment();
+        }
+    }
+
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        outState.putString(STATE_EMAIL, Objects.requireNonNull(etEmail.getText()).toString());
+        outState.putString(STATE_FIRST_NAME, Objects.requireNonNull(etFirstName.getText()).toString());
+        outState.putString(STATE_LAST_NAME, Objects.requireNonNull(etLastName.getText()).toString());
+        outState.putString(STATE_ADDRESS, Objects.requireNonNull(etAddress.getText()).toString());
+        outState.putString(STATE_PHONE, Objects.requireNonNull(etPhone.getText()).toString());
+        outState.putString(STATE_PASSWORD, Objects.requireNonNull(etPassword.getText()).toString());
+        outState.putString(STATE_CONFIRM_PASSWORD, Objects.requireNonNull(etConfirmPassword.getText()).toString());
+
+        outState.putString(STATE_BASE64_IMAGE, base64Image);
+        outState.putBoolean(STATE_IMAGE_VISIBLE, ivImagePreview.getVisibility() == View.VISIBLE);
+    }
+
+    private void restoreState(Bundle savedState) {
+        String email = savedState.getString(STATE_EMAIL);
+        String firstName = savedState.getString(STATE_FIRST_NAME);
+        String lastName = savedState.getString(STATE_LAST_NAME);
+        String address = savedState.getString(STATE_ADDRESS);
+        String phone = savedState.getString(STATE_PHONE);
+        String password = savedState.getString(STATE_PASSWORD);
+        String confirmPassword = savedState.getString(STATE_CONFIRM_PASSWORD);
+
+        if (email != null) etEmail.setText(email);
+        if (firstName != null) etFirstName.setText(firstName);
+        if (lastName != null) etLastName.setText(lastName);
+        if (address != null) etAddress.setText(address);
+        if (phone != null) etPhone.setText(phone);
+        if (password != null) etPassword.setText(password);
+        if (confirmPassword != null) etConfirmPassword.setText(confirmPassword);
+
+        base64Image = savedState.getString(STATE_BASE64_IMAGE);
+        boolean imageVisible = savedState.getBoolean(STATE_IMAGE_VISIBLE, false);
+
+        if (imageVisible && base64Image != null) {
+            try {
+                byte[] decodedBytes = Base64.decode(base64Image, Base64.DEFAULT);
+                Bitmap bitmap = android.graphics.BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
+                ivImagePreview.setImageBitmap(bitmap);
+                ivImagePreview.setVisibility(View.VISIBLE);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 }
