@@ -66,4 +66,17 @@
     <string name="mock_1">1</string>
     <string name="main_street">Main Street</string>
     <string name="university">University</string>
+    <string name="ride_history">Ride History</string>
+    <string name="from">From:</string>
+    <string name="mm_dd_yyyy">mm/dd/yyyy</string>
+    <string name="to">To:</string>
+    <string name="view_report">View report</string>
+    <string name="id">ID</string>
+    <string name="triangle">▲</string>
+    <string name="start">Start</string>
+    <string name="end">End</string>
+    <string name="passengers">Passengers</string>
+    <string name="price_din">Price (din)</string>
+    <string name="cancelled">Cancelled</string>
+    <string name="panic">PANIC</string>
 </resources>
