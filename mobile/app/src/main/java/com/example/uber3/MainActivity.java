@@ -36,8 +36,7 @@ public class MainActivity extends AppCompatActivity {
                 loadFragment(HomeFragment.newInstance(currentUserRole));
 
             } else if (id == R.id.nav_chat) {
-                topAppBar.setTitle("Login");
-                loadFragment(new LoginFragment());
+                topAppBar.setTitle("Chat");
 
             } else if (id == R.id.nav_ride) {
                 topAppBar.setTitle("Ride History");
@@ -47,12 +46,15 @@ public class MainActivity extends AppCompatActivity {
                 topAppBar.setTitle("Profile");
                 loadFragment(ProfileFragment.newInstance(currentUserRole));
 
+            } else if (id == R.id.nav_login) {
+                topAppBar.setTitle("Login");
+                loadFragment(new LoginFragment());
             }
+
             drawerLayout.close();
             return true;
         });
 
-        // DEFAULT SCREEN
         if (savedInstanceState == null) {
             topAppBar.setTitle("Home");
             loadFragment(HomeFragment.newInstance(currentUserRole));

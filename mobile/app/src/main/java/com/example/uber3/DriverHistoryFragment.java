@@ -27,10 +27,17 @@ import java.util.Locale;
 
 public class DriverHistoryFragment extends Fragment {
 
+    private static final String KEY_START_DATE = "start_date";
+    private static final String KEY_END_DATE = "end_date";
+    private static final String KEY_SORT_FIELD = "sort_field";
+    private static final String KEY_IS_ASCENDING = "is_ascending";
+    private static final String KEY_RIDE_LIST = "ride_list";
+    private static final String KEY_FILTERED_LIST = "filtered_list";
+
     private RecyclerView recyclerView;
     private RideHistoryAdapter adapter;
-    private List<RideHistory> rideList;
-    private List<RideHistory> filteredList;
+    private ArrayList<RideHistory> rideList;
+    private ArrayList<RideHistory> filteredList;
 
     private TextView tvFromDate, tvToDate;
     private MaterialButton btnViewReport;
@@ -45,6 +52,33 @@ public class DriverHistoryFragment extends Fragment {
         return new DriverHistoryFragment();
     }
 
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        // Restore saved state
+        if (savedInstanceState != null) {
+            if (savedInstanceState.containsKey(KEY_START_DATE)) {
+                startDateMillis = savedInstanceState.getLong(KEY_START_DATE);
+            }
+            if (savedInstanceState.containsKey(KEY_END_DATE)) {
+                endDateMillis = savedInstanceState.getLong(KEY_END_DATE);
+            }
+            currentSortField = savedInstanceState.getString(KEY_SORT_FIELD, "id");
+            isAscending = savedInstanceState.getBoolean(KEY_IS_ASCENDING, true);
+
+            rideList = savedInstanceState.getParcelableArrayList(KEY_RIDE_LIST);
+            filteredList = savedInstanceState.getParcelableArrayList(KEY_FILTERED_LIST);
+        }
+
+        if (rideList == null) {
+            rideList = new ArrayList<>();
+        }
+        if (filteredList == null) {
+            filteredList = new ArrayList<>();
+        }
+    }
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -57,9 +91,31 @@ public class DriverHistoryFragment extends Fragment {
 
         initializeViews(view);
         setupRecyclerView();
-        loadMockData();
+
+        if (rideList.isEmpty()) {
+            loadMockData();
+        }
+
         setupDatePickers();
         setupSortHeaders(view);
+
+        restoreDateText();
+    }
+
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        if (startDateMillis != null) {
+            outState.putLong(KEY_START_DATE, startDateMillis);
+        }
+        if (endDateMillis != null) {
+            outState.putLong(KEY_END_DATE, endDateMillis);
+        }
+        outState.putString(KEY_SORT_FIELD, currentSortField);
+        outState.putBoolean(KEY_IS_ASCENDING, isAscending);
+        outState.putParcelableArrayList(KEY_RIDE_LIST, rideList);
+        outState.putParcelableArrayList(KEY_FILTERED_LIST, filteredList);
     }
 
     private void initializeViews(View view) {
@@ -72,11 +128,21 @@ public class DriverHistoryFragment extends Fragment {
     }
 
     private void setupRecyclerView() {
-        rideList = new ArrayList<>();
-        filteredList = new ArrayList<>();
         adapter = new RideHistoryAdapter(filteredList);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         recyclerView.setAdapter(adapter);
+    }
+
+    private void restoreDateText() {
+        SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy", Locale.getDefault());
+
+        if (startDateMillis != null) {
+            tvFromDate.setText(sdf.format(new Date(startDateMillis)));
+        }
+
+        if (endDateMillis != null) {
+            tvToDate.setText(sdf.format(new Date(endDateMillis)));
+        }
     }
 
     private void setupDatePickers() {
@@ -205,7 +271,7 @@ public class DriverHistoryFragment extends Fragment {
     }
 
     // Inner class for RideHistory data model
-    public static class RideHistory {
+    public static class RideHistory implements android.os.Parcelable {
         private long id;
         private String startTime;
         private String endTime;
@@ -232,6 +298,50 @@ public class DriverHistoryFragment extends Fragment {
             this.startTimeMillis = startTimeMillis;
         }
 
+        protected RideHistory(android.os.Parcel in) {
+            id = in.readLong();
+            startTime = in.readString();
+            endTime = in.readString();
+            fromAddress = in.readString();
+            toAddress = in.readString();
+            passengers = in.readString();
+            price = in.readDouble();
+            cancelled = in.readByte() != 0;
+            panic = in.readByte() != 0;
+            startTimeMillis = in.readLong();
+        }
+
+        @Override
+        public void writeToParcel(android.os.Parcel dest, int flags) {
+            dest.writeLong(id);
+            dest.writeString(startTime);
+            dest.writeString(endTime);
+            dest.writeString(fromAddress);
+            dest.writeString(toAddress);
+            dest.writeString(passengers);
+            dest.writeDouble(price);
+            dest.writeByte((byte) (cancelled ? 1 : 0));
+            dest.writeByte((byte) (panic ? 1 : 0));
+            dest.writeLong(startTimeMillis);
+        }
+
+        @Override
+        public int describeContents() {
+            return 0;
+        }
+
+        public static final Creator<RideHistory> CREATOR = new Creator<RideHistory>() {
+            @Override
+            public RideHistory createFromParcel(android.os.Parcel in) {
+                return new RideHistory(in);
+            }
+
+            @Override
+            public RideHistory[] newArray(int size) {
+                return new RideHistory[size];
+            }
+        };
+
         public long getId() { return id; }
         public String getStartTime() { return startTime; }
         public String getEndTime() { return endTime; }
@@ -246,7 +356,7 @@ public class DriverHistoryFragment extends Fragment {
         public String getPanicDisplay() { return panic ? "Yes" : "No"; }
     }
 
-    // Adapter class
+
     private static class RideHistoryAdapter extends RecyclerView.Adapter<RideHistoryAdapter.ViewHolder> {
 
         private final List<RideHistory> rides;
