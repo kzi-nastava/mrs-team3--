@@ -35,12 +35,13 @@ public class MainActivity extends AppCompatActivity {
             if (id == R.id.nav_home) {
                 topAppBar.setTitle("Home");
 
-
             } else if (id == R.id.nav_chat) {
-                topAppBar.setTitle("Chat");
+                topAppBar.setTitle("Login");
+                loadFragment(new LoginFragment());
 
             } else if (id == R.id.nav_ride) {
-                topAppBar.setTitle("Ride");
+                topAppBar.setTitle("Register");
+                loadFragment(new RegisterFragment());
 
             } else if (id == R.id.nav_profile) {
                 topAppBar.setTitle("Profile");
@@ -57,8 +58,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-
-
     private void loadFragment(Fragment fragment) {
         if (fragment != null) {
             getSupportFragmentManager()
@@ -66,6 +65,28 @@ public class MainActivity extends AppCompatActivity {
                     .replace(R.id.fragmentContainer, fragment)
                     .commit();
         }
+    }
+
+    // Called from RegisterFragment after successful registration
+    public void loadDefaultFragment() {
+        topAppBar.setTitle("Profile");
+        loadFragment(ProfileFragment.newInstance(currentUserRole));
+
+        // Unlock drawer (in case it was locked)
+        drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
+        topAppBar.setNavigationIcon(R.drawable.ic_menu);
+    }
+
+    // Called from LoginFragment to open RegisterFragment
+    public void loadRegisterFragment() {
+        topAppBar.setTitle("Register");
+        loadFragment(new RegisterFragment());
+    }
+
+    // Called from RegisterFragment to open LoginFragment
+    public void loadLoginFragment() {
+        topAppBar.setTitle("Login");
+        loadFragment(new LoginFragment());
     }
 
     public String getCurrentUserRole() {
