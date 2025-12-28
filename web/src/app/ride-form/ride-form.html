@@ -1,0 +1,57 @@
+<div class="content-section">
+  <h1>Let's ride!</h1>
+  
+  <div class="form">
+    <!-- Start location input -->
+    <div class="input-wrapper">
+      <input type="text" 
+             placeholder="Choose start location" 
+             class="input-field" 
+             [(ngModel)]="startLocation" 
+             (input)="onStartInputChange()">
+      
+      @if (showStartSuggestions && startSuggestions.length > 0) {
+        <div class="suggestions">
+          @for (suggestion of startSuggestions; track suggestion.place_id) {
+            <div class="suggestion-item" (click)="selectStartSuggestion(suggestion)">
+              {{ suggestion.display_name }}
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- End location input -->
+    <div class="input-wrapper">
+      <input type="text" 
+             placeholder="Choose end location" 
+             class="input-field" 
+             [(ngModel)]="endLocation" 
+             (input)="onEndInputChange()">
+      
+      @if (showEndSuggestions && endSuggestions.length > 0) {
+        <div class="suggestions">
+          @for (suggestion of endSuggestions; track suggestion.place_id) {
+            <div class="suggestion-item" (click)="selectEndSuggestion(suggestion)">
+              {{ suggestion.display_name }}
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Buttons -->
+    <div class="button-group">
+      <button class="calculate-btn" (click)="onCalculate()">Calculate</button>
+      <button class="refresh-btn" (click)="clearRoute()">Reset</button>
+    </div>
+
+    <!-- Ride info -->
+    @if (showRideInfo) {
+      <div class="ride-info">
+        <span class="time">4 min</span> 
+        <span class="price">520 din</span>
+      </div>
+    }
+  </div>
+</div>

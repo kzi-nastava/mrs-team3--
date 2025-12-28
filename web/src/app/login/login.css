@@ -1,0 +1,104 @@
+/* Login Page - Split Screen Layout */
+
+.app-content {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  overflow: hidden; /* only internal scrolling */
+  box-sizing: border-box;
+}
+
+/* Left: Login Form */
+.left {
+  flex: 1; /* take 50% of remaining width */
+  background: var(--color-white);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: var(--spacing-2xl);
+  box-sizing: border-box;
+}
+
+.form-wrap {
+  width: 100%;
+  max-width: 420px;
+}
+
+.title {
+  text-align: center;
+  margin-bottom: var(--spacing-lg);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+/* Right: Promo Section */
+.right {
+  flex: 1; /* take the other 50% */
+  background: #111;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: var(--spacing-2xl);
+  color: var(--color-white);
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.brand {
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: var(--spacing-md);
+}
+
+.tagline {
+  font-size: 1.1rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* Gray links for forgot password and signup */
+.forgot,
+.hint .link {
+  color: var(--color-gray); /* gray color */
+  text-decoration: none; /* remove underline */
+}
+
+.forgot:hover,
+.hint .link:hover {
+  color: var(--color-dark); /* slightly darker on hover */
+  text-decoration: underline; /* optional hover effect */
+}
+
+
+/* Responsive: stack on smaller screens */
+@media (max-width: 900px) {
+  .app-content {
+    flex-direction: column;
+  }
+
+  .right {
+    display: none; /* hide promo on mobile */
+  }
+}
+
+@media (max-width: 480px) {
+  .left {
+    padding: var(--spacing-lg) var(--spacing-md);
+  }
+
+  .title {
+    font-size: 1.5rem;
+  }
+
+  .brand {
+    font-size: 1.75rem;
+  }
+
+  .tagline {
+    font-size: 1rem;
+  }
+}

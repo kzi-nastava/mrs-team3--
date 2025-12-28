@@ -1,0 +1,25 @@
+.container {
+  display: flex;
+  height: 100vh;
+  /*width: 94vw;*/
+  overflow: hidden;
+}
+
+.container app-profile {
+  flex: 1;
+  display: flex;
+}
+
+/* Tablet */
+@media (max-width: 1024px) {
+  .container {
+    flex-direction: column;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .container {
+    flex-direction: column;
+  }
+}

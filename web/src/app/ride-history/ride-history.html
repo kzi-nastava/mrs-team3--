@@ -1,0 +1,114 @@
+<div class="ride-history-container">
+  <div class="ride-history-card">
+
+    <div class="ride-history-header">
+      <h2>Ride History</h2>
+    </div>
+
+    <div class="toolbar">
+      <div class="filter">
+        <label>
+          From:
+          <input type="date">
+        </label>
+
+        <label>
+          To:
+          <input type="date">
+        </label>
+      </div>
+
+      <div class="actions">
+        <button type="button" (click)="viewReport()">View report</button>
+      </div>
+    </div>
+
+    <div class="table-wrapper">
+      <table class="ride-table">
+        <thead>
+          <tr>
+            <th class="sortable" (click)="setSort('id')">
+              ID
+              @if (sortKey() === 'id') {
+                <span class="sort-indicator">{{ sortAsc() ? '▲' : '▼' }}</span>
+              }
+            </th>
+
+            <th class="sortable" (click)="setSort('start')">
+              Start
+              @if (sortKey() === 'start') {
+                <span class="sort-indicator">{{ sortAsc() ? '▲' : '▼' }}</span>
+              }
+            </th>
+
+            <th class="sortable" (click)="setSort('end')">
+              End
+              @if (sortKey() === 'end') {
+                <span class="sort-indicator">{{ sortAsc() ? '▲' : '▼' }}</span>
+              }
+            </th>
+
+            <th class="sortable" (click)="setSort('from')">
+              From
+              @if (sortKey() === 'from') {
+                <span class="sort-indicator">{{ sortAsc() ? '▲' : '▼' }}</span>
+              }
+            </th>
+
+            <th class="sortable" (click)="setSort('to')">
+              To
+              @if (sortKey() === 'to') {
+                <span class="sort-indicator">{{ sortAsc() ? '▲' : '▼' }}</span>
+              }
+            </th>
+
+            <th class="sortable" (click)="setSort('passengers')">
+              Passengers
+              @if (sortKey() === 'passengers') {
+                <span class="sort-indicator">{{ sortAsc() ? '▲' : '▼' }}</span>
+              }
+            </th>
+
+            <th class="sortable" (click)="setSort('price')">
+              Price (din)
+              @if (sortKey() === 'price') {
+                <span class="sort-indicator">{{ sortAsc() ? '▲' : '▼' }}</span>
+              }
+            </th>
+
+            <th class="sortable" (click)="setSort('cancelled')">
+              Cancelled
+              @if (sortKey() === 'cancelled') {
+                <span class="sort-indicator">{{ sortAsc() ? '▲' : '▼' }}</span>
+              }
+            </th>
+
+            <th class="sortable" (click)="setSort('panic')">
+              PANIC
+              @if (sortKey() === 'panic') {
+                <span class="sort-indicator">{{ sortAsc() ? '▲' : '▼' }}</span>
+              }
+            </th>
+          </tr>
+        </thead>
+
+        <tbody>
+          @for (ride of sortedRides(); track ride.id) {
+            <tr>
+              <td>{{ ride.id }}</td>
+              <td>{{ ride.start }}</td>
+              <td>{{ ride.end }}</td>
+              <td>{{ ride.from }}</td>
+              <td>{{ ride.to }}</td>
+              <td>{{ ride.passengers.join(', ') }}</td>
+              <td>{{ ride.price }}</td>
+              <td>{{ ride.cancelled }}</td>
+              <td>{{ ride.panic }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>

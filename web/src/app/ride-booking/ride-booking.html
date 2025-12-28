@@ -1,0 +1,135 @@
+<div class="booking-section">
+  <h1>Let's ride!</h1>
+  
+  <div class="booking-form">
+    <div class="input-wrapper">
+      <div class="input-group">
+        <div class="input-icon">⚫</div>
+        <input 
+          type="text" 
+          placeholder="Enter pickup location" 
+          class="location-input" 
+          [(ngModel)]="pickupLocation"
+          (input)="onPickupInputChange()">
+      </div>
+      
+      @if (showPickupSuggestions && pickupSuggestions.length > 0) {
+        <div class="suggestions">
+          @for (suggestion of pickupSuggestions; track suggestion.place_id) {
+            <div class="suggestion-item" (click)="selectPickupSuggestion(suggestion)">
+              {{ suggestion.display_name }}
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Add stop button -->
+    <button class="add-stop-btn" (click)="addStop()">
+      <span class="plus-icon">+</span>
+      Add stop
+    </button>
+
+    <!-- Dynamic stops -->
+    @for (stop of stops; track trackByStopId($index, stop)) {
+      <div class="input-wrapper">
+        <div class="input-group stop-group">
+          <div class="input-icon">⚫</div>
+          <input 
+            type="text" 
+            placeholder="Enter stop location" 
+            class="location-input" 
+            [(ngModel)]="stop.location"
+            (input)="onStopInputChange(stop.id)">
+          <button class="remove-stop-btn" (click)="removeStop(stop.id)">✕</button>
+        </div>
+        
+        @if (stop.showSuggestions && stop.suggestions.length > 0) {
+          <div class="suggestions">
+            @for (suggestion of stop.suggestions; track suggestion.place_id) {
+              <div class="suggestion-item" (click)="selectStopSuggestion(stop.id, suggestion)">
+                {{ suggestion.display_name }}
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Destination -->
+    <div class="input-wrapper">
+      <div class="input-group">
+        <div class="input-icon">⬛</div>
+        <input 
+          type="text" 
+          placeholder="Enter destination" 
+          class="location-input" 
+          [(ngModel)]="destination"
+          (input)="onDestinationInputChange()">
+      </div>
+      
+      @if (showDestinationSuggestions && destinationSuggestions.length > 0) {
+        <div class="suggestions">
+          @for (suggestion of destinationSuggestions; track suggestion.place_id) {
+            <div class="suggestion-item" (click)="selectDestinationSuggestion(suggestion)">
+              {{ suggestion.display_name }}
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Book ride and refresh button row -->
+    <div class="button-group">
+      <button class="book-ride-btn" (click)="onBookRide()">
+        Book Ride
+      </button>
+      <button class="refresh-btn" (click)="clearRoute()">
+        Reset
+      </button>
+    </div>
+
+    <!-- Schedule and favorites row -->
+    <div class="secondary-button-group">
+      <button class="schedule-btn" (click)="onSchedule()">
+        🕒 Schedule
+      </button>
+      <button class="favorites-btn" (click)="toggleFavorites()">
+        ❤️ Favorites
+      </button>
+    </div>
+
+
+    @if (showRideInfo) {
+      <div class="ride-info">
+        <span class="time">{{ estimatedTime }}</span>
+        <span class="price">{{ estimatedPrice }}</span>
+      </div>
+    }
+
+    <!-- Favorites list - shows only on click -->
+    @if (showFavorites) {
+      <div class="favorites-list">
+        <h3>Your Favorite Routes</h3>
+        @if (favoriteRoutes.length === 0) {
+          <p class="no-favorites">No favorite routes yet. Save your first route!</p>
+        } @else {
+          @for (route of favoriteRoutes; track route.id) {
+            <div class="favorite-item">
+              <div class="favorite-info">
+                <div class="favorite-name">{{ route.name }}</div>
+                <div class="favorite-route">
+                  {{ route.pickup }} → {{ route.destination }}
+                </div>
+              </div>
+              <div class="favorite-actions">
+                <button class="use-btn" (click)="useFavoriteRoute(route)">Use</button>
+                <button class="delete-btn" (click)="deleteFavoriteRoute(route.id)">🗑️</button>
+              </div>
+            </div>
+          }
+        }
+      </div>
+    }
+  </div>
+</div>

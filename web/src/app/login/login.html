@@ -1,0 +1,81 @@
+<p-splitter [style]="{ height: '100%' }">
+  <ng-template #panel>
+    <div class="flex flex-column justify-content-center align-items-center h-full">
+      <div class="card-wrapper" [style]="{ width: '90%' }">
+        <p-card>
+          <ng-template pTemplate="header">
+            <div class="text-center mb-2">
+              <div class="text-900 text-3xl font-medium mb-3">Welcome Back</div>
+              <span class="text-600 font-medium line-height-3">Don't have an account?</span>
+              <a
+                class="font-medium no-underline ml-2 text-blue-500 cursor-pointer"
+                (click)="goRegister()"
+              >
+                Create today!
+              </a>
+            </div>
+          </ng-template>
+
+          <form (ngSubmit)="onSubmit()">
+            <div class="flex flex-column gap-2 mb-2">
+              <div class="flex flex-column gap-2">
+                <label for="email">Email</label>
+                <input
+                  pInputText
+                  id="email"
+                  type="email"
+                  [(ngModel)]="email"
+                  name="email"
+                  required
+                />
+              </div>
+
+              <div class="flex flex-column gap-2">
+                <label for="password">Password</label>
+                <input
+                  pInputText
+                  id="password"
+                  type="password"
+                  [(ngModel)]="password"
+                  name="password"
+                  required
+                />
+              </div>
+            </div>
+
+            <button type="submit" style="display:none"></button>
+          </form>
+
+          <div class="flex justify-content-end mt-2">
+            <a class="forgot cursor-pointer" (click)="changePassword()">
+              Forgot password?
+            </a>
+          </div>
+
+
+          <ng-template pTemplate="footer">
+            <div class="flex gap-4 mt-1">
+              <p-button
+                label="Login"
+                class="w-full"
+                styleClass="w-full"
+                size="large"
+                type="submit"
+                (onClick)="onSubmit()"
+              ></p-button>
+            </div>
+          </ng-template>
+        </p-card>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template #panel>
+    <div class="flex flex-column justify-content-center bg-primary h-full align-items-center">
+      <div>
+        <h1 style="text-align: center">Uber</h1>
+        <h3>Let’s get you moving. Walking is overrated anyway.</h3>
+      </div>
+    </div>
+  </ng-template>
+</p-splitter>

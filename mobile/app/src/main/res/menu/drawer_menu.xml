@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <group android:id="@+id/group_main">
+        <item
+            android:id="@+id/nav_home"
+            android:title="@string/home"
+            android:icon="@drawable/ic_home" />
+
+        <item
+            android:id="@+id/nav_chat"
+            android:title="@string/chat"
+            android:icon="@drawable/ic_chat" />
+
+        <item
+            android:id="@+id/nav_ride"
+            android:title="@string/ride"
+            android:icon="@drawable/ic_uber" />
+
+        <item
+            android:id="@+id/nav_profile"
+            android:title="@string/profile"
+            android:icon="@drawable/ic_person" />
+    </group>
+
+    <item android:title="">
+        <menu>
+            <group android:id="@+id/group_bottom">
+                <item
+                    android:id="@+id/nav_login"
+                    android:title="@string/login"
+                    android:icon="@android:drawable/ic_lock_idle_lock" />
+            </group>
+        </menu>
+    </item>
+
+</menu>
