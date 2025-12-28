@@ -39,13 +39,14 @@ public class MainActivity extends AppCompatActivity {
                 loadFragment(new LoginFragment());
 
             } else if (id == R.id.nav_ride) {
-                topAppBar.setTitle("Register");
+                topAppBar.setTitle("Ride History");
+                loadFragment(DriverHistoryFragment.newInstance());
 
             } else if (id == R.id.nav_profile) {
                 topAppBar.setTitle("Profile");
                 loadFragment(ProfileFragment.newInstance(currentUserRole));
-            }
 
+            }
             drawerLayout.close();
             return true;
         });
