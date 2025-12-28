@@ -1,18 +1,18 @@
-<div class="booking-section">
+x<div class="booking-section">
   <h1>Let's ride!</h1>
-  
+
   <div class="booking-form">
     <div class="input-wrapper">
       <div class="input-group">
         <div class="input-icon">⚫</div>
-        <input 
-          type="text" 
-          placeholder="Enter pickup location" 
-          class="location-input" 
+        <input
+          type="text"
+          placeholder="Enter pickup location"
+          class="location-input"
           [(ngModel)]="pickupLocation"
           (input)="onPickupInputChange()">
       </div>
-      
+
       @if (showPickupSuggestions && pickupSuggestions.length > 0) {
         <div class="suggestions">
           @for (suggestion of pickupSuggestions; track suggestion.place_id) {
@@ -35,15 +35,15 @@
       <div class="input-wrapper">
         <div class="input-group stop-group">
           <div class="input-icon">⚫</div>
-          <input 
-            type="text" 
-            placeholder="Enter stop location" 
-            class="location-input" 
+          <input
+            type="text"
+            placeholder="Enter stop location"
+            class="location-input"
             [(ngModel)]="stop.location"
             (input)="onStopInputChange(stop.id)">
           <button class="remove-stop-btn" (click)="removeStop(stop.id)">✕</button>
         </div>
-        
+
         @if (stop.showSuggestions && stop.suggestions.length > 0) {
           <div class="suggestions">
             @for (suggestion of stop.suggestions; track suggestion.place_id) {
@@ -60,14 +60,14 @@
     <div class="input-wrapper">
       <div class="input-group">
         <div class="input-icon">⬛</div>
-        <input 
-          type="text" 
-          placeholder="Enter destination" 
-          class="location-input" 
+        <input
+          type="text"
+          placeholder="Enter destination"
+          class="location-input"
           [(ngModel)]="destination"
           (input)="onDestinationInputChange()">
       </div>
-      
+
       @if (showDestinationSuggestions && destinationSuggestions.length > 0) {
         <div class="suggestions">
           @for (suggestion of destinationSuggestions; track suggestion.place_id) {
@@ -82,7 +82,7 @@
     <!-- Book ride and refresh button row -->
     <div class="button-group">
       <button class="book-ride-btn" (click)="onBookRide()">
-        Book Ride
+        Book a Ride
       </button>
       <button class="refresh-btn" (click)="clearRoute()">
         Reset

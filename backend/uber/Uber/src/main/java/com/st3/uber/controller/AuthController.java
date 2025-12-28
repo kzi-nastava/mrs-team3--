@@ -3,7 +3,10 @@ package com.st3.uber.controller;
 import com.st3.uber.domain.Passenger;
 import com.st3.uber.dto.auth.*;
 import com.st3.uber.service.UserService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.function.EntityResponse;
 
 import java.time.LocalDateTime;
 
@@ -28,8 +31,8 @@ public class AuthController {
     }
 
     @PostMapping("/forgot-password")
-    public void forgotPassword(@RequestBody ForgotPasswordRequest req) {
-        userService.forgotPassword(req);
+    public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest req) {
+        return userService.forgotPassword(req);
     }
 
     // POST /api/auth/email-validation - Validate email availability
