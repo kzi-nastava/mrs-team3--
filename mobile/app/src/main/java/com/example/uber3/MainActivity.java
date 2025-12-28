@@ -36,16 +36,18 @@ public class MainActivity extends AppCompatActivity {
                 loadFragment(HomeFragment.newInstance(currentUserRole));
 
             } else if (id == R.id.nav_chat) {
-                topAppBar.setTitle("Chat");
+                topAppBar.setTitle("Login");
+                loadFragment(new LoginFragment());
 
             } else if (id == R.id.nav_ride) {
-                topAppBar.setTitle("Ride");
+                topAppBar.setTitle("Ride History");
+                loadFragment(DriverHistoryFragment.newInstance());
 
             } else if (id == R.id.nav_profile) {
                 topAppBar.setTitle("Profile");
                 loadFragment(ProfileFragment.newInstance(currentUserRole));
-            }
 
+            }
             drawerLayout.close();
             return true;
         });
@@ -58,9 +60,42 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void loadFragment(Fragment fragment) {
-        getSupportFragmentManager()
-                .beginTransaction()
-                .replace(R.id.fragmentContainer, fragment)
-                .commit();
+        if (fragment != null) {
+            getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.fragmentContainer, fragment)
+                    .commit();
+        }
+    }
+
+    public void loadDefaultFragment() {
+        topAppBar.setTitle("Profile");
+        loadFragment(ProfileFragment.newInstance(currentUserRole));
+
+        drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
+        topAppBar.setNavigationIcon(R.drawable.ic_menu);
+    }
+
+    public void loadRegisterFragment() {
+        topAppBar.setTitle("Register");
+        loadFragment(new RegisterFragment());
+    }
+
+    public void loadLoginFragment() {
+        topAppBar.setTitle("Login");
+        loadFragment(new LoginFragment());
+    }
+
+    public void loadForgotPasswordFragment() {
+        topAppBar.setTitle("Forgot Password");
+        loadFragment(new ForgotPasswordFragment());
+    }
+
+    public String getCurrentUserRole() {
+        return currentUserRole;
+    }
+
+    public void setCurrentUserRole(String role) {
+        this.currentUserRole = role;
     }
 }

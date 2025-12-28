@@ -1,0 +1,352 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="#F5F5F5">
+
+    <!-- Title -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Ride History"
+        android:textSize="32sp"
+        android:textStyle="bold"
+        android:textColor="#333333"
+        android:layout_marginBottom="24dp"/>
+
+    <!-- Date Filter Card -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="4dp"
+        android:layout_marginBottom="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="16dp"
+            android:gravity="center_vertical">
+
+            <!-- From Date -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginEnd="8dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="From:"
+                    android:textSize="14sp"
+                    android:textColor="#666666"
+                    android:layout_marginBottom="4dp"/>
+
+                <TextView
+                    android:id="@+id/tvFromDate"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="mm/dd/yyyy"
+                    android:textSize="16sp"
+                    android:textColor="#333333"
+                    android:padding="12dp"
+                    android:background="@drawable/date_picker_background"
+                    android:drawableEnd="@android:drawable/ic_menu_my_calendar"
+                    android:clickable="true"
+                    android:focusable="true"/>
+
+            </LinearLayout>
+
+            <!-- To Date -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="To:"
+                    android:textSize="14sp"
+                    android:textColor="#666666"
+                    android:layout_marginBottom="4dp"/>
+
+                <TextView
+                    android:id="@+id/tvToDate"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="mm/dd/yyyy"
+                    android:textSize="16sp"
+                    android:textColor="#333333"
+                    android:padding="12dp"
+                    android:background="@drawable/date_picker_background"
+                    android:drawableEnd="@android:drawable/ic_menu_my_calendar"
+                    android:clickable="true"
+                    android:focusable="true"/>
+
+            </LinearLayout>
+
+            <!-- View Report Button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnViewReport"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="View report"
+                android:textSize="14sp"
+                app:backgroundTint="#9B7FC9"
+                android:layout_marginStart="8dp"
+                android:layout_gravity="bottom"/>
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- History Table Card -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="4dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <!-- WRAP EVERYTHING IN ONE HORIZONTAL SCROLL -->
+            <HorizontalScrollView
+                android:id="@+id/horizontalScrollView"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:scrollbars="horizontal">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical">
+
+                    <!-- Table Header -->
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:background="#F8F8F8"
+                        android:padding="16dp">
+
+                        <LinearLayout
+                            android:id="@+id/headerID"
+                            android:layout_width="60dp"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:background="?attr/selectableItemBackground">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="ID"
+                                android:textStyle="bold"
+                                android:textSize="14sp"
+                                android:textColor="#333333"/>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text=" ▲"
+                                android:textSize="10sp"
+                                android:textColor="#9B7FC9"/>
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/headerStart"
+                            android:layout_width="80dp"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:background="?attr/selectableItemBackground"
+                            android:layout_marginStart="16dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Start"
+                                android:textStyle="bold"
+                                android:textSize="14sp"
+                                android:textColor="#333333"/>
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/headerEnd"
+                            android:layout_width="80dp"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:background="?attr/selectableItemBackground"
+                            android:layout_marginStart="16dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="End"
+                                android:textStyle="bold"
+                                android:textSize="14sp"
+                                android:textColor="#333333"/>
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/headerFrom"
+                            android:layout_width="140dp"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:background="?attr/selectableItemBackground"
+                            android:layout_marginStart="16dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="From"
+                                android:textStyle="bold"
+                                android:textSize="14sp"
+                                android:textColor="#333333"/>
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/headerTo"
+                            android:layout_width="140dp"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:background="?attr/selectableItemBackground"
+                            android:layout_marginStart="16dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="To"
+                                android:textStyle="bold"
+                                android:textSize="14sp"
+                                android:textColor="#333333"/>
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/headerPassengers"
+                            android:layout_width="160dp"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:layout_marginStart="16dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Passengers"
+                                android:textStyle="bold"
+                                android:textSize="14sp"
+                                android:textColor="#333333"/>
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/headerPrice"
+                            android:layout_width="100dp"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:background="?attr/selectableItemBackground"
+                            android:layout_marginStart="16dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Price (din)"
+                                android:textStyle="bold"
+                                android:textSize="14sp"
+                                android:textColor="#333333"/>
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/headerCancelled"
+                            android:layout_width="120dp"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:background="?attr/selectableItemBackground"
+                            android:layout_marginStart="16dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Cancelled"
+                                android:textStyle="bold"
+                                android:textSize="14sp"
+                                android:textColor="#333333"/>
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/headerPanic"
+                            android:layout_width="80dp"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:background="?attr/selectableItemBackground"
+                            android:layout_marginStart="16dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="PANIC"
+                                android:textStyle="bold"
+                                android:textSize="14sp"
+                                android:textColor="#333333"/>
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="#E0E0E0"/>
+
+                    <!-- RecyclerView for rides -->
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/recyclerViewHistory"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:scrollbars="vertical"/>
+
+                </LinearLayout>
+
+            </HorizontalScrollView>
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+</LinearLayout>

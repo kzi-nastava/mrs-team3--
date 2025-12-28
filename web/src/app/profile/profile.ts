@@ -69,7 +69,7 @@ export class ProfileComponent implements OnInit {
   editedUser: User = { ...this.user };
 
   // Promena lozinke
-  showPasswordModal = Create and implement a mobile view that displays the user's basic information.false;
+  showPasswordModal: boolean = false;
   oldPassword = '';
   newPassword = '';
   confirmPassword = '';
