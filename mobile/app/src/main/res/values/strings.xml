@@ -37,4 +37,22 @@
     <string name="current_password">Current password</string>
     <string name="new_password">New password</string>
     <string name="confirm_new_password">Confirm new password</string>
+    <string name="forgot_password">Forgot password</string>
+    <string name="enter_your_email">Enter your email</string>
+    <string name="submit">Submit</string>
+    <string name="back_to_login">Back to login</string>
+    <string name="create_account">Create Account</string>
+    <string name="already_have_an_account">Already have an account?</string>
+    <string name="login">Login</string>
+    <string name="last_name">Last Name</string>
+    <string name="password">Password</string>
+    <string name="confirm_password">Confirm Password</string>
+    <string name="passwords_do_not_match">Passwords do not match</string>
+    <string name="profile_image_optional">Profile Image (optional)</string>
+    <string name="choose_image">Choose Image</string>
+    <string name="slogan">Create an account.\nWe know you checked the distance twice.</string>
+    <string name="slogan_two">Let\'s get you moving.\nWalking is overrated anyway.</string>
+    <string name="create_today">Create today!</string>
+    <string name="don_t_have_an_account">Don\'t have an account?</string>
+    <string name="welcome_back">Welcome Back</string>
 </resources>
