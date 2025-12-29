@@ -3,6 +3,8 @@ package com.st3.uber.controller;
 import com.st3.uber.dto.register.RegisterDriverRequest;
 import com.st3.uber.dto.register.RegisterDriverResponse;
 import com.st3.uber.dto.ride.ReportInconsistencyResponse;
+import com.st3.uber.dto.user.driver.DriverActivityRequest;
+import com.st3.uber.dto.user.driver.DriverActivityResponse;
 import com.st3.uber.dto.user.driver.DriverRideDetailResponse;
 import com.st3.uber.dto.user.driver.DriverRideHistoryResponse;
 import com.st3.uber.dto.vehicle.VehicleResponse;
@@ -16,15 +18,11 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 @CrossOrigin(origins = "http://localhost:4200")
 @RestController
 @RequestMapping("/api/drivers")
 public class DriverController {
-
-    private final Map<Long, Boolean> driverActive = new ConcurrentHashMap<>();
 
     // POST /api/drivers - Create new driver
     @PostMapping(
@@ -185,20 +183,13 @@ public class DriverController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/{id}/logout")
-    public ResponseEntity<String> logoutDriver(@PathVariable Long id) {
-        driverActive.put(id, true);
-        return ResponseEntity.ok("Driver is active");
-    }
+    @PutMapping("/{id}/active")
+    public ResponseEntity<DriverActivityResponse> setDriverActivity(
+        @PathVariable Long id,
+        @RequestBody DriverActivityRequest request
+        ) {
 
-    @PostMapping("/{id}/login")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public ResponseEntity<String> loginDriver(@PathVariable Long id) {
-        if (!driverActive.containsKey(id)) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Driver not found");
-        }
-        driverActive.put(id, false);
-        return ResponseEntity.ok("Driver is inactive");
+        return ResponseEntity.ok(new DriverActivityResponse(id, request.isActive()));
     }
 
     @DeleteMapping("/{id}")

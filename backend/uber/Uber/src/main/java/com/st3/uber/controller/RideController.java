@@ -213,6 +213,24 @@ public class RideController {
     return ResponseEntity.ok(response);
   }
 
+  @PutMapping(
+      value = "/{rideId}/stop",
+      produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<StopRideResponse> stopRide(
+      @PathVariable Long rideId,
+      @RequestBody StopRideRequest request)
+  {
+    StopRideResponse response = new StopRideResponse(
+      rideId,
+      LocalDateTime.now(),
+      1200.0,
+      15.0,
+      request
+    );
+
+    return ResponseEntity.ok(response);
+  }
+
   // DELETE /api/rides/{id} - Delete ride (admin only)
   @DeleteMapping("/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
