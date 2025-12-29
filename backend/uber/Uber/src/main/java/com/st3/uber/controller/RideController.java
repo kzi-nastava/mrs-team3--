@@ -1,14 +1,18 @@
 package com.st3.uber.controller;
 
+import com.st3.uber.domain.Location;
 import com.st3.uber.dto.ride.*;
 import com.st3.uber.enums.CancelledBy;
 import com.st3.uber.enums.RideStatus;
+import com.st3.uber.util.ComparatorUtils;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @CrossOrigin(origins = "http://localhost:4200")
 @RestController
@@ -230,6 +234,141 @@ public class RideController {
 
     return ResponseEntity.ok(response);
   }
+
+  @GetMapping
+  public ResponseEntity<List<AdminRideDetailsResponse>> getAllRidesForAdmin(
+      @RequestParam(required = false)
+      @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+      LocalDateTime from,
+      @RequestParam(required = false)
+      @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+      LocalDateTime to,
+      @RequestParam(defaultValue = "rideStartTime")
+      String sortBy,
+      @RequestParam(defaultValue = "DESC")
+      String direction
+  ) {
+
+    List<AdminRideDetailsResponse> rides = mockRides();
+
+    rides = rides.stream()
+        .filter(r -> {
+          LocalDateTime t = r.getRideStartTime();
+          boolean okFrom = from == null || !t.isBefore(from);
+          boolean okTo = to == null || !t.isAfter(to);
+          return okFrom && okTo;
+        })
+        .sorted(ComparatorUtils.buildComparator(sortBy, direction))
+        .toList();
+
+    return ResponseEntity.ok(rides);
+  }
+
+//  @GetMapping(
+//      value = "/{rideId}",
+//      produces = MediaType.APPLICATION_JSON_VALUE)
+//  public ResponseEntity<AdminRideDetailsResponse> getRideDetails(@PathVariable Long rideId) {
+//
+//  }
+
+
+  private List<AdminRideDetailsResponse> mockRides() {
+    return List.of(
+        new AdminRideDetailsResponse(
+            LocalDateTime.now().minusHours(1),
+            LocalDateTime.now().minusMinutes(20),
+            List.of(
+                new Location(45.2671, 19.8335, "Bulevar oslobođenja 1"),
+                new Location(45.2684, 19.8360, "Futoška ulica"),
+                new Location(45.2702, 19.8401, "Trg slobode")
+            ),
+            new Location(45.2671, 19.8335, "Bulevar oslobođenja 1"),
+            new Location(45.2702, 19.8401, "Trg slobode"),
+            null,
+            15.40,
+            false
+        ),
+
+        new AdminRideDetailsResponse(
+            LocalDateTime.now().minusDays(1).minusHours(2),
+            LocalDateTime.now().minusDays(1).minusHours(1),
+            List.of(
+                new Location(45.2550, 19.8450, "Detelinara"),
+                new Location(45.2600, 19.8500, "Limanska pijaca")
+            ),
+            new Location(45.2550, 19.8450, "Detelinara"),
+            new Location(45.2600, 19.8500, "Limanska pijaca"),
+            CancelledBy.DRIVER,
+            0.0,
+            true
+        )
+    );
+  }
+
+  private AdminRideAdvancedDetailsResponse mockAdvancedRide() {
+
+    List<Location> route = List.of(
+        new Location(45.2671, 19.8335, "Bulevar oslobođenja 1"),
+        new Location(45.2684, 19.8360, "Futoška ulica"),
+        new Location(45.2702, 19.8401, "Trg slobode")
+    );
+
+    Location startLocation =
+        new Location(45.2671, 19.8335, "Bulevar oslobođenja 1");
+
+    Location endLocation =
+        new Location(45.2702, 19.8401, "Trg slobode");
+
+    AdminRideDetailsResponse baseDetails =
+        new AdminRideDetailsResponse(
+            LocalDateTime.now().minusHours(1),
+            LocalDateTime.now().minusMinutes(20),
+            route,
+            startLocation,
+            endLocation,
+            null,
+            15.40,
+            false
+        );
+
+    AdminRideAdvancedDetailsResponse.UserDetails driver =
+        new AdminRideAdvancedDetailsResponse.UserDetails(
+            1L,
+            "Marko",
+            "Marković",
+            "marko@mail.com"
+        );
+
+    AdminRideAdvancedDetailsResponse.UserDetails passenger1 =
+        new AdminRideAdvancedDetailsResponse.UserDetails(
+            2L,
+            "Ana",
+            "Anić",
+            "ana@mail.com"
+        );
+
+    AdminRideAdvancedDetailsResponse.UserDetails passenger2 =
+        new AdminRideAdvancedDetailsResponse.UserDetails(
+            3L,
+            "Ivan",
+            "Ivanović",
+            "ivan@mail.com"
+        );
+
+    List<String> inconsistencies = List.of(
+        "Driver arrived late",
+        "Vehicle did not match description"
+    );
+
+    List<Integer> ratings = List.of(5, 4);
+
+    return new AdminRideAdvancedDetailsResponse(
+        driver,
+        List.of(passenger1, passenger2),
+        baseDetails
+    );
+}
+
 
   // DELETE /api/rides/{id} - Delete ride (admin only)
   @DeleteMapping("/{id}")
