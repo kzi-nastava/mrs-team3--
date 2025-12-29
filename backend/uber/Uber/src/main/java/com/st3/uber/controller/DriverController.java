@@ -16,11 +16,15 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @CrossOrigin(origins = "http://localhost:4200")
 @RestController
 @RequestMapping("/api/drivers")
 public class DriverController {
+
+    private final Map<Long, Boolean> driverActive = new ConcurrentHashMap<>();
 
     // POST /api/drivers - Create new driver
     @PostMapping(
@@ -179,6 +183,22 @@ public class DriverController {
         );
 
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{id}/logout")
+    public ResponseEntity<String> logoutDriver(@PathVariable Long id) {
+        driverActive.put(id, true);
+        return ResponseEntity.ok("Driver is active");
+    }
+
+    @PostMapping("/{id}/login")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public ResponseEntity<String> loginDriver(@PathVariable Long id) {
+        if (!driverActive.containsKey(id)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Driver not found");
+        }
+        driverActive.put(id, false);
+        return ResponseEntity.ok("Driver is inactive");
     }
 
     @DeleteMapping("/{id}")
