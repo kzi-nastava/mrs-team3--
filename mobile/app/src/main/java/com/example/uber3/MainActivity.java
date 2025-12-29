@@ -14,14 +14,13 @@ public class MainActivity extends AppCompatActivity {
     private DrawerLayout drawerLayout;
     private MaterialToolbar topAppBar;
 
-    private String currentUserRole = "DRIVER";
+    private String currentUserRole = "PASSENGER";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        //Ucitati glavnu ulogu
         drawerLayout = findViewById(R.id.drawerLayout);
         topAppBar = findViewById(R.id.topAppBar);
         NavigationView navigationView = findViewById(R.id.navigationView);
@@ -34,17 +33,22 @@ public class MainActivity extends AppCompatActivity {
 
             if (id == R.id.nav_home) {
                 topAppBar.setTitle("Home");
-
+                loadFragment(HomeFragment.newInstance(currentUserRole));
 
             } else if (id == R.id.nav_chat) {
                 topAppBar.setTitle("Chat");
 
             } else if (id == R.id.nav_ride) {
-                topAppBar.setTitle("Ride");
+                topAppBar.setTitle("Ride History");
+                loadFragment(DriverHistoryFragment.newInstance());
 
             } else if (id == R.id.nav_profile) {
                 topAppBar.setTitle("Profile");
                 loadFragment(ProfileFragment.newInstance(currentUserRole));
+
+            } else if (id == R.id.nav_login) {
+                topAppBar.setTitle("Login");
+                loadFragment(new LoginFragment());
             }
 
             drawerLayout.close();
@@ -52,12 +56,10 @@ public class MainActivity extends AppCompatActivity {
         });
 
         if (savedInstanceState == null) {
-            topAppBar.setTitle("Profile");
-            loadFragment(ProfileFragment.newInstance(currentUserRole));
+            topAppBar.setTitle("Home");
+            loadFragment(HomeFragment.newInstance(currentUserRole));
         }
     }
-
-
 
     private void loadFragment(Fragment fragment) {
         if (fragment != null) {
@@ -66,6 +68,29 @@ public class MainActivity extends AppCompatActivity {
                     .replace(R.id.fragmentContainer, fragment)
                     .commit();
         }
+    }
+
+    public void loadDefaultFragment() {
+        topAppBar.setTitle("Profile");
+        loadFragment(ProfileFragment.newInstance(currentUserRole));
+
+        drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
+        topAppBar.setNavigationIcon(R.drawable.ic_menu);
+    }
+
+    public void loadRegisterFragment() {
+        topAppBar.setTitle("Register");
+        loadFragment(new RegisterFragment());
+    }
+
+    public void loadLoginFragment() {
+        topAppBar.setTitle("Login");
+        loadFragment(new LoginFragment());
+    }
+
+    public void loadForgotPasswordFragment() {
+        topAppBar.setTitle("Forgot Password");
+        loadFragment(new ForgotPasswordFragment());
     }
 
     public String getCurrentUserRole() {

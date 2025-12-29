@@ -34,18 +34,18 @@ public class DriverController {
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<RegisterDriverResponse> registerDriver(@RequestBody RegisterDriverRequest req ) {
         VehicleResponse vehicleResponse = new VehicleResponse(
-          10L,
-          req.request().model(),
-          req.request().type() != null ? req.request().type() : VehicleType.STANDARD
+                10L,
+                req.request().model(),
+                req.request().type() != null ? req.request().type() : VehicleType.STANDARD
         );
 
         RegisterDriverResponse response = new RegisterDriverResponse(
-          1L,
-          req.email(),
-          req.firstName(),
-          req.lastName(),
-          vehicleResponse,
-          false
+                1L,
+                req.email(),
+                req.firstName(),
+                req.lastName(),
+                vehicleResponse,
+                false
         );
 
         return new ResponseEntity<>(response, HttpStatus.CREATED);
@@ -58,26 +58,36 @@ public class DriverController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public ResponseEntity<RegisterDriverResponse> getDriver(@PathVariable Long id) {
-        return ResponseEntity.ok().build();
+        VehicleResponse vehicleResponse = new VehicleResponse(
+                10L,
+                "Toyota Corolla",
+                VehicleType.STANDARD
+        );
+
+        RegisterDriverResponse response = new RegisterDriverResponse(
+                id,
+                "driver@test.com",
+                "Marko",
+                "Markovic",
+                vehicleResponse,
+                true
+        );
+
+        return ResponseEntity.ok(response);
     }
 
     // GET /api/drivers - Get all drivers
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> getAllDrivers() {
-        return ResponseEntity.ok().build();
-    }
+    public ResponseEntity<List<RegisterDriverResponse>> getAllDrivers() {
+        VehicleResponse vehicle1 = new VehicleResponse(10L, "Toyota Corolla", VehicleType.STANDARD);
+        VehicleResponse vehicle2 = new VehicleResponse(11L, "BMW X5", VehicleType.VAN);
 
-    // PUT /api/drivers/{id} - Update driver
-    @PutMapping(
-            value = "/{id}",
-            consumes = MediaType.APPLICATION_JSON_VALUE,
-            produces = MediaType.APPLICATION_JSON_VALUE
-    )
-    public ResponseEntity<RegisterDriverResponse> updateDriver(
-            @PathVariable Long id,
-            @RequestBody RegisterDriverRequest req
-    ) {
-        return ResponseEntity.ok().build();
+        List<RegisterDriverResponse> drivers = List.of(
+                new RegisterDriverResponse(1L, "driver1@test.com", "Marko", "Markovic", vehicle1, true),
+                new RegisterDriverResponse(2L, "driver2@test.com", "Jovan", "Jovanovic", vehicle2, true)
+        );
+
+        return ResponseEntity.ok(drivers);
     }
 
 
@@ -183,13 +193,31 @@ public class DriverController {
         return ResponseEntity.ok(response);
     }
 
-    @PutMapping("/{id}/active")
-    public ResponseEntity<DriverActivityResponse> setDriverActivity(
-        @PathVariable Long id,
-        @RequestBody DriverActivityRequest request
-        ) {
+    @PutMapping(
+            value = "/{id}",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<RegisterDriverResponse> updateDriver(
+            @PathVariable Long id,
+            @RequestBody RegisterDriverRequest req
+    ) {
+        VehicleResponse vehicleResponse = new VehicleResponse(
+                10L,
+                req.request().model(),
+                req.request().type() != null ? req.request().type() : VehicleType.STANDARD
+        );
 
-        return ResponseEntity.ok(new DriverActivityResponse(id, request.isActive()));
+        RegisterDriverResponse response = new RegisterDriverResponse(
+                id,
+                req.email(),
+                req.firstName(),
+                req.lastName(),
+                vehicleResponse,
+                true
+        );
+
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")

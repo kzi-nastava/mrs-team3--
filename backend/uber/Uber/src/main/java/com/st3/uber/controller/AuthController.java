@@ -31,8 +31,8 @@ public class AuthController {
     }
 
     @PostMapping("/forgot-password")
-    public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest req) {
-        return userService.forgotPassword(req);
+    public void forgotPassword(@RequestBody ForgotPasswordRequest req) {
+       // userService.forgotPassword(req);
     }
 
     // POST /api/auth/email-validation - Validate email availability
