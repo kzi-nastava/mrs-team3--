@@ -1,6 +1,7 @@
 package com.st3.uber.controller;
 
 import com.st3.uber.dto.ride.*;
+import com.st3.uber.enums.CancelledBy;
 import com.st3.uber.enums.RideStatus;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -196,10 +197,26 @@ public class RideController {
       return ResponseEntity.ok(response);
     }
 
-    // DELETE /api/rides/{id} - Delete ride (admin only)
-    @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public ResponseEntity<Void> deleteRide(@PathVariable Long id) {
-        return ResponseEntity.noContent().build();
+  @PutMapping(
+          value = "/{rideId}/cancel-universal",
+          produces = MediaType.APPLICATION_JSON_VALUE
+  )
+  public ResponseEntity<CancelRideResponse> cancelRide(
+      @PathVariable Long rideId,
+      @RequestBody(required = false) CancelRideRequest request)
+  {
+    if(request.getCancellationReason() == null || request.getCancelledBy() == null) {
+      return ResponseEntity.badRequest().build();
     }
+    CancelRideResponse response = new CancelRideResponse(request, rideId);
+
+    return ResponseEntity.ok(response);
+  }
+
+  // DELETE /api/rides/{id} - Delete ride (admin only)
+  @DeleteMapping("/{id}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public ResponseEntity<Void> deleteRide(@PathVariable Long id) {
+      return ResponseEntity.noContent().build();
+  }
 }
