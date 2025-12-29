@@ -220,6 +220,15 @@ public class DriverController {
         return ResponseEntity.ok(response);
     }
 
+    @PutMapping("/{id}/active")
+    public ResponseEntity<DriverActivityResponse> setDriverActivity(
+        @PathVariable Long id,
+        @RequestBody DriverActivityRequest request
+    ) {
+
+        return ResponseEntity.ok(new DriverActivityResponse(id, request.isActive()));
+    }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public ResponseEntity<Void> deleteDriver(@PathVariable Long id) {
