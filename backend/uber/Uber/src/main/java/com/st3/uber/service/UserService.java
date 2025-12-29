@@ -8,9 +8,13 @@ import com.st3.uber.dto.auth.LoginResponse;
 import com.st3.uber.dto.auth.RegisterPassengerRequest;
 import com.st3.uber.repository.UserRepository;
 import lombok.SneakyThrows;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.function.EntityResponse;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -67,4 +71,12 @@ public class UserService {
         return new LoginResponse(u.getId(), u.getEmail(), role);
     }
 
+    public ResponseEntity<?> forgotPassword(ForgotPasswordRequest req) {
+        // TODO generate token and find user by email
+        // TODO if fails return EntityResponse with error message
+
+
+
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
 }

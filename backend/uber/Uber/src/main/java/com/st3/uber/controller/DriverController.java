@@ -3,6 +3,8 @@ package com.st3.uber.controller;
 import com.st3.uber.dto.register.RegisterDriverRequest;
 import com.st3.uber.dto.register.RegisterDriverResponse;
 import com.st3.uber.dto.ride.ReportInconsistencyResponse;
+import com.st3.uber.dto.user.driver.DriverActivityRequest;
+import com.st3.uber.dto.user.driver.DriverActivityResponse;
 import com.st3.uber.dto.user.driver.DriverRideDetailResponse;
 import com.st3.uber.dto.user.driver.DriverRideHistoryResponse;
 import com.st3.uber.dto.vehicle.VehicleResponse;
