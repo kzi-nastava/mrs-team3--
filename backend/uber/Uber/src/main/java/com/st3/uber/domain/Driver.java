@@ -9,9 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Getter
-@Setter
-@DiscriminatorValue("DRIVER")
+@Table(name = "drivers")
 public class Driver extends User{
 
     @Column(nullable = false)

@@ -7,10 +7,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-@Getter
-@Setter
+
 @Entity
-@DiscriminatorValue("PASSENGER")
+@Table(name = "passengers")
 public class Passenger extends User {
     @ManyToMany
     @JoinTable(

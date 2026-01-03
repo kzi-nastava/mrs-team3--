@@ -10,8 +10,7 @@ import java.util.Map;
 
 @Entity
 @Table(name = "ride_pricing")
-@Getter
-@Setter
+
 public class RidePricing {
 
     @Id

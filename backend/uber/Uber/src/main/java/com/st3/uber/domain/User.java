@@ -1,4 +1,5 @@
 package com.st3.uber.domain;
+import com.st3.uber.enums.UserRole;
 import jakarta.persistence.*;
 
 import lombok.Data;
@@ -11,7 +12,7 @@ import java.util.List;
 @Data
 @Entity
 @Inheritance(strategy = InheritanceType.JOINED)
-@DiscriminatorColumn(name = "role")
+//@DiscriminatorColumn(name = "role", discriminatorType =  DiscriminatorType.STRING)
 @Table(name = "users")
 
 public abstract class User {
@@ -47,4 +48,8 @@ public abstract class User {
     private List<Notification> notifications = new ArrayList<>();
 
     String imagePath;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private UserRole role;
 }
