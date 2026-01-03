@@ -1,0 +1,311 @@
+#####################################################################
+BRISANJE SVIH TABELA DA SE GENERISU NORMALNOOOOOOOOOOO
+######################################################################
+
+
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS
+    actual_ride_stops,
+    admins,
+    chat_rooms,
+    driver,
+    drivers,
+    messages,
+    notifications,
+    panic_events,
+    passenger,
+    passenger_favorite_rides,
+    passengers,
+    reviews,
+    ride_passengers,
+    ride_pricing,
+    ride_stops,
+    rides,
+    users,
+    vehicle_type_prices,
+    vehicles,
+    inconsistency_reports,
+    verification_tokens;
+Set foreign_key_checks =1;
+
+
+
+##############################################################################
+E sada podaci u tabeli 
+###############################################################
+
+
+-- MySQL Test Data Script for Uber Application
+-- Using JOINED inheritance: users, admins, drivers, passengers tables
+
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- Clear existing data
+DELETE FROM actual_ride_stops;
+DELETE FROM ride_stops;
+DELETE FROM ride_passengers;
+DELETE FROM passenger_favorite_rides;
+DELETE FROM vehicle_type_prices;
+DELETE FROM messages;
+DELETE FROM chat_rooms;
+DELETE FROM inconsistency_reports;
+DELETE FROM panic_events;
+DELETE FROM reviews;
+DELETE FROM notifications;
+DELETE FROM rides;
+DELETE FROM ride_pricing;
+DELETE FROM drivers;
+DELETE FROM passengers;
+DELETE FROM admins;
+DELETE FROM vehicles;
+DELETE FROM users;
+
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- Reset auto_increment
+ALTER TABLE users AUTO_INCREMENT = 1;
+ALTER TABLE vehicles AUTO_INCREMENT = 1;
+ALTER TABLE rides AUTO_INCREMENT = 1;
+ALTER TABLE chat_rooms AUTO_INCREMENT = 1;
+ALTER TABLE messages AUTO_INCREMENT = 1;
+ALTER TABLE reviews AUTO_INCREMENT = 1;
+ALTER TABLE panic_events AUTO_INCREMENT = 1;
+ALTER TABLE inconsistency_reports AUTO_INCREMENT = 1;
+ALTER TABLE notifications AUTO_INCREMENT = 1;
+ALTER TABLE ride_pricing AUTO_INCREMENT = 1;
+
+-- ========================================
+-- INSERT VEHICLES (must come before drivers)
+-- ========================================
+INSERT INTO vehicles (id, model, type, registration_number, seating_capacity, baby_transport, pet_transport) VALUES
+                                                                                                                 (1, 'Toyota Corolla', 'STANDARD', 'BG-123-AB', 4, 0, 1),
+                                                                                                                 (2, 'Mercedes E-Class', 'LUXURY', 'BG-456-CD', 4, 1, 0),
+                                                                                                                 (3, 'VW Transporter', 'VAN', 'NS-789-EF', 8, 1, 1),
+                                                                                                                 (4, 'BMW 5 Series', 'LUXURY', 'BG-321-GH', 4, 0, 0),
+                                                                                                                 (5, 'Skoda Octavia', 'STANDARD', 'NS-654-IJ', 4, 1, 1);
+
+-- ========================================
+-- INSERT USERS (base table)
+-- ========================================
+INSERT INTO users (id, email, password, name, surname, phone_number, address, profile_image, blocked, block_reason, image_path, role) VALUES
+-- Admin
+(1, 'admin@uber.com', '1', 'John', 'Admin', '+381641234567', 'Admin Street 1, Novi Sad', NULL, 0, NULL, NULL, 'ADMIN'),
+
+-- Passengers
+(2, 'passenger1@gmail.com', '1', 'Ana', 'Petrovic', '+381641111111', 'Zmaj Jovina 15, Novi Sad', NULL, 0, NULL, NULL, 'PASSENGER'),
+(3, 'passenger2@gmail.com', '1', 'Marko', 'Jovanovic', '+381642222222', 'Bulevar Oslobodjenja 20, Novi Sad', NULL, 0, NULL, NULL, 'PASSENGER'),
+(4, 'passenger3@gmail.com', '1', 'Jelena', 'Nikolic', '+381643333333', 'Dunavska 5, Novi Sad', NULL, 0, NULL, NULL, 'PASSENGER'),
+(5, 'passenger4@gmail.com', '1', 'Stefan', 'Popovic', '+381644444444', 'Narodnog fronta 10, Novi Sad', NULL, 1, 'Inappropriate behavior', NULL, 'PASSENGER'),
+
+-- Drivers
+(6, 'driver1@uber.com', '1', 'Nikola', 'Milosevic', '+381645555555', 'Bulevar Evrope 25, Novi Sad', NULL, 0, NULL, NULL, 'DRIVER'),
+(7, 'driver2@uber.com', '1', 'Ivan', 'Stojanovic', '+381646666666', 'Limanski Park 12, Novi Sad', NULL, 0, NULL, NULL, 'DRIVER'),
+(8, 'driver3@uber.com', '1', 'Milica', 'Djordjevic', '+381647777777', 'Svetozara Markovica 12, Novi Sad', NULL, 0, NULL, NULL, 'DRIVER'),
+(9, 'driver4@uber.com', '1', 'Petar', 'Ilic', '+381648888888', 'Maksima Gorkog 8, Novi Sad', NULL, 0, NULL, NULL, 'DRIVER'),
+(10, 'driver5@uber.com', '1', 'Jovana', 'Markovic', '+381649999999', 'Zmaj Jovina 5, Belgrade', NULL, 1, 'Multiple complaints', NULL, 'DRIVER');
+
+-- ========================================
+-- INSERT ADMINS (subclass table)
+-- ========================================
+INSERT INTO admins (id) VALUES (1);
+
+-- ========================================
+-- INSERT PASSENGERS (subclass table)
+-- ========================================
+INSERT INTO passengers (id, verified) VALUES
+                                          (2, 1),
+                                          (3, 1),
+                                          (4, 0),
+                                          (5, 1);
+
+-- ========================================
+-- INSERT DRIVERS (subclass table)
+-- ========================================
+INSERT INTO drivers (id, active, available, free, vehicle_id, working_minutes_per_day, current_lat, current_lng, current_address, location_updated_at, driver_id) VALUES
+                                                                                                                                                                      (6, 1, 1, 1, 1, 120, 45.255000, 19.845000, 'Freedom Square, Novi Sad', NOW() - INTERVAL 5 MINUTE, NULL),
+                                                                                                                                                                      (7, 1, 1, 0, 2, 240, 45.267136, 19.833549, 'Petrovaradin Fortress, Novi Sad', NOW() - INTERVAL 10 MINUTE, NULL),
+                                                                                                                                                                      (8, 1, 0, 0, 3, 180, 45.254844, 19.845350, 'Freedom Square, Novi Sad', NOW() - INTERVAL 15 MINUTE, NULL),
+                                                                                                                                                                      (9, 0, 0, 0, 4, 0, 45.260000, 19.820000, 'Detelinara, Novi Sad', NOW() - INTERVAL 2 HOUR, NULL),
+                                                                                                                                                                      (10, 0, 0, 0, 5, 360, 45.240000, 19.800000, 'Liman, Novi Sad', NOW() - INTERVAL 1 HOUR, NULL);
+
+-- ========================================
+-- INSERT RIDE PRICING
+-- ========================================
+INSERT INTO ride_pricing (id, price_per_km) VALUES (1, 120);
+
+INSERT INTO vehicle_type_prices (pricing_id, base_price, base_prices_key) VALUES
+                                                                              (1, 200, 'STANDARD'),
+                                                                              (1, 400, 'LUXURY'),
+                                                                              (1, 500, 'VAN');
+
+-- ========================================
+-- INSERT RIDES
+-- ========================================
+INSERT INTO rides (id, driver_id, creator_id, status, start_lat, start_lng, start_address, end_lat, end_lng, end_address,
+                   actual_end_lat, actual_end_lng, actual_end_address, created_at, scheduled_at, started_at, finished_at,
+                   stopped_early, stopped_at, vehicle_type, distance, base_price, calculated_price, cancelled_by, cancelled_at,
+                   termination_reason, panic) VALUES
+-- Completed rides
+(1, 6, 2, 'COMPLETED', 45.254844, 19.845350, 'Freedom Square, Novi Sad',
+ 45.267136, 19.833549, 'Strand, Novi Sad',
+ 45.267136, 19.833549, 'Strand, Novi Sad', NOW() - INTERVAL 5 HOUR, NULL,
+ NOW() - INTERVAL 4 HOUR - INTERVAL 50 MINUTE, NOW() - INTERVAL 4 HOUR - INTERVAL 30 MINUTE,
+ 0, NULL, 'STANDARD', 8.5, 200, 1220, NULL, NULL, NULL, 0),
+
+(2, 7, 3, 'COMPLETED', 45.254844, 19.845350, 'Freedom Square, Novi Sad', 45.267136, 19.833549, 'Petrovaradin Fortress, Novi Sad',
+ 45.267136, 19.833549, 'Petrovaradin Fortress, Novi Sad', NOW() - INTERVAL 3 HOUR, NULL,
+ NOW() - INTERVAL 2 HOUR - INTERVAL 50 MINUTE, NOW() - INTERVAL 2 HOUR - INTERVAL 35 MINUTE,
+ 0, NULL, 'LUXURY', 3.2, 400, 784, NULL, NULL, NULL, 0),
+
+(3, 8, 2, 'COMPLETED', 45.254844, 19.845350, 'Zmaj Jovina, Novi Sad',
+ 45.255500, 19.844000, 'Dunavska Street, Novi Sad',
+ 45.255500, 19.844000, 'Dunavska Street, Novi Sad', NOW() - INTERVAL 2 DAY, NULL,
+ NOW() - INTERVAL 2 DAY + INTERVAL 10 MINUTE, NOW() - INTERVAL 2 DAY + INTERVAL 25 MINUTE,
+ 0, NULL, 'VAN', 2.8, 500, 836, NULL, NULL, NULL, 0),
+
+-- Active ride
+(4, 7, 3, 'IN_PROGRESS', 45.240000, 19.850000, 'Bulevar Oslobodjenja, Novi Sad', 45.267136, 19.833549, 'Strand, Novi Sad',
+ NULL, NULL, NULL, NOW() - INTERVAL 15 MINUTE, NULL, NOW() - INTERVAL 10 MINUTE, NULL,
+ 0, NULL, 'LUXURY', 4.5, 400, 940, NULL, NULL, NULL, 0),
+
+-- Pending ride
+(5, 6, 4, 'ACCEPTED', 45.267136, 19.833549, 'Strand, Novi Sad',
+ 45.254844, 19.845350, 'Freedom Square, Novi Sad',
+ NULL, NULL, NULL, NOW() - INTERVAL 5 MINUTE, NULL, NULL, NULL,
+ 0, NULL, 'STANDARD', 6.0, 200, 920, NULL, NULL, NULL, 0),
+
+-- Scheduled future ride
+(6, NULL, 2, 'PENDING', 45.254844, 19.845350, 'Freedom Square, Novi Sad',
+ 45.256000, 19.810000, 'Novi Sad Bus Station',
+ NULL, NULL, NULL, NOW(), NOW() + INTERVAL 3 HOUR, NULL, NULL,
+ 0, NULL, 'LUXURY', 18.0, 400, 2560, NULL, NULL, NULL, 0),
+
+-- Cancelled ride
+(7, NULL, 3, 'CANCELLED', 45.254844, 19.845350, 'Freedom Square, Novi Sad', 45.240000, 19.850000, 'Exit Festival, Novi Sad',
+ NULL, NULL, NULL, NOW() - INTERVAL 1 DAY, NULL, NULL, NULL,
+ 0, NULL, 'VAN', 5.5, 500, 1160, 'PASSENGER', NOW() - INTERVAL 1 DAY + INTERVAL 5 MINUTE,
+ 'Changed plans', 0),
+
+-- Ride with panic event (finished early)
+(8, 6, 2, 'FINISHED_EARLY', 45.240000, 19.800000, 'Liman, Novi Sad',
+ 45.260000, 19.820000, 'Detelinara, Novi Sad',
+ 45.258000, 19.818000, 'Near Detelinara, Novi Sad', NOW() - INTERVAL 10 DAY, NULL,
+ NOW() - INTERVAL 10 DAY + INTERVAL 15 MINUTE, NOW() - INTERVAL 10 DAY + INTERVAL 35 MINUTE,
+ 1, NOW() - INTERVAL 10 DAY + INTERVAL 32 MINUTE, 'STANDARD', 7.2, 200, 1064, NULL, NULL,
+ 'Stopped early due to panic button', 1);
+
+-- Update driver #7 to have current ride #4 (now that ride exists)
+UPDATE drivers SET driver_id = 4 WHERE id = 7;
+
+-- ========================================
+-- INSERT RIDE PASSENGERS (many-to-many)
+-- ========================================
+INSERT INTO ride_passengers (ride_id, passenger_id) VALUES
+                                                        (1, 2),
+                                                        (2, 3),
+                                                        (3, 2),
+                                                        (3, 4), -- Multiple passengers in one ride
+                                                        (4, 3),
+                                                        (5, 4),
+                                                        (6, 2),
+                                                        (7, 3),
+                                                        (8, 2);
+
+-- ========================================
+-- INSERT RIDE STOPS
+-- ========================================
+INSERT INTO ride_stops (ride_id, lat, lng, address, stop_order) VALUES
+                                                                    (3, 45.255000, 19.842000, 'Zmaj Jovina, Novi Sad', 0),
+                                                                    (6, 45.250000, 19.830000, 'Futoski Put, Novi Sad', 0);
+
+INSERT INTO actual_ride_stops (ride_id, lat, lng, address, stop_order) VALUES
+    (3, 45.255000, 19.842000, 'Zmaj Jovina, Novi Sad', 0);
+
+-- ========================================
+-- INSERT REVIEWS
+-- ========================================
+INSERT INTO reviews (id, ride_id, driver_rating, vehicle_rating, review_comment, reviewed_at) VALUES
+                                                                                                  (1, 1, 5, 5, 'Excellent driver, very polite and on time!', NOW() - INTERVAL 4 HOUR - INTERVAL 25 MINUTE),
+                                                                                                  (2, 2, 4, 5, 'Great car, comfortable ride. Driver was a bit quiet.', NOW() - INTERVAL 2 HOUR - INTERVAL 30 MINUTE),
+                                                                                                  (3, 3, 5, 4, 'Very helpful with luggage. Van was clean but slightly old.', NOW() - INTERVAL 2 DAY + INTERVAL 30 MINUTE),
+                                                                                                  (4, 8, 2, 3, 'Driver did not follow the route properly. Had to use panic button.', NOW() - INTERVAL 10 DAY + INTERVAL 1 HOUR);
+
+-- ========================================
+-- INSERT PANIC EVENTS
+-- ========================================
+INSERT INTO panic_events (id, ride_id, user_id, created_at) VALUES
+    (1, 8, 2, NOW() - INTERVAL 10 DAY + INTERVAL 32 MINUTE);
+
+-- ========================================
+-- INSERT INCONSISTENCY REPORTS
+-- ========================================
+INSERT INTO inconsistency_reports (id, passenger_id, ride_id, driver_id, report_text, created_at) VALUES
+    (1, 2, 8, 6, 'The driver took a much longer route than necessary and the actual endpoint was different from what I requested. The ride was also stopped early after I pressed the panic button.', NOW() - INTERVAL 10 DAY + INTERVAL 1 HOUR);
+
+-- ========================================
+-- INSERT FAVORITE RIDES
+-- ========================================
+INSERT INTO passenger_favorite_rides (passenger_id, ride_id) VALUES
+                                                                 (2, 1),
+                                                                 (2, 3),
+                                                                 (3, 2);
+
+-- ========================================
+-- INSERT NOTIFICATIONS
+-- ========================================
+INSERT INTO notifications (id, user_id, message, created_at) VALUES
+                                                                 (1, 2, 'Your ride has been accepted by driver Nikola', NOW() - INTERVAL 4 HOUR - INTERVAL 50 MINUTE),
+                                                                 (2, 6, 'New ride request nearby!', NOW() - INTERVAL 4 HOUR - INTERVAL 52 MINUTE),
+                                                                 (3, 3, 'Your ride is starting now', NOW() - INTERVAL 10 MINUTE),
+                                                                 (4, 7, 'Passenger Ana has rated your ride 5 stars', NOW() - INTERVAL 4 HOUR - INTERVAL 25 MINUTE),
+                                                                 (5, 2, 'Your scheduled ride is in 3 hours', NOW()),
+                                                                 (6, 4, 'Your ride has been accepted', NOW() - INTERVAL 5 MINUTE),
+                                                                 (7, 6, 'A panic event was reported on your ride. Support will contact you.', NOW() - INTERVAL 10 DAY + INTERVAL 35 MINUTE),
+                                                                 (8, 1, 'New inconsistency report received from passenger Ana', NOW() - INTERVAL 10 DAY + INTERVAL 1 HOUR),
+                                                                 (9, 10, 'Your account has been blocked due to: Multiple complaints', NOW() - INTERVAL 1 HOUR),
+                                                                 (10, 2, 'Thank you for your review!', NOW() - INTERVAL 4 HOUR - INTERVAL 20 MINUTE);
+
+-- ========================================
+-- INSERT CHAT ROOMS
+-- ========================================
+INSERT INTO chat_rooms (id, admin_id, user_id, created_at) VALUES
+                                                               (1, 1, 2, NOW() - INTERVAL 10 DAY),
+                                                               (2, 1, 6, NOW() - INTERVAL 5 DAY);
+
+-- ========================================
+-- INSERT MESSAGES
+-- ========================================
+INSERT INTO messages (id, chat_room_id, content, sender_type, sender_id, sent_at) VALUES
+                                                                                      (1, 1, 'Hello, I need help regarding my recent ride.', 'USER', 2, NOW() - INTERVAL 10 DAY),
+                                                                                      (2, 1, 'Hi Ana, how can I assist you today?', 'ADMIN', 1, NOW() - INTERVAL 10 DAY + INTERVAL 2 MINUTE),
+                                                                                      (3, 1, 'The driver took a wrong route and I had to use the panic button.', 'USER', 2, NOW() - INTERVAL 10 DAY + INTERVAL 5 MINUTE),
+                                                                                      (4, 1, 'I understand. We will investigate this matter. Thank you for reporting.', 'ADMIN', 1, NOW() - INTERVAL 10 DAY + INTERVAL 10 MINUTE),
+                                                                                      (5, 2, 'I received a complaint about my driving. Can you explain?', 'USER', 6, NOW() - INTERVAL 5 DAY),
+                                                                                      (6, 2, 'A passenger reported route inconsistencies. Please ensure you follow GPS directions.', 'ADMIN', 1, NOW() - INTERVAL 5 DAY + INTERVAL 1 HOUR);
+
+-- ========================================
+-- VERIFICATION QUERY
+-- ========================================
+SELECT 'Users' as table_name, COUNT(*) as count FROM users
+UNION ALL
+SELECT 'Admins', COUNT(*) FROM admins
+UNION ALL
+SELECT 'Passengers', COUNT(*) FROM passengers
+UNION ALL
+SELECT 'Drivers', COUNT(*) FROM drivers
+UNION ALL
+SELECT 'Vehicles', COUNT(*) FROM vehicles
+UNION ALL
+SELECT 'Rides', COUNT(*) FROM rides
+UNION ALL
+SELECT 'Reviews', COUNT(*) FROM reviews
+UNION ALL
+SELECT 'Notifications', COUNT(*) FROM notifications
+UNION ALL
+SELECT 'Chat Rooms', COUNT(*) FROM chat_rooms
+UNION ALL
+SELECT 'Messages', COUNT(*) FROM messages
+UNION ALL
+SELECT 'Panic Events', COUNT(*) FROM panic_events
+UNION ALL
+SELECT 'Inconsistency Reports', COUNT(*) FROM inconsistency_reports;
