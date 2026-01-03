@@ -124,13 +124,8 @@ public class Ride {
     @OneToMany(mappedBy = "ride", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PanicEvent> panicEvents = new ArrayList<>();
 
-    private Integer driverRating;
-    private Integer vehicleRating;
-
-    @Column(length = 1000)
-    private String reviewComment;
-
-    private LocalDateTime reviewedAt;
+    @OneToMany(mappedBy = "ride", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Review> reviews = new ArrayList<>();
 
     @OneToMany(mappedBy = "ride", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<InconsistencyReport> inconsistencyReports = new ArrayList<>();
