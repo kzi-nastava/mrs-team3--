@@ -7,8 +7,6 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "vehicles")
-@Getter
-@Setter
 public class Vehicle {
 
     @Id
@@ -18,6 +16,7 @@ public class Vehicle {
     @Column(nullable = false)
     private String model;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private VehicleType type;
 
