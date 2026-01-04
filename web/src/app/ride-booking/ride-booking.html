@@ -2,6 +2,8 @@
   <h1>Let's ride!</h1>
 
   <form [formGroup]="rideForm" class="booking-form">
+
+    <!-- PICKUP -->
     <div class="input-wrapper">
       <div class="input-group">
         <div class="input-icon">⚫</div>
@@ -23,11 +25,13 @@
       }
     </div>
 
+    <!-- ADD STOP -->
     <button type="button" class="add-stop-btn" (click)="addStop()">
       <span class="plus-icon">+</span>
       Add stop
     </button>
 
+    <!-- STOPS -->
     @for (stop of stops; track trackByStopId($index, stop)) {
       <div class="input-wrapper">
         <div class="input-group stop-group">
@@ -53,6 +57,7 @@
       </div>
     }
 
+    <!-- DESTINATION -->
     <div class="input-wrapper">
       <div class="input-group">
         <div class="input-icon">⬛</div>
@@ -74,25 +79,33 @@
       }
     </div>
 
+    <!-- MAIN ACTIONS -->
     <div class="button-group">
-      <button type="button" class="book-ride-btn" (click)="onBookRide()" [disabled]="rideForm.invalid">
+      <button
+        type="button"
+        class="book-ride-btn"
+        (click)="onBookRide()"
+        [disabled]="rideForm.invalid">
         Book a Ride
       </button>
+
       <button type="button" class="refresh-btn" (click)="clearRoute()">
         Reset
       </button>
     </div>
 
+    <!-- SECONDARY ACTIONS -->
     <div class="secondary-button-group">
       <button type="button" class="schedule-btn" (click)="onSchedule()">
         🕒 Schedule
       </button>
+
       <button type="button" class="favorites-btn" (click)="toggleFavorites()">
         ❤️ Favorites
       </button>
     </div>
 
-
+    <!-- RIDE INFO -->
     @if (showRideInfo) {
       <div class="ride-info">
         <span class="time">{{ estimatedTime }}</span>
@@ -100,28 +113,37 @@
       </div>
     }
 
+    <!-- FAVORITES PANEL -->
     @if (showFavorites) {
       <div class="favorites-list">
         <h3>Your Favorite Routes</h3>
-        @if (favoriteRoutes.length === 0) {
-          <p class="no-favorites">No favorite routes yet. Save your first route!</p>
+
+        @if (favorites().length === 0) {
+          <p class="no-favorites">
+            No favorite routes yet. Save your first route!
+          </p>
         } @else {
-          @for (route of favoriteRoutes; track route.id) {
+          @for (route of favorites(); track route.id) {
             <div class="favorite-item">
               <div class="favorite-info">
-                <div class="favorite-name">{{ route.name }}</div>
                 <div class="favorite-route">
-                  {{ route.pickup }} → {{ route.destination }}
+                  {{ route.from }} → {{ route.to }}
                 </div>
               </div>
+
               <div class="favorite-actions">
-                <button type="button" class="use-btn" (click)="useFavoriteRoute(route)">Use</button>
-                <button type="button" class="delete-btn" (click)="deleteFavoriteRoute(route.id)">🗑️</button>
+                <button
+                  type="button"
+                  class="use-btn"
+                  (click)="useFavoriteRoute(route)">
+                  Use
+                </button>
               </div>
             </div>
           }
         }
       </div>
     }
+
   </form>
 </div>
