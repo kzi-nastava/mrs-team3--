@@ -3,7 +3,6 @@
 
   <form [formGroup]="rideForm" class="booking-form">
 
-    <!-- PICKUP -->
     <div class="input-wrapper">
       <div class="input-group">
         <div class="input-icon">⚫</div>
@@ -25,13 +24,11 @@
       }
     </div>
 
-    <!-- ADD STOP -->
     <button type="button" class="add-stop-btn" (click)="addStop()">
       <span class="plus-icon">+</span>
       Add stop
     </button>
 
-    <!-- STOPS -->
     @for (stop of stops; track trackByStopId($index, stop)) {
       <div class="input-wrapper">
         <div class="input-group stop-group">
@@ -57,7 +54,6 @@
       </div>
     }
 
-    <!-- DESTINATION -->
     <div class="input-wrapper">
       <div class="input-group">
         <div class="input-icon">⬛</div>
@@ -79,7 +75,53 @@
       }
     </div>
 
-    <!-- MAIN ACTIONS -->
+    <div class="vehicle-section">
+      <h3>Choose vehicle type</h3>
+
+      <div class="vehicle-types">
+        <label class="vehicle-card">
+          <input type="radio" formControlName="vehicleType" value="STANDARD">
+          <span class="title">Standard</span>
+          <span class="desc">Affordable everyday rides</span>
+        </label>
+
+        <label class="vehicle-card">
+          <input type="radio" formControlName="vehicleType" value="VAN">
+          <span class="title">Van</span>
+          <span class="desc">More space for groups</span>
+        </label>
+
+        <label class="vehicle-card">
+          <input type="radio" formControlName="vehicleType" value="LUXURY">
+          <span class="title">Luxury</span>
+          <span class="desc">Premium experience</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="extras-section">
+      <h3>Additional options</h3>
+
+      <label class="checkbox-option">
+        <input type="checkbox" formControlName="babyTransport">
+        👶 Baby seat
+      </label>
+
+      <label class="checkbox-option">
+        <input type="checkbox" formControlName="petTransport">
+        🐶 Pet friendly
+      </label>
+
+      <label class="passengers-option">
+        👥 Passengers:
+        <input
+          type="number"
+          min="1"
+          max="8"
+          formControlName="passengers">
+      </label>
+    </div>
+
     <div class="button-group">
       <button
         type="button"
@@ -94,7 +136,6 @@
       </button>
     </div>
 
-    <!-- SECONDARY ACTIONS -->
     <div class="secondary-button-group">
       <button type="button" class="schedule-btn" (click)="onSchedule()">
         🕒 Schedule
@@ -105,7 +146,6 @@
       </button>
     </div>
 
-    <!-- RIDE INFO -->
     @if (showRideInfo) {
       <div class="ride-info">
         <span class="time">{{ estimatedTime }}</span>
@@ -113,32 +153,24 @@
       </div>
     }
 
-    <!-- FAVORITES PANEL -->
     @if (showFavorites) {
       <div class="favorites-list">
         <h3>Your Favorite Routes</h3>
 
         @if (favorites().length === 0) {
-          <p class="no-favorites">
-            No favorite routes yet. Save your first route!
-          </p>
+          <p class="no-favorites">No favorite routes yet.</p>
         } @else {
           @for (route of favorites(); track route.id) {
             <div class="favorite-item">
-              <div class="favorite-info">
-                <div class="favorite-route">
-                  {{ route.from }} → {{ route.to }}
-                </div>
+              <div class="favorite-route">
+                {{ route.from }} → {{ route.to }}
               </div>
-
-              <div class="favorite-actions">
-                <button
-                  type="button"
-                  class="use-btn"
-                  (click)="useFavoriteRoute(route)">
-                  Use
-                </button>
-              </div>
+              <button
+                type="button"
+                class="use-btn"
+                (click)="useFavoriteRoute(route)">
+                Use
+              </button>
             </div>
           }
         }
