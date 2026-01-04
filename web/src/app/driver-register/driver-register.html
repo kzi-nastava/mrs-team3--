@@ -1,0 +1,95 @@
+<div class="left-scroll">
+  <div class="content-wrapper">
+    <div class="card-wrapper">
+
+      <p-card>
+
+        <ng-template pTemplate="header">
+          <div class="text-center mb-4">
+            <div class="text-900 text-3xl font-medium mb-2">
+              Register Driver
+            </div>
+          </div>
+        </ng-template>
+
+        <form [formGroup]="form" (ngSubmit)="submit()">
+          <div class="grid-2 gap-lg">
+
+            <div class="flex flex-column gap-3">
+              <div class="flex flex-column gap-1">
+                <label>Name</label>
+                <input pInputText type="text" formControlName="firstName" />
+              </div>
+
+              <div class="flex flex-column gap-1">
+                <label>Surname</label>
+                <input pInputText type="text" formControlName="lastName" />
+              </div>
+
+              <div class="flex flex-column gap-1">
+                <label>Username</label>
+                <input pInputText type="text" formControlName="username" />
+              </div>
+
+              <div class="flex flex-column gap-1">
+                <label>Email</label>
+                <input pInputText type="email" formControlName="email" />
+              </div>
+
+              <div class="flex flex-column gap-1">
+                <label>Phone number</label>
+                <input pInputText type="text" formControlName="phone" />
+              </div>
+            </div>
+
+            <div class="flex flex-column gap-3">
+              <div class="flex flex-column gap-1">
+                <label>Vehicle model</label>
+                <input pInputText type="text" formControlName="vehicleModel" />
+              </div>
+
+              <div class="flex flex-column gap-1">
+                <label>Vehicle brand</label>
+                <input pInputText type="text" formControlName="vehicleBrand" />
+              </div>
+
+              <div class="flex flex-column gap-1">
+                <label>Year of manufacture</label>
+                <input pInputText type="number" formControlName="year" />
+              </div>
+
+              <div class="flex flex-column gap-1">
+                <label>Vehicle color</label>
+                <input pInputText type="text" formControlName="color" />
+              </div>
+
+              <div class="flex flex-column gap-1">
+                <label>License plate number</label>
+                <input pInputText type="text" formControlName="plate" />
+              </div>
+
+              <div class="flex flex-column gap-1">
+                <label>Number of seats</label>
+                <input pInputText type="number" formControlName="seats" />
+              </div>
+            </div>
+
+          </div>
+
+          <div class="footer-space">
+            <p-button
+              [label]="submitting ? 'Registering…' : 'Register'"
+              class="w-full"
+              styleClass="w-full"
+              size="large"
+              type="submit"
+              [disabled]="form.invalid || submitting"
+            ></p-button>
+          </div>
+        </form>
+
+      </p-card>
+
+    </div>
+  </div>
+</div>

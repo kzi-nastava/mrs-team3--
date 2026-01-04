@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
-import { CommonModule, NgIf} from '@angular/common';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-sidebar',
@@ -11,10 +11,20 @@ import { CommonModule, NgIf} from '@angular/common';
 })
 export class SidebarComponent {
 
-  // HARD-CODED for now (easy to replace later)
   role: 'DRIVER' | 'ADMIN' | 'GUEST' | 'REGISTERED' = 'DRIVER';
-  // role = authService.getRole();
+  // kasnije: role = authService.getRole();
+
   constructor(private router: Router) {}
+
+
+  get isAdmin(): boolean {
+    return this.role === 'ADMIN';
+  }
+
+  get isNotGuest(): boolean {
+    return this.role !== 'GUEST';
+  }
+
 
   goHome() {
     this.router.navigateByUrl('/');
@@ -25,7 +35,6 @@ export class SidebarComponent {
   }
 
   goMessages() {
-    // this.router.navigateByUrl('/messages');
     alert('Messages - to be implemented');
   }
 
@@ -35,5 +44,9 @@ export class SidebarComponent {
 
   goLogin() {
     this.router.navigateByUrl('/login');
+  }
+
+  goDriverRegister() {
+    this.router.navigate(['/driver-register']);
   }
 }
