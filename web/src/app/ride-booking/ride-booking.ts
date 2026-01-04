@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { RideBookingService, Location } from '../services/ride-booking.service';
 import { Subject, takeUntil } from 'rxjs';
@@ -14,15 +14,16 @@ interface Stop {
 @Component({
   selector: 'app-ride-booking',
   standalone: true,
-  imports: [FormsModule, CommonModule],
+  imports: [ReactiveFormsModule, CommonModule],
   templateUrl: './ride-booking.html',
   styleUrl: './ride-booking.css'
 })
 export class RideBookingComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   
-  pickupLocation: string = '';
-  destination: string = '';
+  // Reactive Form
+  rideForm!: FormGroup;
+  
   stops: Stop[] = [];
   
   pickupSuggestions: any[] = [];
@@ -40,7 +41,20 @@ export class RideBookingComponent implements OnInit, OnDestroy {
   private stopIdCounter = 0;
   private searchTimeout: any = null;
 
-  constructor(private rideBookingService: RideBookingService) {}
+  constructor(
+    private fb: FormBuilder,
+    private rideBookingService: RideBookingService
+  ) {
+    this.initForm();
+  }
+
+  // Inicijalizacija forme
+  initForm(): void {
+    this.rideForm = this.fb.group({
+      pickupLocation: ['', Validators.required],
+      destination: ['', Validators.required]
+    });
+  }
 
   ngOnInit(): void {
     // Listen for ride booking data changes from service
@@ -48,10 +62,14 @@ export class RideBookingComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(data => {
         if (data.pickup) {
-          this.pickupLocation = data.pickup.name;
+          this.rideForm.patchValue({
+            pickupLocation: data.pickup.name
+          });
         }
         if (data.destination) {
-          this.destination = data.destination.name;
+          this.rideForm.patchValue({
+            destination: data.destination.name
+          });
         }
         // Update stops from service
         if (data.stops.length > this.stops.length) {
@@ -76,6 +94,15 @@ export class RideBookingComponent implements OnInit, OnDestroy {
         // Check and update ride info display automatically
         this.checkAndUpdateRideInfo(data);
       });
+
+    // Subscribe to form value changes for autocomplete
+    this.rideForm.get('pickupLocation')?.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.onPickupInputChange());
+
+    this.rideForm.get('destination')?.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.onDestinationInputChange());
   }
 
   ngOnDestroy(): void {
@@ -95,7 +122,6 @@ export class RideBookingComponent implements OnInit, OnDestroy {
 
   //Mock calculation of time and price estimates
   private calculateEstimate(data: any): void {
-
     const baseTime = 5; 
     const timePerStop = 3; 
     const totalTime = baseTime + (data.stops.length * timePerStop);
@@ -114,9 +140,11 @@ export class RideBookingComponent implements OnInit, OnDestroy {
       clearTimeout(this.searchTimeout);
     }
     
-    if (this.pickupLocation.length > 2) {
+    const pickupValue = this.rideForm.get('pickupLocation')?.value || '';
+    
+    if (pickupValue.length > 2) {
       this.searchTimeout = setTimeout(() => {
-        this.searchLocation(this.pickupLocation, 'pickup');
+        this.searchLocation(pickupValue, 'pickup');
       }, 500);
     } else {
       this.showPickupSuggestions = false;
@@ -124,7 +152,9 @@ export class RideBookingComponent implements OnInit, OnDestroy {
   }
 
   selectPickupSuggestion(suggestion: any): void {
-    this.pickupLocation = suggestion.display_name;
+    this.rideForm.patchValue({
+      pickupLocation: suggestion.display_name
+    });
     this.showPickupSuggestions = false;
     
     const location: Location = {
@@ -142,9 +172,11 @@ export class RideBookingComponent implements OnInit, OnDestroy {
       clearTimeout(this.searchTimeout);
     }
     
-    if (this.destination.length > 2) {
+    const destinationValue = this.rideForm.get('destination')?.value || '';
+    
+    if (destinationValue.length > 2) {
       this.searchTimeout = setTimeout(() => {
-        this.searchLocation(this.destination, 'destination');
+        this.searchLocation(destinationValue, 'destination');
       }, 500);
     } else {
       this.showDestinationSuggestions = false;
@@ -152,7 +184,9 @@ export class RideBookingComponent implements OnInit, OnDestroy {
   }
 
   selectDestinationSuggestion(suggestion: any): void {
-    this.destination = suggestion.display_name;
+    this.rideForm.patchValue({
+      destination: suggestion.display_name
+    });
     this.showDestinationSuggestions = false;
     
     const location: Location = {
@@ -165,13 +199,16 @@ export class RideBookingComponent implements OnInit, OnDestroy {
   }
 
   // Stop autocomplete
-  onStopInputChange(stopId: number): void {
+  onStopInputChange(stopId: number, event: Event): void {
     if (this.searchTimeout) {
       clearTimeout(this.searchTimeout);
     }
     
     const stop = this.stops.find(s => s.id === stopId);
     if (!stop) return;
+    
+    const input = event.target as HTMLInputElement;
+    stop.location = input.value;
     
     if (stop.location.length > 2) {
       this.searchTimeout = setTimeout(() => {
@@ -243,6 +280,12 @@ export class RideBookingComponent implements OnInit, OnDestroy {
   }
 
   onBookRide(): void {
+    if (this.rideForm.invalid) {
+      this.rideForm.markAllAsTouched();
+      alert('Please select pickup and destination locations!');
+      return;
+    }
+
     const rideData = this.rideBookingService.getRideBookingData();
     
     if (rideData.pickup && rideData.destination) {
@@ -254,8 +297,7 @@ export class RideBookingComponent implements OnInit, OnDestroy {
   }
 
   clearRoute(): void {
-    this.pickupLocation = '';
-    this.destination = '';
+    this.rideForm.reset();
     this.stops = [];
     this.showPickupSuggestions = false;
     this.showDestinationSuggestions = false;
@@ -292,10 +334,11 @@ export class RideBookingComponent implements OnInit, OnDestroy {
   }
 
   useFavoriteRoute(route: any): void {
-    this.pickupLocation = route.pickup;
-    this.destination = route.destination;
+    this.rideForm.patchValue({
+      pickupLocation: route.pickup,
+      destination: route.destination
+    });
     
-    // Set locations in service mock for now
     console.log('Using favorite route:', route);
     this.showFavorites = false;
   }
