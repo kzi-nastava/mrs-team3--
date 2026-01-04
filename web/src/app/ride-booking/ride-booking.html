@@ -1,7 +1,7 @@
 <div class="booking-section">
   <h1>Let's ride!</h1>
 
-  <div class="booking-form">
+  <form [formGroup]="rideForm" class="booking-form">
     <div class="input-wrapper">
       <div class="input-group">
         <div class="input-icon">⚫</div>
@@ -9,8 +9,7 @@
           type="text"
           placeholder="Enter pickup location"
           class="location-input"
-          [(ngModel)]="pickupLocation"
-          (input)="onPickupInputChange()">
+          formControlName="pickupLocation">
       </div>
 
       @if (showPickupSuggestions && pickupSuggestions.length > 0) {
@@ -24,7 +23,7 @@
       }
     </div>
 
-    <button class="add-stop-btn" (click)="addStop()">
+    <button type="button" class="add-stop-btn" (click)="addStop()">
       <span class="plus-icon">+</span>
       Add stop
     </button>
@@ -37,9 +36,9 @@
             type="text"
             placeholder="Enter stop location"
             class="location-input"
-            [(ngModel)]="stop.location"
-            (input)="onStopInputChange(stop.id)">
-          <button class="remove-stop-btn" (click)="removeStop(stop.id)">✕</button>
+            [value]="stop.location"
+            (input)="onStopInputChange(stop.id, $event)">
+          <button type="button" class="remove-stop-btn" (click)="removeStop(stop.id)">✕</button>
         </div>
 
         @if (stop.showSuggestions && stop.suggestions.length > 0) {
@@ -61,8 +60,7 @@
           type="text"
           placeholder="Enter destination"
           class="location-input"
-          [(ngModel)]="destination"
-          (input)="onDestinationInputChange()">
+          formControlName="destination">
       </div>
 
       @if (showDestinationSuggestions && destinationSuggestions.length > 0) {
@@ -77,19 +75,19 @@
     </div>
 
     <div class="button-group">
-      <button class="book-ride-btn" (click)="onBookRide()">
+      <button type="button" class="book-ride-btn" (click)="onBookRide()" [disabled]="rideForm.invalid">
         Book a Ride
       </button>
-      <button class="refresh-btn" (click)="clearRoute()">
+      <button type="button" class="refresh-btn" (click)="clearRoute()">
         Reset
       </button>
     </div>
 
     <div class="secondary-button-group">
-      <button class="schedule-btn" (click)="onSchedule()">
+      <button type="button" class="schedule-btn" (click)="onSchedule()">
         🕒 Schedule
       </button>
-      <button class="favorites-btn" (click)="toggleFavorites()">
+      <button type="button" class="favorites-btn" (click)="toggleFavorites()">
         ❤️ Favorites
       </button>
     </div>
@@ -117,13 +115,13 @@
                 </div>
               </div>
               <div class="favorite-actions">
-                <button class="use-btn" (click)="useFavoriteRoute(route)">Use</button>
-                <button class="delete-btn" (click)="deleteFavoriteRoute(route.id)">🗑️</button>
+                <button type="button" class="use-btn" (click)="useFavoriteRoute(route)">Use</button>
+                <button type="button" class="delete-btn" (click)="deleteFavoriteRoute(route.id)">🗑️</button>
               </div>
             </div>
           }
         }
       </div>
     }
-  </div>
+  </form>
 </div>

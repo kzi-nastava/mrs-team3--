@@ -1,22 +1,22 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RideService, Location } from '../services/ride.service';
 import { Subject, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-ride-form',
   standalone: true,
-  imports: [FormsModule],
+  imports: [ReactiveFormsModule],
   templateUrl: './ride-form.html',
   styleUrl: './ride-form.css'
 })
 export class RideFormComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   
-  showRideInfo = false;
+  // Reactive Form
+  rideForm!: FormGroup;
   
-  startLocation: string = '';
-  endLocation: string = '';
+  showRideInfo = false;
   
   startSuggestions: any[] = [];
   endSuggestions: any[] = [];
@@ -25,7 +25,20 @@ export class RideFormComponent implements OnInit, OnDestroy {
   
   private searchTimeout: any = null;
 
-  constructor(private rideService: RideService) {}
+  constructor(
+    private fb: FormBuilder,
+    private rideService: RideService
+  ) {
+    this.initForm();
+  }
+
+  // Inicijalizacija forme
+  initForm(): void {
+    this.rideForm = this.fb.group({
+      startLocation: ['', Validators.required],
+      endLocation: ['', Validators.required]
+    });
+  }
 
   ngOnInit(): void {
     // Osluškuj promene iz servisa (kada se klikne na mapu)
@@ -33,15 +46,28 @@ export class RideFormComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(data => {
         if (data.start) {
-          this.startLocation = data.start.name;
+          this.rideForm.patchValue({
+            startLocation: data.start.name
+          });
         }
         if (data.end) {
-          this.endLocation = data.end.name;
+          this.rideForm.patchValue({
+            endLocation: data.end.name
+          });
         }
         
         // Prikaži ride info ako su obe lokacije postavljene
         this.showRideInfo = data.start !== null && data.end !== null;
       });
+
+    // Subscribe to form value changes for autocomplete
+    this.rideForm.get('startLocation')?.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.onStartInputChange());
+
+    this.rideForm.get('endLocation')?.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.onEndInputChange());
   }
 
   ngOnDestroy(): void {
@@ -54,9 +80,11 @@ export class RideFormComponent implements OnInit, OnDestroy {
       clearTimeout(this.searchTimeout);
     }
     
-    if (this.startLocation.length > 2) {
+    const startValue = this.rideForm.get('startLocation')?.value || '';
+    
+    if (startValue.length > 2) {
       this.searchTimeout = setTimeout(() => {
-        this.searchLocation(this.startLocation, 'start');
+        this.searchLocation(startValue, 'start');
       }, 500);
     } else {
       this.showStartSuggestions = false;
@@ -68,9 +96,11 @@ export class RideFormComponent implements OnInit, OnDestroy {
       clearTimeout(this.searchTimeout);
     }
     
-    if (this.endLocation.length > 2) {
+    const endValue = this.rideForm.get('endLocation')?.value || '';
+    
+    if (endValue.length > 2) {
       this.searchTimeout = setTimeout(() => {
-        this.searchLocation(this.endLocation, 'end');
+        this.searchLocation(endValue, 'end');
       }, 500);
     } else {
       this.showEndSuggestions = false;
@@ -96,7 +126,9 @@ export class RideFormComponent implements OnInit, OnDestroy {
   }
 
   selectStartSuggestion(suggestion: any): void {
-    this.startLocation = suggestion.display_name;
+    this.rideForm.patchValue({
+      startLocation: suggestion.display_name
+    });
     this.showStartSuggestions = false;
     
     const location: Location = {
@@ -109,7 +141,9 @@ export class RideFormComponent implements OnInit, OnDestroy {
   }
 
   selectEndSuggestion(suggestion: any): void {
-    this.endLocation = suggestion.display_name;
+    this.rideForm.patchValue({
+      endLocation: suggestion.display_name
+    });
     this.showEndSuggestions = false;
     
     const location: Location = {
@@ -122,6 +156,12 @@ export class RideFormComponent implements OnInit, OnDestroy {
   }
 
   onCalculate(): void {
+    if (this.rideForm.invalid) {
+      this.rideForm.markAllAsTouched();
+      alert('Please select start and end locations!');
+      return;
+    }
+
     const rideData = this.rideService.getRideData();
     
     if (rideData.start && rideData.end) {
@@ -133,8 +173,7 @@ export class RideFormComponent implements OnInit, OnDestroy {
   }
 
   clearRoute(): void {
-    this.startLocation = '';
-    this.endLocation = '';
+    this.rideForm.reset();
     this.showRideInfo = false;
     this.rideService.clearRoute();
   }
