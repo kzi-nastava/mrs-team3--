@@ -1,4 +1,4 @@
-x<div class="booking-section">
+<div class="booking-section">
   <h1>Let's ride!</h1>
 
   <div class="booking-form">
@@ -24,13 +24,11 @@ x<div class="booking-section">
       }
     </div>
 
-    <!-- Add stop button -->
     <button class="add-stop-btn" (click)="addStop()">
       <span class="plus-icon">+</span>
       Add stop
     </button>
 
-    <!-- Dynamic stops -->
     @for (stop of stops; track trackByStopId($index, stop)) {
       <div class="input-wrapper">
         <div class="input-group stop-group">
@@ -56,7 +54,6 @@ x<div class="booking-section">
       </div>
     }
 
-    <!-- Destination -->
     <div class="input-wrapper">
       <div class="input-group">
         <div class="input-icon">⬛</div>
@@ -79,7 +76,6 @@ x<div class="booking-section">
       }
     </div>
 
-    <!-- Book ride and refresh button row -->
     <div class="button-group">
       <button class="book-ride-btn" (click)="onBookRide()">
         Book a Ride
@@ -89,7 +85,6 @@ x<div class="booking-section">
       </button>
     </div>
 
-    <!-- Schedule and favorites row -->
     <div class="secondary-button-group">
       <button class="schedule-btn" (click)="onSchedule()">
         🕒 Schedule
@@ -107,7 +102,6 @@ x<div class="booking-section">
       </div>
     }
 
-    <!-- Favorites list - shows only on click -->
     @if (showFavorites) {
       <div class="favorites-list">
         <h3>Your Favorite Routes</h3>
