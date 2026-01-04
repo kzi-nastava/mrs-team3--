@@ -16,168 +16,169 @@
     }
 
     <!-- Profile Image -->
-    <!-- Profile Image -->
-  <div class="image-section">
-    <div class="image-wrapper">
-      @if (imagePreview && imagePreview !== '') {
-        <img [src]="imagePreview" alt="Profile" class="profile-image">
-      } @else {
-        <div class="profile-image-placeholder">
-          <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="8" r="4" stroke="#9b7fc9" stroke-width="1.5"/>
-            <path d="M6 20C6 16.6863 8.68629 14 12 14C15.3137 14 18 16.6863 18 20" stroke="#9b7fc9" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
-        </div>
-      }
-      @if (editMode) {
-        <div class="image-actions">
-          <label for="file-upload" class="upload-btn">
-            📷 Upload Photo
-          </label>
-          <input id="file-upload" type="file" accept="image/*" (change)="onImageSelected($event)" style="display: none;">
-          <button class="remove-image-btn" (click)="removeImage()">🗑️ Remove</button>
-        </div>
-      }
+    <div class="image-section">
+      <div class="image-wrapper">
+        @if (imagePreview && imagePreview !== '') {
+          <img [src]="imagePreview" alt="Profile" class="profile-image">
+        } @else {
+          <div class="profile-image-placeholder">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="8" r="4" stroke="#9b7fc9" stroke-width="1.5"/>
+              <path d="M6 20C6 16.6863 8.68629 14 12 14C15.3137 14 18 16.6863 18 20" stroke="#9b7fc9" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+        }
+        @if (editMode) {
+          <div class="image-actions">
+            <label for="file-upload" class="upload-btn">
+              📷 Upload Photo
+            </label>
+            <input id="file-upload" type="file" accept="image/*" (change)="onImageSelected($event)" style="display: none;">
+            <button class="remove-image-btn" (click)="removeImage()">🗑️ Remove</button>
+          </div>
+        }
+      </div>
     </div>
-  </div>
 
     <!-- Basic Information -->
-    <div class="section">
-      <h2 class="section-header">Basic Information</h2>
-      
-      <div class="grid-2">
-        <div class="form-group">
-          <label class="form-label">First Name</label>
-          @if (editMode) {
-            <input type="text" [(ngModel)]="editedUser.firstName" class="form-input">
-          } @else {
-            <p class="form-value">{{ user.firstName }}</p>
-          }
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Last Name</label>
-          @if (editMode) {
-            <input type="text" [(ngModel)]="editedUser.lastName" class="form-input">
-          } @else {
-            <p class="form-value">{{ user.lastName }}</p>
-          }
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Email</label>
-          @if (editMode) {
-            <input type="email" [(ngModel)]="editedUser.email" class="form-input">
-          } @else {
-            <p class="form-value">{{ user.email }}</p>
-          }
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Phone Number</label>
-          @if (editMode) {
-            <input type="tel" [(ngModel)]="editedUser.phoneNumber" class="form-input">
-          } @else {
-            <p class="form-value">{{ user.phoneNumber }}</p>
-          }
-        </div>
-
-        <div class="form-group full-width">
-          <label class="form-label">Address</label>
-          @if (editMode) {
-            <input type="text" [(ngModel)]="editedUser.address" class="form-input">
-          } @else {
-            <p class="form-value">{{ user.address }}</p>
-          }
-        </div>
-      </div>
-    </div>
-
-    <!-- Driver Specific Info - SAMO AKO JE VOZAČ -->
-    @if (user.role === 'driver') {
+    <form [formGroup]="profileForm" (ngSubmit)="saveChanges()">
       <div class="section">
-        <h2 class="section-header">Driver Information</h2>
+        <h2 class="section-header">Basic Information</h2>
         
-        <div class="stat-card">
-          <div class="stat-icon">⏱️</div>
-          <div class="stat-info">
-            <span class="stat-label">Active Hours (24h)</span>
-            <span class="stat-value">{{ user.activeHours }} hours</span>
-          </div>
-        </div>
-
-        <h3 class="section-subheader">Vehicle Information</h3>
         <div class="grid-2">
           <div class="form-group">
-            <label class="form-label">Model</label>
+            <label class="form-label">First Name</label>
             @if (editMode) {
-              <input type="text" [(ngModel)]="editedUser.vehicle!.model" class="form-input">
+              <input type="text" formControlName="firstName" class="form-input">
             } @else {
-              <p class="form-value">{{ user.vehicle?.model }}</p>
+              <p class="form-value">{{ user.firstName }}</p>
             }
           </div>
 
           <div class="form-group">
-            <label class="form-label">License Plate</label>
+            <label class="form-label">Last Name</label>
             @if (editMode) {
-              <input type="text" [(ngModel)]="editedUser.vehicle!.licensePlate" class="form-input">
+              <input type="text" formControlName="lastName" class="form-input">
             } @else {
-              <p class="form-value">{{ user.vehicle?.licensePlate }}</p>
+              <p class="form-value">{{ user.lastName }}</p>
             }
           </div>
 
           <div class="form-group">
-            <label class="form-label">Number of Seats</label>
+            <label class="form-label">Email</label>
             @if (editMode) {
-              <input type="number" [(ngModel)]="editedUser.vehicle!.seats" class="form-input">
+              <input type="email" formControlName="email" class="form-input">
             } @else {
-              <p class="form-value">{{ user.vehicle?.seats }}</p>
+              <p class="form-value">{{ user.email }}</p>
+            }
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Phone Number</label>
+            @if (editMode) {
+              <input type="tel" formControlName="phoneNumber" class="form-input">
+            } @else {
+              <p class="form-value">{{ user.phoneNumber }}</p>
+            }
+          </div>
+
+          <div class="form-group full-width">
+            <label class="form-label">Address</label>
+            @if (editMode) {
+              <input type="text" formControlName="address" class="form-input">
+            } @else {
+              <p class="form-value">{{ user.address }}</p>
             }
           </div>
         </div>
       </div>
 
-      <!-- Pending Changes List - SAMO ZA VOZAČE -->
-      @if (pendingChanges.length > 0) {
+      <!-- Driver Specific Info - SAMO AKO JE VOZAČ -->
+      @if (user.role === 'driver') {
         <div class="section">
-          <h2 class="section-header">Change Requests</h2>
-          <div class="pending-changes">
-            @for (change of pendingChanges; track change.id) {
-              <div class="change-item">
-                <div class="change-info">
-                  <span class="change-field">{{ change.field }}</span>
-                  <div class="change-values">
-                    <span class="old-value">{{ change.oldValue }}</span>
-                    <span class="arrow">→</span>
-                    <span class="new-value">{{ change.newValue }}</span>
-                  </div>
-                  <span class="change-date">{{ change.requestedAt | date:'short' }}</span>
-                </div>
-                <span class="change-status" [style.color]="getStatusColor(change.status)">
-                  {{ getStatusText(change.status) }}
-                </span>
-              </div>
-            }
+          <h2 class="section-header">Driver Information</h2>
+          
+          <div class="stat-card">
+            <div class="stat-icon">⏱️</div>
+            <div class="stat-info">
+              <span class="stat-label">Active Hours (24h)</span>
+              <span class="stat-value">{{ user.activeHours }} hours</span>
+            </div>
+          </div>
+
+          <h3 class="section-subheader">Vehicle Information</h3>
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label">Model</label>
+              @if (editMode) {
+                <input type="text" formControlName="vehicleModel" class="form-input">
+              } @else {
+                <p class="form-value">{{ user.vehicle?.model }}</p>
+              }
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">License Plate</label>
+              @if (editMode) {
+                <input type="text" formControlName="vehicleLicensePlate" class="form-input">
+              } @else {
+                <p class="form-value">{{ user.vehicle?.licensePlate }}</p>
+              }
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Number of Seats</label>
+              @if (editMode) {
+                <input type="number" formControlName="vehicleSeats" class="form-input">
+              } @else {
+                <p class="form-value">{{ user.vehicle?.seats }}</p>
+              }
+            </div>
           </div>
         </div>
-      }
-    }
 
-    <!-- Action Buttons -->
-    <div class="action-buttons">
-      @if (editMode) {
-        <button class="save-btn" (click)="saveChanges()">
-          @if (user.role === 'driver') {
-            📤 Submit for Approval
-          } @else {
-            💾 Save Changes
-          }
-        </button>
-        <button class="cancel-btn" (click)="toggleEditMode()">❌ Cancel</button>
-      } @else {
-        <button class="password-btn" (click)="openChangePassword()">🔒 Change Password</button>
+        <!-- Pending Changes List - SAMO ZA VOZAČE -->
+        @if (pendingChanges.length > 0) {
+          <div class="section">
+            <h2 class="section-header">Change Requests</h2>
+            <div class="pending-changes">
+              @for (change of pendingChanges; track change.id) {
+                <div class="change-item">
+                  <div class="change-info">
+                    <span class="change-field">{{ change.field }}</span>
+                    <div class="change-values">
+                      <span class="old-value">{{ change.oldValue }}</span>
+                      <span class="arrow">→</span>
+                      <span class="new-value">{{ change.newValue }}</span>
+                    </div>
+                    <span class="change-date">{{ change.requestedAt | date:'short' }}</span>
+                  </div>
+                  <span class="change-status" [style.color]="getStatusColor(change.status)">
+                    {{ getStatusText(change.status) }}
+                  </span>
+                </div>
+              }
+            </div>
+          </div>
+        }
       }
-    </div>
+
+      <!-- Action Buttons -->
+      <div class="action-buttons">
+        @if (editMode) {
+          <button type="submit" class="save-btn" [disabled]="profileForm.invalid">
+            @if (user.role === 'driver') {
+              📤 Submit for Approval
+            } @else {
+              💾 Save Changes
+            }
+          </button>
+          <button type="button" class="cancel-btn" (click)="toggleEditMode()">❌ Cancel</button>
+        } @else {
+          <button type="button" class="password-btn" (click)="openChangePassword()">🔒 Change Password</button>
+        }
+      </div>
+    </form>
   </div>
 </div>
 
@@ -190,27 +191,29 @@
         <button class="modal-close" (click)="closePasswordModal()">✕</button>
       </div>
       
-      <div class="modal-body">
-        <div class="form-group">
-          <label class="form-label">Old Password</label>
-          <input type="password" [(ngModel)]="oldPassword" class="form-input" placeholder="Enter old password">
+      <form [formGroup]="passwordForm" (ngSubmit)="changePassword()">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Old Password</label>
+            <input type="password" formControlName="oldPassword" class="form-input" placeholder="Enter old password">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">New Password</label>
+            <input type="password" formControlName="newPassword" class="form-input" placeholder="Enter new password">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Confirm New Password</label>
+            <input type="password" formControlName="confirmPassword" class="form-input" placeholder="Confirm new password">
+          </div>
         </div>
         
-        <div class="form-group">
-          <label class="form-label">New Password</label>
-          <input type="password" [(ngModel)]="newPassword" class="form-input" placeholder="Enter new password">
+        <div class="modal-footer">
+          <button type="submit" class="save-btn" [disabled]="passwordForm.invalid">💾 Change Password</button>
+          <button type="button" class="cancel-btn" (click)="closePasswordModal()">Cancel</button>
         </div>
-        
-        <div class="form-group">
-          <label class="form-label">Confirm New Password</label>
-          <input type="password" [(ngModel)]="confirmPassword" class="form-input" placeholder="Confirm new password">
-        </div>
-      </div>
-      
-      <div class="modal-footer">
-        <button class="save-btn" (click)="changePassword()">💾 Change Password</button>
-        <button class="cancel-btn" (click)="closePasswordModal()">Cancel</button>
-      </div>
+      </form>
     </div>
   </div>
 }
