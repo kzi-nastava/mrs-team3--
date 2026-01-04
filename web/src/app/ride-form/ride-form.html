@@ -1,14 +1,13 @@
 <div class="content-section">
   <h1>Let's ride!</h1>
   
-  <div class="form">
+  <form [formGroup]="rideForm" class="form">
     <!-- Start location input -->
     <div class="input-wrapper">
       <input type="text" 
              placeholder="Choose start location" 
              class="input-field" 
-             [(ngModel)]="startLocation" 
-             (input)="onStartInputChange()">
+             formControlName="startLocation">
       
       @if (showStartSuggestions && startSuggestions.length > 0) {
         <div class="suggestions">
@@ -26,8 +25,7 @@
       <input type="text" 
              placeholder="Choose end location" 
              class="input-field" 
-             [(ngModel)]="endLocation" 
-             (input)="onEndInputChange()">
+             formControlName="endLocation">
       
       @if (showEndSuggestions && endSuggestions.length > 0) {
         <div class="suggestions">
@@ -42,8 +40,8 @@
 
     <!-- Buttons -->
     <div class="button-group">
-      <button class="calculate-btn" (click)="onCalculate()">Calculate</button>
-      <button class="refresh-btn" (click)="clearRoute()">Reset</button>
+      <button type="button" class="calculate-btn" (click)="onCalculate()" [disabled]="rideForm.invalid">Calculate</button>
+      <button type="button" class="refresh-btn" (click)="clearRoute()">Reset</button>
     </div>
 
     <!-- Ride info -->
@@ -53,5 +51,5 @@
         <span class="price">520 din</span>
       </div>
     }
-  </div>
+  </form>
 </div>
