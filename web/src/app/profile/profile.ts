@@ -1,7 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-
 
 // Podaci o korisniku u odnosu na ulogu
 interface User {
@@ -36,7 +35,7 @@ interface ChangeRequest {
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [FormsModule, CommonModule],
+  imports: [ReactiveFormsModule, CommonModule],
   templateUrl: './profile.html',
   styleUrl: './profile.css'
 })
@@ -54,7 +53,7 @@ export class ProfileComponent implements OnInit {
     email: 'marko@example.com',
     phoneNumber: '+381 64 123 4567',
     address: 'Bulevar oslobođenja 46, Novi Sad',
-    role: 'admin',
+    role: 'driver',
     profileImage: '',
     activeHours: 18.5,
     vehicle: {
@@ -64,15 +63,15 @@ export class ProfileComponent implements OnInit {
     }
   };
 
-  // Forma za edit
+  // Reactive Forms
+  profileForm!: FormGroup;
+  passwordForm!: FormGroup;
+
+  // Edit mode
   editMode = false;
-  editedUser: User = { ...this.user };
 
   // Promena lozinke
   showPasswordModal: boolean = false;
-  oldPassword = '';
-  newPassword = '';
-  confirmPassword = '';
 
   // Zahtevi za promenu (za vozače)
   pendingChanges: ChangeRequest[] = [];
@@ -82,6 +81,36 @@ export class ProfileComponent implements OnInit {
   selectedFile: File | null = null;
   imagePreview: string = '';
 
+  constructor(private fb: FormBuilder) {
+    this.initForms();
+  }
+
+  // Inicijalizacija formi
+  initForms(): void {
+    // Profil forma
+    this.profileForm = this.fb.group({
+      firstName: ['', Validators.required],
+      lastName: ['', Validators.required],
+      email: ['', [Validators.required, Validators.email]],
+      phoneNumber: ['', Validators.required],
+      address: ['', Validators.required]
+    });
+
+    // Ako je vozač, dodaj vehicle polja
+    if (this.user.role === 'driver') {
+      this.profileForm.addControl('vehicleModel', this.fb.control('', Validators.required));
+      this.profileForm.addControl('vehicleLicensePlate', this.fb.control('', Validators.required));
+      this.profileForm.addControl('vehicleSeats', this.fb.control('', Validators.required));
+    }
+
+    // Password forma
+    this.passwordForm = this.fb.group({
+      oldPassword: ['', Validators.required],
+      newPassword: ['', [Validators.required, Validators.minLength(8)]],
+      confirmPassword: ['', Validators.required]
+    });
+  }
+
   // Inicijalizacija podataka
   ngOnInit(): void {
     this.loadUserData();
@@ -90,7 +119,23 @@ export class ProfileComponent implements OnInit {
 
   loadUserData(): void {
     // Mock - u realnom slucaju bi se povukli podaci sa servera
-    this.editedUser = { ...this.user };
+    // Popuni formu sa podacima korisnika
+    this.profileForm.patchValue({
+      firstName: this.user.firstName,
+      lastName: this.user.lastName,
+      email: this.user.email,
+      phoneNumber: this.user.phoneNumber,
+      address: this.user.address
+    });
+
+    if (this.user.role === 'driver' && this.user.vehicle) {
+      this.profileForm.patchValue({
+        vehicleModel: this.user.vehicle.model,
+        vehicleLicensePlate: this.user.vehicle.licensePlate,
+        vehicleSeats: this.user.vehicle.seats
+      });
+    }
+
     this.imagePreview = this.user.profileImage;
   }
 
@@ -114,8 +159,7 @@ export class ProfileComponent implements OnInit {
   toggleEditMode(): void {
     if (this.editMode) {
       // Cancel - vraca se na originalne podatke
-      this.editedUser = { ...this.user };
-      this.imagePreview = this.user.profileImage;
+      this.loadUserData();
     }
     this.editMode = !this.editMode;
   }
@@ -138,27 +182,39 @@ export class ProfileComponent implements OnInit {
   removeImage(): void {
     this.selectedFile = null;
     this.imagePreview = '';
-    this.editedUser.profileImage = '';
   }
 
   saveChanges(): void {
+    if (this.profileForm.invalid) {
+      this.profileForm.markAllAsTouched();
+      return;
+    }
+
+    const formData = this.profileForm.value;
+
     if (this.user.role === 'driver') {
       // driver saljes zahteve za promenu
-      this.submitChangeRequest();
+      this.submitChangeRequest(formData);
     } else {
       // passenger/admin cuvaju odmah izmene
-      this.user = { ...this.editedUser };
+      this.user.firstName = formData.firstName;
+      this.user.lastName = formData.lastName;
+      this.user.email = formData.email;
+      this.user.phoneNumber = formData.phoneNumber;
+      this.user.address = formData.address;
+
       if (this.imagePreview !== this.user.profileImage) {
         this.user.profileImage = this.imagePreview;
       }
+
       this.editMode = false;
       alert('Profile updated successfully!');
     }
   }
 
-  submitChangeRequest(): void {
+  submitChangeRequest(formData: any): void {
     // Mock up - u realnom slucaju bi se poslao zahtev na server
-    console.log('Submitting change request for approval...');
+    console.log('Submitting change request for approval...', formData);
     this.hasPendingChanges = true;
     this.editMode = false;
     alert('Change request submitted! Waiting for admin approval.');
@@ -167,29 +223,26 @@ export class ProfileComponent implements OnInit {
   // Promena lozinke
   openChangePassword(): void {
     this.showPasswordModal = true;
+    this.passwordForm.reset();
   }
 
   // Zatvaranje modula za promenu lozinke
   closePasswordModal(): void {
     this.showPasswordModal = false;
-    this.oldPassword = '';
-    this.newPassword = '';
-    this.confirmPassword = '';
+    this.passwordForm.reset();
   }
 
   changePassword(): void {
-    if (!this.oldPassword || !this.newPassword || !this.confirmPassword) {
-      alert('Please fill in all fields!');
+    if (this.passwordForm.invalid) {
+      this.passwordForm.markAllAsTouched();
+      alert('Please fill in all fields correctly!');
       return;
     }
 
-    if (this.newPassword !== this.confirmPassword) {
+    const { oldPassword, newPassword, confirmPassword } = this.passwordForm.value;
+
+    if (newPassword !== confirmPassword) {
       alert('New passwords do not match!');
-      return;
-    }
-
-    if (this.newPassword.length < 8) {
-      alert('Password must be at least 8 characters long!');
       return;
     }
 
