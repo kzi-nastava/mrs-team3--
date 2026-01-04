@@ -89,6 +89,8 @@
                 <span class="sort-indicator">{{ sortAsc() ? '▲' : '▼' }}</span>
               }
             </th>
+
+            <th>Favorite</th>
           </tr>
         </thead>
 
@@ -104,6 +106,16 @@
               <td>{{ ride.price }}</td>
               <td>{{ ride.cancelled }}</td>
               <td>{{ ride.panic }}</td>
+
+              <td>
+                <button
+                  type="button"
+                  class="favorite-btn"
+                  [class.is-favorite]="ride.favorite"
+                  (click)="toggleFavorite(ride)">
+                  {{ ride.favorite ? '❤️ Remove' : '⭐ Add' }}
+                </button>
+              </td>
             </tr>
           }
         </tbody>
