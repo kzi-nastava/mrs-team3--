@@ -1,9 +1,18 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { RideBookingService, Location } from '../services/ride-booking.service';
-import { FavoriteRoutesService, FavoriteRoute } from '../services/favorite-routes.service';
 import { Subject, takeUntil } from 'rxjs';
+
+import {
+  RideBookingService,
+  Location,
+  VehicleType
+} from '../services/ride-booking.service';
+
+import {
+  FavoriteRoutesService,
+  FavoriteRoute
+} from '../services/favorite-routes.service';
 
 interface Stop {
   id: number;
@@ -36,6 +45,7 @@ export class RideBookingComponent implements OnInit, OnDestroy {
   estimatedTime = '';
   estimatedPrice = '';
 
+  // ⭐ Favorites
   showFavorites = false;
   favorites!: ReturnType<FavoriteRoutesService['getFavorites']>;
 
@@ -50,47 +60,43 @@ export class RideBookingComponent implements OnInit, OnDestroy {
     this.initForm();
   }
 
-
-  initForm(): void {
-    this.rideForm = this.fb.group({
-      pickupLocation: ['', Validators.required],
-      destination: ['', Validators.required]
-    });
-  }
+  // =========================
+  // INIT
+  // =========================
 
   ngOnInit(): void {
     this.favorites = this.favoriteService.getFavorites();
 
+    // Sync data from service → form
     this.rideBookingService.rideBookingData$
       .pipe(takeUntil(this.destroy$))
       .subscribe(data => {
         if (data.pickup) {
-          this.rideForm.patchValue({ pickupLocation: data.pickup.name });
+          this.rideForm.patchValue({ pickupLocation: data.pickup.name }, { emitEvent: false });
         }
         if (data.destination) {
-          this.rideForm.patchValue({ destination: data.destination.name });
+          this.rideForm.patchValue({ destination: data.destination.name }, { emitEvent: false });
         }
 
-        // sync stops
-        if (data.stops.length > this.stops.length) {
-          const diff = data.stops.length - this.stops.length;
-          for (let i = 0; i < diff; i++) {
-            this.stops.push({
-              id: this.stopIdCounter++,
-              location: '',
-              suggestions: [],
-              showSuggestions: false
-            });
-          }
-        }
+        this.rideForm.patchValue({
+          vehicleType: data.vehicleType,
+          babyTransport: data.babyTransport,
+          petTransport: data.petTransport,
+          passengers: data.passengers
+        }, { emitEvent: false });
 
-        data.stops.forEach((stop, index) => {
-          if (this.stops[index]) {
-            this.stops[index].location = stop.name;
-          }
-        });
+        this.syncStops(data.stops);
+        this.updateRideInfo(data);
+      });
 
-        this.checkAndUpdateRideInfo(data);
+    // Sync form → service
+    this.rideForm.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(val => {
+        this.rideBookingService.setVehicleType(val.vehicleType);
+        this.rideBookingService.setBabyTransport(val.babyTransport);
+        this.rideBookingService.setPetTransport(val.petTransport);
+        this.rideBookingService.setPassengers(val.passengers);
       });
 
     this.rideForm.get('pickupLocation')?.valueChanges
@@ -107,6 +113,22 @@ export class RideBookingComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
+  private initForm(): void {
+    this.rideForm = this.fb.group({
+      pickupLocation: ['', Validators.required],
+      destination: ['', Validators.required],
+
+      // ✅ dodatna polja
+      vehicleType: ['STANDARD' as VehicleType, Validators.required],
+      babyTransport: [false],
+      petTransport: [false],
+      passengers: [1, [Validators.required, Validators.min(1), Validators.max(8)]]
+    });
+  }
+
+  // =========================
+  // FAVORITES
+  // =========================
 
   toggleFavorites(): void {
     this.showFavorites = !this.showFavorites;
@@ -135,147 +157,111 @@ export class RideBookingComponent implements OnInit, OnDestroy {
     this.showFavorites = false;
   }
 
-
-  private checkAndUpdateRideInfo(data: any): void {
-    if (data.pickup && data.destination) {
-      this.showRideInfo = true;
-      this.calculateEstimate(data);
-    } else {
-      this.showRideInfo = false;
-    }
-  }
-
-  private calculateEstimate(data: any): void {
-    const baseTime = 5;
-    const timePerStop = 3;
-    const totalTime = baseTime + (data.stops.length * timePerStop);
-
-    const basePricePerKm = 50;
-    const estimatedKm = 5 + (data.stops.length * 2);
-    const totalPrice = Math.round(basePricePerKm * estimatedKm);
-
-    this.estimatedTime = `${totalTime} min`;
-    this.estimatedPrice = `${totalPrice} din`;
-  }
-
+  // =========================
+  // AUTOCOMPLETE (pickup / destination / stops)
+  // =========================
 
   onPickupInputChange(): void {
-    if (this.searchTimeout) clearTimeout(this.searchTimeout);
-
-    const value = this.rideForm.get('pickupLocation')?.value || '';
-    if (value.length > 2) {
-      this.searchTimeout = setTimeout(() => {
-        this.searchLocation(value, 'pickup');
-      }, 500);
-    } else {
-      this.showPickupSuggestions = false;
-    }
-  }
-
-  selectPickupSuggestion(suggestion: any): void {
-    this.rideForm.patchValue({ pickupLocation: suggestion.display_name });
-    this.showPickupSuggestions = false;
-
-    const location: Location = {
-      lat: parseFloat(suggestion.lat),
-      lng: parseFloat(suggestion.lon),
-      name: suggestion.display_name
-    };
-
-    this.rideBookingService.setPickupLocation(location);
+    this.debounceSearch(this.rideForm.get('pickupLocation')?.value, 'pickup');
   }
 
   onDestinationInputChange(): void {
-    if (this.searchTimeout) clearTimeout(this.searchTimeout);
-
-    const value = this.rideForm.get('destination')?.value || '';
-    if (value.length > 2) {
-      this.searchTimeout = setTimeout(() => {
-        this.searchLocation(value, 'destination');
-      }, 500);
-    } else {
-      this.showDestinationSuggestions = false;
-    }
-  }
-
-  selectDestinationSuggestion(suggestion: any): void {
-    this.rideForm.patchValue({ destination: suggestion.display_name });
-    this.showDestinationSuggestions = false;
-
-    const location: Location = {
-      lat: parseFloat(suggestion.lat),
-      lng: parseFloat(suggestion.lon),
-      name: suggestion.display_name
-    };
-
-    this.rideBookingService.setDestinationLocation(location);
+    this.debounceSearch(this.rideForm.get('destination')?.value, 'destination');
   }
 
   onStopInputChange(stopId: number, event: Event): void {
-    if (this.searchTimeout) clearTimeout(this.searchTimeout);
-
     const stop = this.stops.find(s => s.id === stopId);
     if (!stop) return;
 
-    const input = event.target as HTMLInputElement;
-    stop.location = input.value;
+    stop.location = (event.target as HTMLInputElement).value;
+    this.debounceSearch(stop.location, 'stop', stopId);
+  }
 
-    if (stop.location.length > 2) {
-      this.searchTimeout = setTimeout(() => {
-        this.searchLocation(stop.location, 'stop', stopId);
-      }, 500);
-    } else {
-      stop.showSuggestions = false;
+  private debounceSearch(value: string, type: 'pickup' | 'destination' | 'stop', stopId?: number): void {
+    if (this.searchTimeout) clearTimeout(this.searchTimeout);
+
+    if (!value || value.length < 3) {
+      if (type === 'pickup') this.showPickupSuggestions = false;
+      if (type === 'destination') this.showDestinationSuggestions = false;
+      if (type === 'stop') {
+        const stop = this.stops.find(s => s.id === stopId);
+        if (stop) stop.showSuggestions = false;
+      }
+      return;
     }
+
+    this.searchTimeout = setTimeout(() => {
+      this.searchLocation(value, type, stopId);
+    }, 500);
+  }
+
+  selectPickupSuggestion(suggestion: any): void {
+    this.selectLocation(suggestion, 'pickup');
+  }
+
+  selectDestinationSuggestion(suggestion: any): void {
+    this.selectLocation(suggestion, 'destination');
   }
 
   selectStopSuggestion(stopId: number, suggestion: any): void {
-    const stop = this.stops.find(s => s.id === stopId);
-    if (!stop) return;
-
-    stop.location = suggestion.display_name;
-    stop.showSuggestions = false;
-
     const location: Location = {
-      lat: parseFloat(suggestion.lat),
-      lng: parseFloat(suggestion.lon),
+      lat: +suggestion.lat,
+      lng: +suggestion.lon,
       name: suggestion.display_name
     };
 
     const index = this.stops.findIndex(s => s.id === stopId);
-    this.rideBookingService.updateStopLocation(index, location);
+    if (index >= 0) {
+      this.rideBookingService.updateStopLocation(index, location);
+      this.stops[index].location = suggestion.display_name;
+      this.stops[index].showSuggestions = false;
+    }
   }
 
-  private searchLocation(
-    query: string,
-    type: 'pickup' | 'destination' | 'stop',
-    stopId?: number
-  ): void {
-    const searchQuery = `${query}, Novi Sad, Serbia`;
+  private selectLocation(suggestion: any, type: 'pickup' | 'destination'): void {
+    const location: Location = {
+      lat: +suggestion.lat,
+      lng: +suggestion.lon,
+      name: suggestion.display_name
+    };
+
+    if (type === 'pickup') {
+      this.rideForm.patchValue({ pickupLocation: location.name });
+      this.showPickupSuggestions = false;
+      this.rideBookingService.setPickupLocation(location);
+    } else {
+      this.rideForm.patchValue({ destination: location.name });
+      this.showDestinationSuggestions = false;
+      this.rideBookingService.setDestinationLocation(location);
+    }
+  }
+
+  private searchLocation(query: string, type: 'pickup' | 'destination' | 'stop', stopId?: number): void {
     const url =
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}` +
-      `&limit=5&countrycodes=rs&bounded=1&viewbox=19.7,45.3,20.0,45.2`;
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ', Serbia')}&limit=5`;
 
     fetch(url)
       .then(res => res.json())
       .then(data => {
         if (type === 'pickup') {
           this.pickupSuggestions = data;
-          this.showPickupSuggestions = data.length > 0;
+          this.showPickupSuggestions = true;
         } else if (type === 'destination') {
           this.destinationSuggestions = data;
-          this.showDestinationSuggestions = data.length > 0;
+          this.showDestinationSuggestions = true;
         } else if (type === 'stop' && stopId !== undefined) {
           const stop = this.stops.find(s => s.id === stopId);
           if (stop) {
             stop.suggestions = data;
-            stop.showSuggestions = data.length > 0;
+            stop.showSuggestions = true;
           }
         }
-      })
-      .catch(err => console.error('Search error:', err));
+      });
   }
 
+  // =========================
+  // STOPS
+  // =========================
 
   addStop(): void {
     this.stops.push({
@@ -288,38 +274,63 @@ export class RideBookingComponent implements OnInit, OnDestroy {
 
   removeStop(id: number): void {
     const index = this.stops.findIndex(s => s.id === id);
-    if (index !== -1) {
-      this.stops = this.stops.filter(s => s.id !== id);
+    if (index >= 0) {
+      this.stops.splice(index, 1);
       this.rideBookingService.removeStopLocation(index);
     }
   }
 
-
-  onBookRide(): void {
-    if (this.rideForm.invalid) {
-      this.rideForm.markAllAsTouched();
-      alert('Please select pickup and destination locations!');
-      return;
-    }
-
-    const data = this.rideBookingService.getRideBookingData();
-    if (data.pickup && data.destination) {
-      this.rideBookingService.calculateRoute();
-      console.log('Booking ride:', data);
+  private syncStops(serviceStops: Location[]): void {
+    if (serviceStops.length !== this.stops.length) {
+      this.stops = serviceStops.map((s, i) => ({
+        id: i,
+        location: s.name,
+        suggestions: [],
+        showSuggestions: false
+      }));
+      this.stopIdCounter = this.stops.length;
     }
   }
 
+  // =========================
+  // RIDE INFO & ACTIONS
+  // =========================
+
+  private updateRideInfo(data: any): void {
+    if (data.pickup && data.destination) {
+      this.showRideInfo = true;
+      const baseTime = 5 + data.stops.length * 3;
+      const basePrice = 300 + data.stops.length * 100 + (data.vehicleType === 'LUXURY' ? 300 : 0);
+      this.estimatedTime = `${baseTime} min`;
+      this.estimatedPrice = `${basePrice} din`;
+    } else {
+      this.showRideInfo = false;
+    }
+  }
+
+  onBookRide(): void {
+    if (this.rideForm.invalid) return;
+
+    const payload = this.rideBookingService.getRideBookingData();
+    console.log('BOOK RIDE PAYLOAD:', payload);
+
+    this.rideBookingService.calculateRoute();
+  }
+
   clearRoute(): void {
-    this.rideForm.reset();
+    this.rideForm.reset({
+      vehicleType: 'STANDARD',
+      babyTransport: false,
+      petTransport: false,
+      passengers: 1
+    });
+
     this.stops = [];
-    this.showPickupSuggestions = false;
-    this.showDestinationSuggestions = false;
-    this.showRideInfo = false;
     this.rideBookingService.clearRoute();
   }
 
   onSchedule(): void {
-    alert('Schedule feature coming soon!');
+    alert('Schedule feature coming soon');
   }
 
   trackByStopId(index: number, stop: Stop): number {
