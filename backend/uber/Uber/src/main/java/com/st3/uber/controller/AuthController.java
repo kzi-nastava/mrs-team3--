@@ -2,11 +2,9 @@ package com.st3.uber.controller;
 
 import com.st3.uber.domain.Passenger;
 import com.st3.uber.dto.auth.*;
+import com.st3.uber.service.AuthService;
 import com.st3.uber.service.UserService;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.function.EntityResponse;
 
 import java.time.LocalDateTime;
 
@@ -15,14 +13,16 @@ import java.time.LocalDateTime;
 @RequestMapping("api/auth")
 public class AuthController {
     private final UserService userService;
+    private final AuthService authService;
 
-    public AuthController(UserService userService) {
+    public AuthController(UserService userService, AuthService authService) {
         this.userService = userService;
+        this.authService = authService;
     }
 
     @PostMapping("/register")
     public Passenger registerPassenger(@RequestBody RegisterPassengerRequest req) {
-        return userService.createPassenger(req);
+        return authService.createPassenger(req);
     }
 
     @PostMapping("/login")

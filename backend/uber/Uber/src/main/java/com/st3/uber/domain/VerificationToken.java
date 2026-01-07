@@ -24,7 +24,7 @@ public class VerificationToken {
   private LocalDateTime expiresAt;
 
   @Column(nullable = false)
-  private boolean used = false;
+  private boolean used;
 
   @Column(nullable = false)
   private VerificationTokenType tokenType;

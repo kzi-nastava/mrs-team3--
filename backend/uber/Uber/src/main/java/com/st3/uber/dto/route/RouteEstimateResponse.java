@@ -1,4 +1,4 @@
-package com.st3.uber.route;
+package com.st3.uber.dto.route;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
