@@ -17,6 +17,7 @@ DROP TABLE IF EXISTS
     passenger_favorite_rides,
     passengers,
     reviews,
+    request_changes,
     ride_passengers,
     ride_pricing,
     ride_stops,
@@ -54,6 +55,7 @@ DELETE FROM reviews;
 DELETE FROM notifications;
 DELETE FROM rides;
 DELETE FROM ride_pricing;
+DELETE FROM request_changes;
 DELETE FROM drivers;
 DELETE FROM passengers;
 DELETE FROM admins;
@@ -73,6 +75,8 @@ ALTER TABLE panic_events AUTO_INCREMENT = 1;
 ALTER TABLE inconsistency_reports AUTO_INCREMENT = 1;
 ALTER TABLE notifications AUTO_INCREMENT = 1;
 ALTER TABLE ride_pricing AUTO_INCREMENT = 1;
+ALTER TABLE request_changes AUTO_INCREMENT = 1;
+
 
 -- ========================================
 -- INSERT VEHICLES (must come before drivers)
@@ -283,6 +287,14 @@ INSERT INTO messages (id, chat_room_id, content, sender_type, sender_id, sent_at
                                                                                       (5, 2, 'I received a complaint about my driving. Can you explain?', 'USER', 6, NOW() - INTERVAL 5 DAY),
                                                                                       (6, 2, 'A passenger reported route inconsistencies. Please ensure you follow GPS directions.', 'ADMIN', 1, NOW() - INTERVAL 5 DAY + INTERVAL 1 HOUR);
 
+-- ======================================== -- INSERT REQUEST CHANGES -- ========================================
+INSERT INTO request_changes (id, driver_id, vehicle_id, name, surname, phone_number, address, profile_image, model, registration_number, seating_capacity, status, requested_at, decided_at) VALUES
+                                                                                                                                                                                                (1, 6, 1, 'Marko', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'PENDING', NOW() - INTERVAL 30 MINUTE, NULL),
+                                                                                                                                                                                                (2, 7, 2, 'I', NULL, '+381645678902', NULL, NULL, NULL, 'ZR-456-CD', NULL, 'PENDING', NOW() - INTERVAL 2 HOUR, NULL);
+
+
+
+
 -- ========================================
 -- VERIFICATION QUERY
 -- ========================================
@@ -308,4 +320,6 @@ SELECT 'Messages', COUNT(*) FROM messages
 UNION ALL
 SELECT 'Panic Events', COUNT(*) FROM panic_events
 UNION ALL
-SELECT 'Inconsistency Reports', COUNT(*) FROM inconsistency_reports;
+SELECT 'Inconsistency Reports', COUNT(*) FROM inconsistency_reports
+UNION ALL
+SELECT 'Requested changes', COUNT(*) FROM request_changes;
