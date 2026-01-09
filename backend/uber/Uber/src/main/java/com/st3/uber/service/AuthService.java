@@ -26,8 +26,8 @@ public class AuthService {
   private final MailService mailService;
   private final VerificationTokenRepository tokenRepository;
 
-  @Value("${app.frontend.url}")
-  private String frontendUrl;
+  @Value("${app.backend.url}")
+  private String backendUrl;
 
   public AuthService(UserRepository userRepository, MailService mailService, VerificationTokenRepository tokenRepository) {
     this.userRepository = userRepository;
@@ -73,8 +73,7 @@ public class AuthService {
     verificationToken.setTokenType(VerificationTokenType.EMAIL_VERIFICATION);
     tokenRepository.save(verificationToken);
 
-//    try{
-      String link = frontendUrl + "/verify?token=" + token;
+      String link = backendUrl + "/api/auth/verify?token=" + token;
       String subject = "Email verification";
       String body = "Thank you for registering! Please verify your email by clicking the button below.";
       mailService.sendText(
@@ -83,11 +82,29 @@ public class AuthService {
               body + "\n" + link
       );
 
-//    } catch (Exception e){
-//      System.out.println("Failed to send welcome email to " + p.getEmail());
-//    }
-
     return p;
   }
+
+  @Transactional
+  public void verifyToken(String token) {
+    VerificationToken vt = tokenRepository.findByToken(token)
+        .orElseThrow(() -> new RuntimeException("Invalid token"));
+
+    if (vt.isUsed())
+      throw new RuntimeException("Token already used");
+
+    if (vt.getExpiresAt().isBefore(LocalDateTime.now()))
+      throw new RuntimeException("Token expired");
+
+    Passenger passenger = vt.getPassenger();
+    passenger.setVerified(true);
+
+    vt.setUsed(true);
+
+    userRepository.save(passenger);
+    tokenRepository.save(vt);
+  }
+
+
 
 }

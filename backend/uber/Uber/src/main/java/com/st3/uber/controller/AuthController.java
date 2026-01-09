@@ -4,8 +4,12 @@ import com.st3.uber.domain.Passenger;
 import com.st3.uber.dto.auth.*;
 import com.st3.uber.service.AuthService;
 import com.st3.uber.service.UserService;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
 import java.time.LocalDateTime;
 
 @CrossOrigin(origins = "http://localhost:4200")
@@ -14,6 +18,8 @@ import java.time.LocalDateTime;
 public class AuthController {
     private final UserService userService;
     private final AuthService authService;
+    @Value("${app.frontend.url}")
+    private String frontendUrl;
 
     public AuthController(UserService userService, AuthService authService) {
         this.userService = userService;
@@ -57,4 +63,28 @@ public class AuthController {
                 message
         );
     }
+
+    @GetMapping("/verify")
+    public ResponseEntity<Void> verifyEmail(@RequestParam String token) {
+        try {
+            authService.verifyToken(token);
+
+            return ResponseEntity.status(HttpStatus.FOUND)
+                .location(URI.create(frontendUrl + "/verification-result?status=success"))
+                .build();
+
+        } catch (RuntimeException e) {
+            String status = switch (e.getMessage()) {
+                case "Token expired" -> "expired";
+                case "Token already used" -> "used";
+                case "Invalid token" -> "invalid";
+                default -> "error";
+            };
+
+            return ResponseEntity.status(HttpStatus.FOUND)
+                .location(URI.create(frontendUrl + "/verification-result?status=" + status))
+                .build();
+        }
+    }
+
 }
