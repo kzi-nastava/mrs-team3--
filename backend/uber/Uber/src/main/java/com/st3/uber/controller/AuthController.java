@@ -2,12 +2,14 @@ package com.st3.uber.controller;
 
 import com.st3.uber.domain.Passenger;
 import com.st3.uber.dto.auth.*;
+import com.st3.uber.service.AuthService;
 import com.st3.uber.service.UserService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.function.EntityResponse;
 
+import java.net.URI;
 import java.time.LocalDateTime;
 
 @CrossOrigin(origins = "http://localhost:4200")
@@ -15,14 +17,18 @@ import java.time.LocalDateTime;
 @RequestMapping("api/auth")
 public class AuthController {
     private final UserService userService;
+    private final AuthService authService;
+    @Value("${app.frontend.url}")
+    private String frontendUrl;
 
-    public AuthController(UserService userService) {
+    public AuthController(UserService userService, AuthService authService) {
         this.userService = userService;
+        this.authService = authService;
     }
 
     @PostMapping("/register")
     public Passenger registerPassenger(@RequestBody RegisterPassengerRequest req) {
-        return userService.createPassenger(req);
+        return authService.createPassenger(req);
     }
 
     @PostMapping("/login")
@@ -57,4 +63,28 @@ public class AuthController {
                 message
         );
     }
+
+    @GetMapping("/verify")
+    public ResponseEntity<Void> verifyEmail(@RequestParam String token) {
+        try {
+            authService.verifyToken(token);
+
+            return ResponseEntity.status(HttpStatus.FOUND)
+                .location(URI.create(frontendUrl + "/verification-result?status=success"))
+                .build();
+
+        } catch (RuntimeException e) {
+            String status = switch (e.getMessage()) {
+                case "Token expired" -> "expired";
+                case "Token already used" -> "used";
+                case "Invalid token" -> "invalid";
+                default -> "error";
+            };
+
+            return ResponseEntity.status(HttpStatus.FOUND)
+                .location(URI.create(frontendUrl + "/verification-result?status=" + status))
+                .build();
+        }
+    }
+
 }
