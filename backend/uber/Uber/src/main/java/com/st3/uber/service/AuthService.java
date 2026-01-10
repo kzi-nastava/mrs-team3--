@@ -1,16 +1,25 @@
 package com.st3.uber.service;
 
 import com.st3.uber.domain.Passenger;
+import com.st3.uber.domain.User;
 import com.st3.uber.domain.VerificationToken;
+import com.st3.uber.dto.auth.ForgotPasswordRequest;
+import com.st3.uber.dto.auth.LoginRequest;
+import com.st3.uber.dto.auth.LoginResponse;
 import com.st3.uber.dto.auth.RegisterPassengerRequest;
 import com.st3.uber.enums.UserRole;
 import com.st3.uber.enums.VerificationTokenType;
+import com.st3.uber.exception.TokenAlreadyUsedException;
+import com.st3.uber.exception.TokenExpiredException;
+import com.st3.uber.exception.TokenInvalidException;
 import com.st3.uber.repository.UserRepository;
 import com.st3.uber.repository.VerificationTokenRepository;
 import jakarta.transaction.Transactional;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import java.nio.file.Files;
@@ -34,6 +43,28 @@ public class AuthService {
     this.mailService = mailService;
     this.tokenRepository = tokenRepository;
 
+  }
+
+  public LoginResponse login(LoginRequest req) {
+    User u = userRepository.findByEmail(req.email())
+        .orElseThrow(() -> new RuntimeException("Invalid credentials"));
+
+    if (u.isBlocked()) {
+      throw new RuntimeException("User is blocked");
+    }
+
+    if (!req.password().equals(u.getPassword())) {
+      throw new RuntimeException("Invalid credentials");
+    }
+
+    if (u instanceof Passenger passenger) {
+      if (!passenger.isVerified()) {
+        throw new RuntimeException("Email not verified");
+      }
+    }
+    String role = u.getClass().getSimpleName().toUpperCase();
+
+    return new LoginResponse(u.getId(), u.getEmail(), role);
   }
 
   @SneakyThrows
@@ -88,13 +119,13 @@ public class AuthService {
   @Transactional
   public void verifyToken(String token) {
     VerificationToken vt = tokenRepository.findByToken(token)
-        .orElseThrow(() -> new RuntimeException("Invalid token"));
+        .orElseThrow(() -> new TokenInvalidException("Invalid token"));
 
     if (vt.isUsed())
-      throw new RuntimeException("Token already used");
+      throw new TokenAlreadyUsedException("Token already used");
 
     if (vt.getExpiresAt().isBefore(LocalDateTime.now()))
-      throw new RuntimeException("Token expired");
+      throw new TokenExpiredException("Token expired");
 
     Passenger passenger = vt.getPassenger();
     passenger.setVerified(true);
@@ -105,6 +136,34 @@ public class AuthService {
     tokenRepository.save(vt);
   }
 
+  public void forgotPassword(ForgotPasswordRequest req) {
+    // TODO if fails return EntityResponse with error message
+
+    String token = UUID.randomUUID().toString();
+    Passenger p = userRepository.findByEmail(req.getEmail())
+        .filter(user -> user instanceof Passenger)
+        .map(user -> (Passenger) user)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+    VerificationToken verificationToken = new VerificationToken();
+    verificationToken.setToken(token);
+    verificationToken.setPassenger(p);
+    verificationToken.setUsed(false);
+    verificationToken.setExpiresAt(LocalDateTime.now().plusHours(24));
+    verificationToken.setTokenType(VerificationTokenType.PASSWORD_RESET);
+    tokenRepository.save(verificationToken);
+
+    String link = backendUrl + "/api/auth/reset?token=" + token;
+    String subject = "Reset your password";
+    String body = "Click the link below to reset your password.";
+    mailService.sendText(
+        p.getEmail(),
+        subject,
+        body + "\n" + link
+    );
+
+    ResponseEntity.ok().build();
+  }
 
 
 }

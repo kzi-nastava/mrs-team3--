@@ -2,8 +2,10 @@ package com.st3.uber.controller;
 
 import com.st3.uber.domain.Passenger;
 import com.st3.uber.dto.auth.*;
+import com.st3.uber.exception.TokenAlreadyUsedException;
+import com.st3.uber.exception.TokenException;
+import com.st3.uber.exception.TokenExpiredException;
 import com.st3.uber.service.AuthService;
-import com.st3.uber.service.UserService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,13 +18,11 @@ import java.time.LocalDateTime;
 @RestController
 @RequestMapping("api/auth")
 public class AuthController {
-    private final UserService userService;
     private final AuthService authService;
     @Value("${app.frontend.url}")
     private String frontendUrl;
 
-    public AuthController(UserService userService, AuthService authService) {
-        this.userService = userService;
+    public AuthController(AuthService authService) {
         this.authService = authService;
     }
 
@@ -33,12 +33,12 @@ public class AuthController {
 
     @PostMapping("/login")
     public LoginResponse login(@RequestBody LoginRequest req) {
-        return userService.login(req);
+        return authService.login(req);
     }
 
     @PostMapping("/forgot-password")
     public void forgotPassword(@RequestBody ForgotPasswordRequest req) {
-       // userService.forgotPassword(req);
+        authService.forgotPassword(req);
     }
 
     // POST /api/auth/email-validation - Validate email availability
@@ -66,25 +66,27 @@ public class AuthController {
 
     @GetMapping("/verify")
     public ResponseEntity<Void> verifyEmail(@RequestParam String token) {
-        try {
-            authService.verifyToken(token);
+        authService.verifyToken(token);
 
-            return ResponseEntity.status(HttpStatus.FOUND)
-                .location(URI.create(frontendUrl + "/verification-result?status=success"))
-                .build();
+        return ResponseEntity.status(HttpStatus.FOUND)
+            .location(URI.create(frontendUrl + "/verification-result?status=success"))
+            .build();
 
-        } catch (RuntimeException e) {
-            String status = switch (e.getMessage()) {
-                case "Token expired" -> "expired";
-                case "Token already used" -> "used";
-                case "Invalid token" -> "invalid";
-                default -> "error";
-            };
+    }
 
-            return ResponseEntity.status(HttpStatus.FOUND)
+    @ExceptionHandler(TokenException.class)
+    private ResponseEntity<String> handleTokenException(TokenException ex) {
+        String status;
+        if(ex instanceof TokenExpiredException)
+            status = "expired";
+        else if(ex instanceof TokenAlreadyUsedException)
+            status = "used";
+        else
+            status = "invalid";
+        return ResponseEntity.status(HttpStatus.FOUND)
                 .location(URI.create(frontendUrl + "/verification-result?status=" + status))
                 .build();
-        }
     }
+
 
 }

@@ -33,7 +33,7 @@ export class ForgotPassword {
   ) {}
   onSubmit() {
     if (!this.email.trim()) {
-      console.log('Please enter email.');
+      this.messageService.add({severity:'warn', summary: 'Input Required', detail: 'Please enter your email address.'});
       return;
     }
 

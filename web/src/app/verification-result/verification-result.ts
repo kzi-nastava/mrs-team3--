@@ -21,7 +21,7 @@ export class VerificationResultComponent implements OnInit {
   ngOnInit(): void {
     const status = this.route.snapshot.queryParamMap.get('status');
 
-    switch ( status ) {
+    switch (status) {
       case 'success':
         this.title = 'Email Verified 🎉';
         this.message = 'Your account is now active. You can log in.';
