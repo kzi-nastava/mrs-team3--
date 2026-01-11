@@ -29,14 +29,17 @@ public class DriverController {
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-
-
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<RegisterDriverResponse> registerDriver(@RequestBody RegisterDriverRequest req ) {
+    public ResponseEntity<RegisterDriverResponse> registerDriver(@RequestBody RegisterDriverRequest req) {
+
         VehicleResponse vehicleResponse = new VehicleResponse(
                 10L,
                 req.request().model(),
-                req.request().type() != null ? req.request().type() : VehicleType.STANDARD
+                req.request().type() != null ? req.request().type() : VehicleType.STANDARD,
+                req.request().registrationNumber(),
+                req.request().seatingCapacity(),
+                req.request().babyTransport(),
+                req.request().petTransport()
         );
 
         RegisterDriverResponse response = new RegisterDriverResponse(
@@ -51,17 +54,21 @@ public class DriverController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-
-    // GET /api/drivers/{id} - Get specific driver
+    // GET /api/drivers/{id}
     @GetMapping(
             value = "/{id}",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public ResponseEntity<RegisterDriverResponse> getDriver(@PathVariable Long id) {
+
         VehicleResponse vehicleResponse = new VehicleResponse(
                 10L,
                 "Toyota Corolla",
-                VehicleType.STANDARD
+                VehicleType.STANDARD,
+                "NS-123-AB",
+                4,
+                false,
+                false
         );
 
         RegisterDriverResponse response = new RegisterDriverResponse(
@@ -76,11 +83,29 @@ public class DriverController {
         return ResponseEntity.ok(response);
     }
 
-    // GET /api/drivers - Get all drivers
+    // GET /api/drivers
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<RegisterDriverResponse>> getAllDrivers() {
-        VehicleResponse vehicle1 = new VehicleResponse(10L, "Toyota Corolla", VehicleType.STANDARD);
-        VehicleResponse vehicle2 = new VehicleResponse(11L, "BMW X5", VehicleType.VAN);
+
+        VehicleResponse vehicle1 = new VehicleResponse(
+                10L,
+                "Toyota Corolla",
+                VehicleType.STANDARD,
+                "NS-123-AB",
+                4,
+                false,
+                false
+        );
+
+        VehicleResponse vehicle2 = new VehicleResponse(
+                11L,
+                "BMW X5",
+                VehicleType.VAN,
+                "BG-555-ZZ",
+                6,
+                true,
+                true
+        );
 
         List<RegisterDriverResponse> drivers = List.of(
                 new RegisterDriverResponse(1L, "driver1@test.com", "Marko", "Markovic", vehicle1, true),
@@ -90,8 +115,7 @@ public class DriverController {
         return ResponseEntity.ok(drivers);
     }
 
-
-    // GET /api/drivers/{id}/rides - Get driver's ride history with filtering and sorting
+    // GET /api/drivers/{id}/rides
     @GetMapping(
             value = "/{id}/rides",
             produces = MediaType.APPLICATION_JSON_VALUE
@@ -104,12 +128,6 @@ public class DriverController {
             @RequestParam(required = false, defaultValue = "createdAt") String sortBy,
             @RequestParam(required = false, defaultValue = "DESC") String sortDirection
     ) {
-        // Service layer will:
-        // 1. Get driver by id
-        // 2. Filter rides by date range (startDate, endDate)
-        // 3. Filter by status if provided
-        // 4. Sort by specified field and direction
-        // 5. Map to DriverRideHistoryResponse
 
         List<DriverRideHistoryResponse> rides = List.of(
                 new DriverRideHistoryResponse(
@@ -145,7 +163,7 @@ public class DriverController {
         return ResponseEntity.ok(rides);
     }
 
-    // GET /api/drivers/{driverId}/rides/{rideId} - Get detailed information about specific ride
+    // GET /api/drivers/{driverId}/rides/{rideId}
     @GetMapping(
             value = "/{driverId}/rides/{rideId}",
             produces = MediaType.APPLICATION_JSON_VALUE
@@ -154,11 +172,6 @@ public class DriverController {
             @PathVariable Long driverId,
             @PathVariable Long rideId
     ) {
-        // Service layer will:
-        // 1. Get driver by driverId
-        // 2. Get ride by rideId and verify it belongs to this driver
-        // 3. Load all related data (passengers, stops, reports, ratings)
-        // 4. Map to DriverRideDetailResponse
 
         DriverRideDetailResponse response = new DriverRideDetailResponse(
                 rideId,
@@ -202,10 +215,15 @@ public class DriverController {
             @PathVariable Long id,
             @RequestBody RegisterDriverRequest req
     ) {
+
         VehicleResponse vehicleResponse = new VehicleResponse(
                 10L,
                 req.request().model(),
-                req.request().type() != null ? req.request().type() : VehicleType.STANDARD
+                req.request().type() != null ? req.request().type() : VehicleType.STANDARD,
+                req.request().registrationNumber(),
+                req.request().seatingCapacity(),
+                req.request().babyTransport(),
+                req.request().petTransport()
         );
 
         RegisterDriverResponse response = new RegisterDriverResponse(
@@ -222,10 +240,9 @@ public class DriverController {
 
     @PutMapping("/{id}/active")
     public ResponseEntity<DriverActivityResponse> setDriverActivity(
-        @PathVariable Long id,
-        @RequestBody DriverActivityRequest request
+            @PathVariable Long id,
+            @RequestBody DriverActivityRequest request
     ) {
-
         return ResponseEntity.ok(new DriverActivityResponse(id, request.isActive()));
     }
 
