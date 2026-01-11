@@ -6,7 +6,7 @@ import { RideHistoryComponent } from './ride-history/ride-history';
 import { RegisterComponent } from './register/register';
 import { ChangePasswordComponent } from './change-password/change-password';
 import { ForgotPassword } from './forgot-password/forgot-password';
-
+import {VerificationResultComponent} from './verification-result/verification-result';
 export const routes: Routes = [
   { path: '', component: LandingPageComponent },
   { path: 'profile', component: ProfileComponent },
@@ -23,6 +23,7 @@ export const routes: Routes = [
   { path: 'ride-history', component: RideHistoryComponent },
   { path: 'change-password', component: ChangePasswordComponent },
   { path: 'forgot-password', component: ForgotPassword },
+  {path: 'verification-result', component: VerificationResultComponent},
 
   { path: '**', redirectTo: '' }
 ];
