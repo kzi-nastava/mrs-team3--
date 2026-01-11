@@ -24,40 +24,9 @@ import static java.util.Base64.getDecoder;
 
 @Service
 public class UserService {
-    private final UserRepository userRepository;
 
     public UserService(UserRepository userRepository) {
-        this.userRepository = userRepository;
     }
 
-    public LoginResponse login(LoginRequest req) {
-        User u = userRepository.findByEmail(req.email())
-                .orElseThrow(() -> new RuntimeException("Invalid credentials"));
 
-        if (u.isBlocked()) {
-            throw new RuntimeException("User is blocked");
-        }
-
-        if (!req.password().equals(u.getPassword())) {
-            throw new RuntimeException("Invalid credentials");
-        }
-
-        if (u instanceof Passenger passenger) {
-            if (!passenger.isVerified()) {
-                throw new RuntimeException("Email not verified");
-            }
-        }
-        String role = u.getClass().getSimpleName().toUpperCase();
-
-        return new LoginResponse(u.getId(), u.getEmail(), role);
-    }
-
-    public ResponseEntity<?> forgotPassword(ForgotPasswordRequest req) {
-        // TODO generate token and find user by email
-        // TODO if fails return EntityResponse with error message
-
-
-
-        return new ResponseEntity<>(HttpStatus.OK);
-    }
 }
