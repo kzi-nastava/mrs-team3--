@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### .pem files from resource folders ###
+**/*.pem

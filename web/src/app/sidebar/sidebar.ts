@@ -25,7 +25,6 @@ export class SidebarComponent {
     return this.role !== 'GUEST';
   }
 
-
   goHome() {
     this.router.navigateByUrl('/');
   }

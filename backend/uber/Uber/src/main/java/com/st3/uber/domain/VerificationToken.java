@@ -29,8 +29,8 @@ public class VerificationToken {
   @Column(nullable = false)
   private VerificationTokenType tokenType;
 
-  @OneToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "passenger_id", nullable = false, unique = true)
-  private Passenger passenger;
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "user_id", nullable = false)
+  private User user;
 
 }

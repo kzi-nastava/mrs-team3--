@@ -21,6 +21,4 @@ public class Passenger extends User {
     )
     private List<Ride> favoriteRides = new ArrayList<>();
 
-  @Column(nullable = false)
-  private boolean verified;
 }
