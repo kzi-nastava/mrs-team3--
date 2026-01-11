@@ -45,7 +45,6 @@ export class RideBookingComponent implements OnInit, OnDestroy {
   estimatedTime = '';
   estimatedPrice = '';
 
-  // ⭐ Favorites
   showFavorites = false;
   favorites!: ReturnType<FavoriteRoutesService['getFavorites']>;
 
@@ -60,14 +59,10 @@ export class RideBookingComponent implements OnInit, OnDestroy {
     this.initForm();
   }
 
-  // =========================
-  // INIT
-  // =========================
-
+  
   ngOnInit(): void {
     this.favorites = this.favoriteService.getFavorites();
 
-    // Sync data from service → form
     this.rideBookingService.rideBookingData$
       .pipe(takeUntil(this.destroy$))
       .subscribe(data => {
@@ -89,7 +84,6 @@ export class RideBookingComponent implements OnInit, OnDestroy {
         this.updateRideInfo(data);
       });
 
-    // Sync form → service
     this.rideForm.valueChanges
       .pipe(takeUntil(this.destroy$))
       .subscribe(val => {
@@ -118,7 +112,6 @@ export class RideBookingComponent implements OnInit, OnDestroy {
       pickupLocation: ['', Validators.required],
       destination: ['', Validators.required],
 
-      // ✅ dodatna polja
       vehicleType: ['STANDARD' as VehicleType, Validators.required],
       babyTransport: [false],
       petTransport: [false],
@@ -126,10 +119,7 @@ export class RideBookingComponent implements OnInit, OnDestroy {
     });
   }
 
-  // =========================
-  // FAVORITES
-  // =========================
-
+ 
   toggleFavorites(): void {
     this.showFavorites = !this.showFavorites;
   }
@@ -157,10 +147,7 @@ export class RideBookingComponent implements OnInit, OnDestroy {
     this.showFavorites = false;
   }
 
-  // =========================
-  // AUTOCOMPLETE (pickup / destination / stops)
-  // =========================
-
+ 
   onPickupInputChange(): void {
     this.debounceSearch(this.rideForm.get('pickupLocation')?.value, 'pickup');
   }
@@ -259,10 +246,7 @@ export class RideBookingComponent implements OnInit, OnDestroy {
       });
   }
 
-  // =========================
-  // STOPS
-  // =========================
-
+  
   addStop(): void {
     this.stops.push({
       id: this.stopIdCounter++,
@@ -291,10 +275,6 @@ export class RideBookingComponent implements OnInit, OnDestroy {
       this.stopIdCounter = this.stops.length;
     }
   }
-
-  // =========================
-  // RIDE INFO & ACTIONS
-  // =========================
 
   private updateRideInfo(data: any): void {
     if (data.pickup && data.destination) {

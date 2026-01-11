@@ -1,8 +1,24 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { 
+  UserProfileService, 
+  UserRole, 
+  DriverProfileResponse,
+  PassengerProfileResponse,
+  AdminProfileResponse,
+  VehicleResponse 
+} from '../services/user-profile.service';
 
-// Podaci o korisniku u odnosu na ulogu
+interface Vehicle {
+  model: string;
+  licensePlate: string;
+  seats: number;
+  vehicleType: 'STANDARD' | 'VAN' | 'LUXURY';
+  babyTransport: boolean;
+  petTransport: boolean;
+}
+
 interface User {
   id: number;
   firstName: string;
@@ -10,18 +26,12 @@ interface User {
   email: string;
   phoneNumber: string;
   address: string;
-  role: 'passenger' | 'driver' | 'admin';
+  role: UserRole;
   profileImage: string;
-  // Specificno za vozace
   activeHours?: number;
-  vehicle?: {
-    model: string;
-    licensePlate: string;
-    seats: number;
-  };
+  vehicle?: Vehicle;
 }
 
-//Interfejs za zahteve za promenu podataka
 interface ChangeRequest {
   id: number;
   field: string;
@@ -31,7 +41,6 @@ interface ChangeRequest {
   requestedAt: Date;
 }
 
-// Glavna komponenta profila
 @Component({
   selector: 'app-profile',
   standalone: true,
@@ -39,71 +48,52 @@ interface ChangeRequest {
   templateUrl: './profile.html',
   styleUrl: './profile.css'
 })
-
-/* Klasa komponente profila - mockup podaci
-  Na osnovu uloge korisnika (passenger, driver, admin), prikazuju se razliciti podaci i opcije.
-  Vozaci mogu da salju zahteve za promenu podataka koji moraju biti odobreni od strane admina.
-  Svi korisnici mogu da menjaju lozinku i uploaduju profilnu sliku.
-*/
 export class ProfileComponent implements OnInit {
   user: User = {
-    id: 1,
-    firstName: 'Marko',
-    lastName: 'Marković',
-    email: 'marko@example.com',
-    phoneNumber: '+381 64 123 4567',
-    address: 'Bulevar oslobođenja 46, Novi Sad',
-    role: 'passenger',
-    profileImage: '',
-    activeHours: 18.5,
-    vehicle: {
-      model: 'Toyota Corolla',
-      licensePlate: 'NS 123 AB',
-      seats: 4
-    }
+    id: 0,
+    firstName: '',
+    lastName: '',
+    email: '',
+    phoneNumber: '',
+    address: '',
+    role: 'PASSENGER',
+    profileImage: ''
   };
 
-  // Reactive Forms
   profileForm!: FormGroup;
   passwordForm!: FormGroup;
 
-  // Edit mode
   editMode = false;
-
-  // Promena lozinke
   showPasswordModal: boolean = false;
 
-  // Zahtevi za promenu (za vozače)
   pendingChanges: ChangeRequest[] = [];
   hasPendingChanges = false;
 
-  // Image upload
   selectedFile: File | null = null;
   imagePreview: string = '';
 
-  constructor(private fb: FormBuilder) {
+  constructor(
+    private fb: FormBuilder,
+    private profileService: UserProfileService
+  ) {
     this.initForms();
   }
 
-  // Inicijalizacija formi
   initForms(): void {
-    // Profil forma
     this.profileForm = this.fb.group({
       firstName: ['', Validators.required],
       lastName: ['', Validators.required],
-      email: ['', [Validators.required, Validators.email]],
+      email: [{ value: '', disabled: true }, [Validators.required, Validators.email]],
       phoneNumber: ['', Validators.required],
-      address: ['', Validators.required]
+      address: ['', Validators.required],
+      vehicleModel: [''],
+      vehicleLicensePlate: [''],
+      vehicleSeats: ['', [Validators.min(1)]],
+      vehicleType: ['STANDARD'],
+      babyTransport: [false],
+      petTransport: [false]
     });
 
-    // Ako je vozač, dodaj vehicle polja
-    if (this.user.role === 'driver') {
-      this.profileForm.addControl('vehicleModel', this.fb.control('', Validators.required));
-      this.profileForm.addControl('vehicleLicensePlate', this.fb.control('', Validators.required));
-      this.profileForm.addControl('vehicleSeats', this.fb.control('', Validators.required));
-    }
-
-    // Password forma
     this.passwordForm = this.fb.group({
       oldPassword: ['', Validators.required],
       newPassword: ['', [Validators.required, Validators.minLength(8)]],
@@ -111,66 +101,215 @@ export class ProfileComponent implements OnInit {
     });
   }
 
-  // Inicijalizacija podataka
   ngOnInit(): void {
-    this.loadUserData();
-    this.loadPendingChanges();
+    this.loadUserDataFromDatabase();
   }
 
-  loadUserData(): void {
-    // Mock - u realnom slucaju bi se povukli podaci sa servera
-    // Popuni formu sa podacima korisnika
-    this.profileForm.patchValue({
-      firstName: this.user.firstName,
-      lastName: this.user.lastName,
-      email: this.user.email,
-      phoneNumber: this.user.phoneNumber,
-      address: this.user.address
+  loadUserDataFromDatabase(): void {
+    const userId = this.getCurrentUserId();
+    
+    this.profileService.getProfile(userId).subscribe({
+      next: (response) => {
+        this.processApiResponse(response);
+      },
+      error: (error) => {
+        console.error('Error loading profile from API:', error);
+        alert('Error loading profile! Using mock data.');
+        this.loadMockUserData();
+      }
     });
+  }
 
-    if (this.user.role === 'driver' && this.user.vehicle) {
+  private getCurrentUserId(): number {
+    const userId = localStorage.getItem('userId');
+    return userId ? parseInt(userId) : 3;
+  }
+
+  private processApiResponse(
+    response: DriverProfileResponse | PassengerProfileResponse | AdminProfileResponse
+  ): void {
+    const isDriver = this.isDriverResponse(response);
+    
+    if (isDriver) {
+      const driverResponse = response as DriverProfileResponse;
+      
+      this.user = {
+        id: driverResponse.id,
+        firstName: driverResponse.firstName,
+        lastName: driverResponse.lastName,
+        email: driverResponse.email,
+        phoneNumber: driverResponse.phoneNumber,
+        address: driverResponse.address,
+        role: 'DRIVER',
+        profileImage: '',
+        activeHours: driverResponse.active ? 24 : 0,
+        vehicle: {
+          model: driverResponse.vehicle.model,
+          licensePlate: driverResponse.vehicle.registrationNumber,
+          seats: driverResponse.vehicle.seatingCapacity,
+          vehicleType: driverResponse.vehicle.vehicleType,
+          babyTransport: driverResponse.vehicle.babyTransport,
+          petTransport: driverResponse.vehicle.petTransport
+        }
+      };
+
       this.profileForm.patchValue({
-        vehicleModel: this.user.vehicle.model,
-        vehicleLicensePlate: this.user.vehicle.licensePlate,
-        vehicleSeats: this.user.vehicle.seats
+        firstName: this.user.firstName,
+        lastName: this.user.lastName,
+        email: this.user.email,
+        phoneNumber: this.user.phoneNumber,
+        address: this.user.address,
+        vehicleModel: this.user.vehicle?.model || '',
+        vehicleLicensePlate: this.user.vehicle?.licensePlate || '',
+        vehicleSeats: this.user.vehicle?.seats || '',
+        vehicleType: this.user.vehicle?.vehicleType || 'STANDARD',
+        babyTransport: this.user.vehicle?.babyTransport || false,
+        petTransport: this.user.vehicle?.petTransport || false
       });
+
+    } else {
+      const basicResponse = response as PassengerProfileResponse | AdminProfileResponse;
+      
+      const isAdmin = 'role' in basicResponse && basicResponse.role === 'ADMIN';
+      
+      this.user = {
+        id: basicResponse.id,
+        firstName: basicResponse.firstName,
+        lastName: basicResponse.lastName,
+        email: basicResponse.email,
+        phoneNumber: basicResponse.phoneNumber,
+        address: basicResponse.address,
+        role: isAdmin ? 'ADMIN' : 'PASSENGER',
+        profileImage: ''
+      };
+
+      this.profileForm.patchValue({
+        firstName: this.user.firstName,
+        lastName: this.user.lastName,
+        email: this.user.email,
+        phoneNumber: this.user.phoneNumber,
+        address: this.user.address
+      });
+
+      this.disableVehicleFields();
     }
 
     this.imagePreview = this.user.profileImage;
+
+    if (this.user.role === 'DRIVER') {
+      this.loadPendingChangesFromDatabase();
+    }
   }
 
-  loadPendingChanges(): void {
-    // Mock up podaci za vozace
-    if (this.user.role === 'driver') {
-      this.pendingChanges = [
-        {
-          id: 1,
-          field: 'phoneNumber',
-          oldValue: '+381 64 123 4567',
-          newValue: '+381 65 999 8888',
-          status: 'pending',
-          requestedAt: new Date('2024-12-10')
+  private isDriverResponse(
+    response: DriverProfileResponse | PassengerProfileResponse | AdminProfileResponse
+  ): response is DriverProfileResponse {
+    return 'vehicle' in response && response.vehicle !== undefined;
+  }
+
+  private loadPendingChangesFromDatabase(): void {
+    this.pendingChanges = [];
+    this.hasPendingChanges = false;
+  }
+
+  private disableVehicleFields(): void {
+    const vehicleFields = [
+      'vehicleModel',
+      'vehicleLicensePlate', 
+      'vehicleSeats',
+      'vehicleType',
+      'babyTransport',
+      'petTransport'
+    ];
+    
+    vehicleFields.forEach(field => {
+      this.profileForm.get(field)?.disable();
+    });
+  }
+
+  private loadMockUserData(): void {
+    console.warn('Using mock data as fallback');
+    
+    const isDriver = false;
+    
+    if (isDriver) {
+      this.user = {
+        id: 1,
+        firstName: 'Marko',
+        lastName: 'Marković',
+        email: 'marko@example.com',
+        phoneNumber: '+381 64 123 4567',
+        address: 'Bulevar oslobođenja 46, Novi Sad',
+        role: 'DRIVER',
+        profileImage: '',
+        activeHours: 18.5,
+        vehicle: {
+          model: 'Toyota Corolla',
+          licensePlate: 'NS 123 AB',
+          seats: 4,
+          vehicleType: 'STANDARD',
+          babyTransport: true,
+          petTransport: false
         }
-      ];
-      this.hasPendingChanges = this.pendingChanges.some(c => c.status === 'pending');
+      };
+
+      this.profileForm.patchValue({
+        firstName: this.user.firstName,
+        lastName: this.user.lastName,
+        email: this.user.email,
+        phoneNumber: this.user.phoneNumber,
+        address: this.user.address,
+        vehicleModel: this.user.vehicle?.model || '',
+        vehicleLicensePlate: this.user.vehicle?.licensePlate || '',
+        vehicleSeats: this.user.vehicle?.seats || '',
+        vehicleType: this.user.vehicle?.vehicleType || 'STANDARD',
+        babyTransport: this.user.vehicle?.babyTransport || false,
+        petTransport: this.user.vehicle?.petTransport || false
+      });
+    } else {
+      this.user = {
+        id: 1,
+        firstName: 'Ana',
+        lastName: 'Anić',
+        email: 'ana@example.com',
+        phoneNumber: '+381 64 987 6543',
+        address: 'Knez Mihailova 15, Beograd',
+        role: 'PASSENGER',
+        profileImage: ''
+      };
+
+      this.profileForm.patchValue({
+        firstName: this.user.firstName,
+        lastName: this.user.lastName,
+        email: this.user.email,
+        phoneNumber: this.user.phoneNumber,
+        address: this.user.address
+      });
+
+      this.disableVehicleFields();
     }
   }
 
   toggleEditMode(): void {
     if (this.editMode) {
-      // Cancel - vraca se na originalne podatke
-      this.loadUserData();
+      this.loadUserDataFromDatabase();
+    } else {
+      this.profileForm.enable();
+      this.profileForm.get('email')?.disable();
+      
+      if (this.user.role !== 'DRIVER') {
+        this.disableVehicleFields();
+      }
     }
+    
     this.editMode = !this.editMode;
   }
 
-  // Rukovanje izborom slike
   onImageSelected(event: any): void {
     const file = event.target.files[0];
     if (file) {
       this.selectedFile = file;
-
-      // Preview
+      
       const reader = new FileReader();
       reader.onload = (e: any) => {
         this.imagePreview = e.target.result;
@@ -187,46 +326,54 @@ export class ProfileComponent implements OnInit {
   saveChanges(): void {
     if (this.profileForm.invalid) {
       this.profileForm.markAllAsTouched();
+      alert('Please fill in all required fields correctly!');
       return;
     }
 
-    const formData = this.profileForm.value;
+    const formData = this.profileForm.getRawValue();
 
-    if (this.user.role === 'driver') {
-      // driver saljes zahteve za promenu
-      this.submitChangeRequest(formData);
-    } else {
-      // passenger/admin cuvaju odmah izmene
-      this.user.firstName = formData.firstName;
-      this.user.lastName = formData.lastName;
-      this.user.email = formData.email;
-      this.user.phoneNumber = formData.phoneNumber;
-      this.user.address = formData.address;
-
-      if (this.imagePreview !== this.user.profileImage) {
-        this.user.profileImage = this.imagePreview;
-      }
-
+    if (this.user.role === 'DRIVER') {
+      // DUMMY za vozače - samo prikazujemo poruku
+      alert('⚠️ Driver profile changes require admin approval. This feature is not yet implemented.');
       this.editMode = false;
-      alert('Profile updated successfully!');
+      return;
     }
+
+    // Za PASSENGER i ADMIN - šaljemo na backend
+    const updateRequest = {
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      phoneNumber: formData.phoneNumber,
+      address: formData.address
+    };
+
+    this.profileService.updateProfile(this.user.id, updateRequest).subscribe({
+      next: () => {
+        // Ažuriramo lokalne podatke
+        this.user.firstName = formData.firstName;
+        this.user.lastName = formData.lastName;
+        this.user.phoneNumber = formData.phoneNumber;
+        this.user.address = formData.address;
+
+        if (this.imagePreview !== this.user.profileImage) {
+          this.user.profileImage = this.imagePreview;
+        }
+
+        this.editMode = false;
+        alert('✅ Profile updated successfully!');
+      },
+      error: (error) => {
+        console.error('Error updating profile:', error);
+        alert('❌ Error updating profile! Please try again.');
+      }
+    });
   }
 
-  submitChangeRequest(formData: any): void {
-    // Mock up - u realnom slucaju bi se poslao zahtev na server
-    console.log('Submitting change request for approval...', formData);
-    this.hasPendingChanges = true;
-    this.editMode = false;
-    alert('Change request submitted! Waiting for admin approval.');
-  }
-
-  // Promena lozinke
   openChangePassword(): void {
     this.showPasswordModal = true;
     this.passwordForm.reset();
   }
 
-  // Zatvaranje modula za promenu lozinke
   closePasswordModal(): void {
     this.showPasswordModal = false;
     this.passwordForm.reset();
@@ -239,14 +386,13 @@ export class ProfileComponent implements OnInit {
       return;
     }
 
-    const { oldPassword, newPassword, confirmPassword } = this.passwordForm.value;
+    const { newPassword, confirmPassword } = this.passwordForm.value;
 
     if (newPassword !== confirmPassword) {
       alert('New passwords do not match!');
       return;
     }
 
-    // Mock but here would send API request
     console.log('Changing password...');
     alert('Password changed successfully!');
     this.closePasswordModal();
