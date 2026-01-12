@@ -4,7 +4,7 @@ import { ProfileComponent } from './profile/profile';
 import { Login } from './login/login';
 import { RideHistoryComponent } from './ride-history/ride-history';
 import { RegisterComponent } from './register/register';
-import { ChangePasswordComponent } from './change-password/change-password';
+import { ResetPasswordComponent } from './reset-password/reset-password';
 import { ForgotPassword } from './forgot-password/forgot-password';
 import {VerificationResultComponent} from './verification-result/verification-result';
 export const routes: Routes = [
@@ -21,7 +21,7 @@ export const routes: Routes = [
   },
 
   { path: 'ride-history', component: RideHistoryComponent },
-  { path: 'change-password', component: ChangePasswordComponent },
+  { path: 'reset-password', component: ResetPasswordComponent },
   { path: 'forgot-password', component: ForgotPassword },
   {path: 'verification-result', component: VerificationResultComponent},
 

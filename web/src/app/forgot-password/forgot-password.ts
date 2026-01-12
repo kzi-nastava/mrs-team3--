@@ -19,7 +19,7 @@ import {ToastModule} from 'primeng/toast';
     ToastModule
   ],
   templateUrl: './forgot-password.html',
-  styleUrl: '../change-password/change-password.css',
+  // styleUrl: '../reset-password/change-password.css',
   standalone: true,
   providers: [MessageService],
 })

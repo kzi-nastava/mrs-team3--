@@ -74,6 +74,15 @@ public class AuthController {
 
     }
 
+    @PostMapping("/reset-password")
+    public ResponseEntity<Void> resetPassword(@RequestBody ResetPasswordRequest req) {
+        authService.resetPassword(req);
+        return ResponseEntity.status(HttpStatus.FOUND)
+            .location(URI.create(frontendUrl + "/verification-result?status=success"))
+            .build();
+    }
+
+
     @ExceptionHandler(TokenException.class)
     private ResponseEntity<String> handleTokenException(TokenException ex) {
         String status;

@@ -7,6 +7,7 @@ import com.st3.uber.enums.RideStatus;
 import com.st3.uber.dto.route.RouteEstimateRequest;
 import com.st3.uber.dto.route.RouteEstimateResponse;
 import com.st3.uber.util.ComparatorUtils;
+import jakarta.annotation.security.RolesAllowed;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -162,6 +163,7 @@ public class RideController {
       consumes = MediaType.APPLICATION_JSON_VALUE,
       produces = MediaType.APPLICATION_JSON_VALUE
   )
+  @RolesAllowed("PASSENGER")
   public ResponseEntity<ReportInconsistencyResponse> reportInconsistency(
       @PathVariable Long id,
       @RequestBody ReportInconsistencyRequest request
@@ -181,6 +183,7 @@ public class RideController {
       consumes = MediaType.APPLICATION_JSON_VALUE,
       produces = MediaType.APPLICATION_JSON_VALUE
   )
+  @RolesAllowed("PASSENGER")
   public ResponseEntity<SubmitRatingResponse> submitRating(
       @PathVariable Long id,
       @RequestBody SubmitRatingRequest request
@@ -208,6 +211,7 @@ public class RideController {
       value = "/{rideId}/cancel-universal",
       produces = MediaType.APPLICATION_JSON_VALUE
   )
+  @RolesAllowed({"PASSENGER", "DRIVER"})
   public ResponseEntity<CancelRideResponse> cancelRide(
       @PathVariable Long rideId,
       @RequestBody(required = false) CancelRideRequest request)
@@ -223,6 +227,7 @@ public class RideController {
   @PutMapping(
       value = "/{rideId}/stop",
       produces = MediaType.APPLICATION_JSON_VALUE)
+  @RolesAllowed("PASSENGER")
   public ResponseEntity<StopRideResponse> stopRide(
       @PathVariable Long rideId,
       @RequestBody StopRideRequest request)
@@ -241,6 +246,7 @@ public class RideController {
   @GetMapping(
       value = "/admin/rides",
       produces = MediaType.APPLICATION_JSON_VALUE)
+  @RolesAllowed("ADMIN")
   public ResponseEntity<List<AdminRideDetailsResponse>> getAllRidesForAdmin(
       @RequestParam(required = false)
       @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
@@ -273,6 +279,7 @@ public class RideController {
       value = "/{rideId}/advanced",
       produces = MediaType.APPLICATION_JSON_VALUE
   )
+  @RolesAllowed("ADMIN")
   public ResponseEntity<AdminRideAdvancedDetailsResponse> getRideDetails(@PathVariable Long rideId) {
 
     List<AdminRideDetailsResponse> rides = mockRides();

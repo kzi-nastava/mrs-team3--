@@ -3,10 +3,7 @@ package com.st3.uber.service;
 import com.st3.uber.domain.Passenger;
 import com.st3.uber.domain.User;
 import com.st3.uber.domain.VerificationToken;
-import com.st3.uber.dto.auth.ForgotPasswordRequest;
-import com.st3.uber.dto.auth.LoginRequest;
-import com.st3.uber.dto.auth.LoginResponse;
-import com.st3.uber.dto.auth.RegisterPassengerRequest;
+import com.st3.uber.dto.auth.*;
 import com.st3.uber.enums.UserRole;
 import com.st3.uber.enums.VerificationTokenType;
 import com.st3.uber.exception.TokenAlreadyUsedException;
@@ -16,7 +13,6 @@ import com.st3.uber.repository.UserRepository;
 import com.st3.uber.repository.VerificationTokenRepository;
 import jakarta.transaction.Transactional;
 import lombok.SneakyThrows;
-import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -27,14 +23,14 @@ import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import static com.st3.uber.util.GenerateVerificationToken.generateToken;
-import static java.util.Base64.getDecoder;
+  import static java.util.Base64.getDecoder;
 
 @Service
 public class AuthService {
@@ -46,6 +42,9 @@ public class AuthService {
 
   @Value("${app.backend.url}")
   private String backendUrl;
+
+  @Value("${app.frontend.url}")
+  private String frontendUrl;
 
   @Value("${jwt.ttl-seconds:3600}")
   private long jwtTtlSeconds;
@@ -147,7 +146,7 @@ public class AuthService {
   }
 
   @Transactional
-  public void verifyToken(String token) {
+  public VerificationToken checkTokenValidity(String token) {
     VerificationToken vt = tokenRepository.findByToken(token)
         .orElseThrow(() -> new TokenInvalidException("Invalid token"));
 
@@ -156,6 +155,13 @@ public class AuthService {
 
     if (vt.getExpiresAt().isBefore(LocalDateTime.now()))
       throw new TokenExpiredException("Token expired");
+    return vt;
+  }
+
+
+  @Transactional
+  public void verifyToken(String token) {
+    VerificationToken vt = checkTokenValidity(token);
 
     User u = vt.getUser();
 
@@ -174,7 +180,6 @@ public class AuthService {
     String token = UUID.randomUUID().toString();
     User p = userRepository.findByEmail(req.getEmail())
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-    tokenRepository.deleteByUserAndTokenType(p, VerificationTokenType.PASSWORD_RESET);
 
     VerificationToken verificationToken = new VerificationToken();
     verificationToken.setToken(token);
@@ -184,7 +189,7 @@ public class AuthService {
     verificationToken.setTokenType(VerificationTokenType.PASSWORD_RESET);
     tokenRepository.save(verificationToken);
 
-    String link = backendUrl + "/api/auth/reset?token=" + token;
+    String link = backendUrl + "  /reset-password?token=" + token;
     String subject = "Reset your password";
     String body = "Click the link below to reset your password.";
     mailService.sendText(
@@ -196,6 +201,19 @@ public class AuthService {
     return ResponseEntity.ok().build();
   }
 
+  @Transactional
+  public void resetPassword(ResetPasswordRequest req){
+    VerificationToken vt = checkTokenValidity(req.getToken());
+    if (vt.getTokenType() != VerificationTokenType.PASSWORD_RESET) {
+      throw new TokenInvalidException("Invalid token type");
+    }
+    User u = vt.getUser();
+    String hashedPassword = passwordEncoder.encode(req.getNewPassword());
+    u.setPassword(hashedPassword);
 
+    vt.setUsed(true);
+    userRepository.save(u);
 
+    ResponseEntity.ok().build();
+  }
 }
