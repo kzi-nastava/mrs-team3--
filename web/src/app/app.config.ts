@@ -4,8 +4,11 @@ import { provideHttpClient } from '@angular/common/http';
 import { routes } from './app.routes';
 import { providePrimeNG } from 'primeng/config';
 import Aura from '@primeuix/themes/aura';
-import { definePreset } from '@primeuix/themes';
-import { MessageService } from 'primeng/api';
+import {definePreset} from '@primeuix/themes';
+import {MessageService} from 'primeng/api';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { authInterceptor } from './services/auth.interceptor';
+
 
 const Violet = definePreset(Aura, {
   semantic: {

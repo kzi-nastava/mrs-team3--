@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URI;
 import java.time.LocalDateTime;
 
-@CrossOrigin(origins = "http://localhost:4200")
+//@CrossOrigin(origins = "http://localhost:4200")
 @RestController
 @RequestMapping("api/auth")
 public class AuthController {
@@ -37,8 +37,8 @@ public class AuthController {
     }
 
     @PostMapping("/forgot-password")
-    public void forgotPassword(@RequestBody ForgotPasswordRequest req) {
-        authService.forgotPassword(req);
+    public ResponseEntity<Void> forgotPassword(@RequestBody ForgotPasswordRequest req) {
+        return authService.forgotPassword(req);
     }
 
     // POST /api/auth/email-validation - Validate email availability
@@ -73,6 +73,15 @@ public class AuthController {
             .build();
 
     }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<Void> resetPassword(@RequestBody ResetPasswordRequest req) {
+        authService.resetPassword(req);
+        return ResponseEntity.status(HttpStatus.FOUND)
+            .location(URI.create(frontendUrl + "/verification-result?status=success"))
+            .build();
+    }
+
 
     @ExceptionHandler(TokenException.class)
     private ResponseEntity<String> handleTokenException(TokenException ex) {
