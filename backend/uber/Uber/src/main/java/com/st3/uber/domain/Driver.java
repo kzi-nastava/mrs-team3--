@@ -10,7 +10,9 @@ import java.util.List;
 
 @Entity
 @Table(name = "drivers")
-public class Driver extends User{
+@Getter
+@Setter
+public class Driver extends User {
 
     @Column(nullable = false)
     private boolean active = false;
@@ -21,7 +23,7 @@ public class Driver extends User{
     @Column(nullable = false)
     private boolean free = false;
 
-    @OneToOne
+    @OneToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "vehicle_id", nullable = false)
     private Vehicle vehicle;
 
@@ -30,7 +32,7 @@ public class Driver extends User{
     private List<Ride> pastRides = new ArrayList<>();
 
     @OneToOne
-    @JoinColumn(name = "driver_id")
+    @JoinColumn(name = "current_ride_id")
     private Ride currentRide;
 
     @Column(nullable = false)
@@ -45,5 +47,4 @@ public class Driver extends User{
     private Location currentLocation;
 
     private LocalDateTime locationUpdatedAt;
-
 }
