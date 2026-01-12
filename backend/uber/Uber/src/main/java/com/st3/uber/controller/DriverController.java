@@ -7,9 +7,9 @@ import com.st3.uber.dto.user.driver.DriverActivityRequest;
 import com.st3.uber.dto.user.driver.DriverActivityResponse;
 import com.st3.uber.dto.user.driver.DriverRideDetailResponse;
 import com.st3.uber.dto.user.driver.DriverRideHistoryResponse;
-import com.st3.uber.dto.vehicle.VehicleResponse;
 import com.st3.uber.enums.RideStatus;
 import com.st3.uber.enums.VehicleType;
+import com.st3.uber.service.DriverRegistrationService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -24,35 +24,23 @@ import java.util.List;
 @RequestMapping("/api/drivers")
 public class DriverController {
 
-    // POST /api/drivers - Create new driver
+    private final DriverRegistrationService driverRegistrationService;
+
+    public DriverController(DriverRegistrationService driverRegistrationService) {
+        this.driverRegistrationService = driverRegistrationService;
+    }
+
     @PostMapping(
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<RegisterDriverResponse> registerDriver(@RequestBody RegisterDriverRequest req) {
-
-        VehicleResponse vehicleResponse = new VehicleResponse(
-                10L,
-                req.request().model(),
-                req.request().type() != null ? req.request().type() : VehicleType.STANDARD,
-                req.request().registrationNumber(),
-                req.request().seatingCapacity(),
-                req.request().babyTransport(),
-                req.request().petTransport()
-        );
-
-        RegisterDriverResponse response = new RegisterDriverResponse(
-                1L,
-                req.email(),
-                req.firstName(),
-                req.lastName(),
-                vehicleResponse,
-                false
-        );
-
-        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    public RegisterDriverResponse registerDriver(
+            @RequestBody RegisterDriverRequest req
+    ) {
+        return driverRegistrationService.register(req);
     }
+
 
     // GET /api/drivers/{id}
     @GetMapping(
@@ -61,22 +49,12 @@ public class DriverController {
     )
     public ResponseEntity<RegisterDriverResponse> getDriver(@PathVariable Long id) {
 
-        VehicleResponse vehicleResponse = new VehicleResponse(
-                10L,
-                "Toyota Corolla",
-                VehicleType.STANDARD,
-                "NS-123-AB",
-                4,
-                false,
-                false
-        );
-
         RegisterDriverResponse response = new RegisterDriverResponse(
                 id,
                 "driver@test.com",
                 "Marko",
                 "Markovic",
-                vehicleResponse,
+                null,
                 true
         );
 
@@ -87,29 +65,9 @@ public class DriverController {
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<RegisterDriverResponse>> getAllDrivers() {
 
-        VehicleResponse vehicle1 = new VehicleResponse(
-                10L,
-                "Toyota Corolla",
-                VehicleType.STANDARD,
-                "NS-123-AB",
-                4,
-                false,
-                false
-        );
-
-        VehicleResponse vehicle2 = new VehicleResponse(
-                11L,
-                "BMW X5",
-                VehicleType.VAN,
-                "BG-555-ZZ",
-                6,
-                true,
-                true
-        );
-
         List<RegisterDriverResponse> drivers = List.of(
-                new RegisterDriverResponse(1L, "driver1@test.com", "Marko", "Markovic", vehicle1, true),
-                new RegisterDriverResponse(2L, "driver2@test.com", "Jovan", "Jovanovic", vehicle2, true)
+                new RegisterDriverResponse(1L, "driver1@test.com", "Marko", "Markovic", null, true),
+                new RegisterDriverResponse(2L, "driver2@test.com", "Jovan", "Jovanovic", null, true)
         );
 
         return ResponseEntity.ok(drivers);
@@ -143,20 +101,6 @@ public class DriverController {
                         null,
                         false,
                         List.of("John Doe", "Jane Smith")
-                ),
-                new DriverRideHistoryResponse(
-                        2L,
-                        "Futoška 10",
-                        "Bulevar Cara Lazara 25",
-                        LocalDateTime.now().minusHours(5),
-                        LocalDateTime.now().minusHours(4),
-                        RideStatus.COMPLETED,
-                        320.0,
-                        6.2,
-                        false,
-                        null,
-                        false,
-                        List.of("Mike Johnson")
                 )
         );
 
@@ -215,23 +159,12 @@ public class DriverController {
             @PathVariable Long id,
             @RequestBody RegisterDriverRequest req
     ) {
-
-        VehicleResponse vehicleResponse = new VehicleResponse(
-                10L,
-                req.request().model(),
-                req.request().type() != null ? req.request().type() : VehicleType.STANDARD,
-                req.request().registrationNumber(),
-                req.request().seatingCapacity(),
-                req.request().babyTransport(),
-                req.request().petTransport()
-        );
-
         RegisterDriverResponse response = new RegisterDriverResponse(
                 id,
                 req.email(),
                 req.firstName(),
                 req.lastName(),
-                vehicleResponse,
+                null,
                 true
         );
 

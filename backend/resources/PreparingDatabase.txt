@@ -199,7 +199,7 @@ INSERT INTO rides (id, driver_id, creator_id, status, start_lat, start_lng, star
  'Stopped early due to panic button', 1);
 
 -- Update driver #7 to have current ride #4 (now that ride exists)
-UPDATE drivers SET driver_id = 4 WHERE id = 7;
+	UPDATE drivers SET driver_id = 4 WHERE id = 7;
 
 -- ========================================
 -- INSERT RIDE PASSENGERS (many-to-many)
