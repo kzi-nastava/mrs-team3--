@@ -7,9 +7,10 @@ import { RegisterComponent } from './register/register';
 import { ResetPasswordComponent } from './reset-password/reset-password';
 import { ForgotPassword } from './forgot-password/forgot-password';
 import {VerificationResultComponent} from './verification-result/verification-result';
+import { authGuard } from './guard/auth.guard';
 export const routes: Routes = [
   { path: '', component: LandingPageComponent },
-  { path: 'profile', component: ProfileComponent },
+  { path: 'profile', component: ProfileComponent, canActivate: [authGuard] },
   { path: 'login', component: Login },
   { path: 'register', component: RegisterComponent },
 
@@ -20,7 +21,7 @@ export const routes: Routes = [
         .then(m => m.DriverRegisterComponent)
   },
 
-  { path: 'ride-history', component: RideHistoryComponent },
+  { path: 'ride-history', component: RideHistoryComponent, canActivate: [authGuard] },
   { path: 'reset-password', component: ResetPasswordComponent },
   { path: 'forgot-password', component: ForgotPassword },
   {path: 'verification-result', component: VerificationResultComponent},
