@@ -8,7 +8,7 @@ import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { SplitterModule } from 'primeng/splitter';
 import { InputTextModule } from 'primeng/inputtext';
-import {MessageService} from 'primeng/api';
+import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-login',
@@ -20,6 +20,7 @@ import {MessageService} from 'primeng/api';
 export class Login {
   email = '';
   password = '';
+  loading = false;
 
   constructor(
     private authService: AuthService,
@@ -33,24 +34,86 @@ export class Login {
 
   onSubmit() {
     if (!this.email.trim() || !this.password) {
-      console.log('Please enter email and password.');
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Validation Error',
+        detail: 'Please enter email and password.'
+      });
       return;
     }
+
+    this.loading = true;
 
     this.authService.login(this.email.trim(), this.password).subscribe({
       next: (res) => {
         console.log('LOGIN SUCCESS', res);
-        this.messageService.add({severity:'success', summary: 'Login Successful', detail: 'Welcome back!'});
+        console.log('User ID:', this.authService.getUserId());
+        console.log('User Role:', this.authService.getUserRole());
+        console.log('User Email:', this.authService.getUserEmail());
+
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Login Successful',
+          detail: `Welcome back, ${res.email}!`
+        });
+
+        // Navigate based on role
+        const role = this.authService.getUserRole();
+        
+        // Redirect to appropriate page based on role
+        if (role === 'ADMIN') {
+          this.router.navigate(['/login']);
+        } else if (role === 'DRIVER') {
+          this.router.navigate(['/register']);
+        } else if (role === 'PASSENGER') {
+          this.router.navigate(['/profile']);
+        } else {
+          this.router.navigate(['/']);
+        }
+
+        this.loading = false;
       },
       error: (err) => {
         console.error('LOGIN ERROR', err);
-        this.messageService.add({severity:'error', summary: 'Login Failed', detail: 'Invalid email or password.'});
+        
+        let errorMessage = 'Invalid email or password.';
+        
+        // Handle specific error messages from backend
+        if (err.error) {
+          if (typeof err.error === 'string') {
+            errorMessage = err.error;
+          } else if (err.error.message) {
+            errorMessage = err.error.message;
+          }
+        }
 
+        // Check for specific error types
+        if (errorMessage.includes('blocked')) {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Account Blocked',
+            detail: 'Your account has been blocked. Please contact support.'
+          });
+        } else if (errorMessage.includes('not verified')) {
+          this.messageService.add({
+            severity: 'warn',
+            summary: 'Email Not Verified',
+            detail: 'Please verify your email before logging in.'
+          });
+        } else {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Login Failed',
+            detail: errorMessage
+          });
+        }
+
+        this.loading = false;
       },
     });
   }
 
   changePassword() {
-    this.router.navigate(['/forgot-password']).then();
+    this.router.navigate(['/forgot-password']);
   }
 }
