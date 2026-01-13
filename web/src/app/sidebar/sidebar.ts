@@ -1,51 +1,55 @@
-import { Component } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Subscription } from 'rxjs';
+import { AuthService } from '../services/auth.service';
+import { GuestSidebarComponent } from './guest-sidebar/guest-sidebar';
+import { PassengerSidebarComponent } from './passenger-sidebar/passenger-sidebar';
+import { DriverSidebarComponent } from './driver-sidebar/driver-sidebar';
+import { AdminSidebarComponent } from './admin-sidebar/admin-sidebar';
 
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [CommonModule],
+  imports: [
+    CommonModule,
+    GuestSidebarComponent,
+    PassengerSidebarComponent,
+    DriverSidebarComponent,
+    AdminSidebarComponent
+  ],
   templateUrl: './sidebar.html',
   styleUrl: './sidebar.css'
 })
-export class SidebarComponent {
+export class SidebarComponent implements OnInit, OnDestroy {
+  userRole: string | null = null;
+  private userSubscription?: Subscription;
 
-  role: 'DRIVER' | 'ADMIN' | 'GUEST' | 'REGISTERED' = 'DRIVER';
-  // kasnije: role = authService.getRole();
+  constructor(private authService: AuthService) {}
 
-  constructor(private router: Router) {}
+  ngOnInit() {
+    // Subscribe to user changes
+    this.userSubscription = this.authService.currentUser$.subscribe(user => {
+      this.userRole = user?.role || null;
+    });
+  }
 
+  ngOnDestroy() {
+    this.userSubscription?.unsubscribe();
+  }
+
+  get isGuest(): boolean {
+    return !this.authService.isAuthenticated();
+  }
+
+  get isPassenger(): boolean {
+    return this.authService.isPassenger();
+  }
+
+  get isDriver(): boolean {
+    return this.authService.isDriver();
+  }
 
   get isAdmin(): boolean {
-    return this.role === 'ADMIN';
-  }
-
-  get isNotGuest(): boolean {
-    return this.role !== 'GUEST';
-  }
-
-  goHome() {
-    this.router.navigateByUrl('/');
-  }
-
-  goHistory() {
-    this.router.navigateByUrl('/ride-history');
-  }
-
-  goMessages() {
-    alert('Messages - to be implemented');
-  }
-
-  goProfile() {
-    this.router.navigateByUrl('/profile');
-  }
-
-  goLogin() {
-    this.router.navigateByUrl('/login');
-  }
-
-  goDriverRegister() {
-    this.router.navigate(['/driver-register']);
+    return this.authService.isAdmin();
   }
 }
