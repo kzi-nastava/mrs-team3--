@@ -1,24 +1,9 @@
-<div class="icon-sidebar">
-  <button class="icon-btn" (click)="goHome()">🏠</button>
-
-
-    <button
-      class="icon-btn"
-      (click)="goDriverRegister()"
-      title="Register Driver">
-      📝
-    </button>
-
-
-  @if (isNotGuest) {
-    <button class="icon-btn" (click)="goMessages()">💬</button>
-    <button class="icon-btn" (click)="goHistory()">🚗</button>
-  }
-
-  <div class="spacer"></div>
-
-  @if (isNotGuest) {
-    <button class="icon-btn" (click)="goProfile()">👤</button>
-    <button class="icon-btn" (click)="goLogin()">🔐</button>
-  }
-</div>
+@if (isGuest) {
+  <app-guest-sidebar></app-guest-sidebar>
+} @else if (isPassenger) {
+  <app-passenger-sidebar></app-passenger-sidebar>
+} @else if (isDriver) {
+  <app-driver-sidebar></app-driver-sidebar>
+} @else if (isAdmin) {
+  <app-admin-sidebar></app-admin-sidebar>
+}
