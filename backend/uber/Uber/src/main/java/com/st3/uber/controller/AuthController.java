@@ -1,15 +1,19 @@
 package com.st3.uber.controller;
 
 import com.st3.uber.domain.Passenger;
+import com.st3.uber.domain.VerificationToken;
 import com.st3.uber.dto.auth.*;
+import com.st3.uber.enums.VerificationTokenType;
 import com.st3.uber.exception.TokenAlreadyUsedException;
 import com.st3.uber.exception.TokenException;
 import com.st3.uber.exception.TokenExpiredException;
+import com.st3.uber.exception.TokenInvalidException;
 import com.st3.uber.service.AuthService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.net.URI;
 import java.time.LocalDateTime;
@@ -76,12 +80,17 @@ public class AuthController {
 
     @PostMapping("/reset-password")
     public ResponseEntity<Void> resetPassword(@RequestBody ResetPasswordRequest req) {
-        authService.resetPassword(req);
-        return ResponseEntity.status(HttpStatus.FOUND)
-            .location(URI.create(frontendUrl + "/verification-result?status=success"))
-            .build();
-    }
+        try{
+            authService.resetPassword(req);
+            return ResponseEntity.ok().build();
+        }catch (TokenException ex) {
+            if (ex instanceof TokenExpiredException)
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Token expired");
+            else
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid token");
+        }
 
+    }
 
     @ExceptionHandler(TokenException.class)
     private ResponseEntity<String> handleTokenException(TokenException ex) {
@@ -97,5 +106,24 @@ public class AuthController {
                 .build();
     }
 
+    @GetMapping("/reset-password/verify")
+    public ResponseEntity<Void> verifyResetPassword(@RequestParam String token) {
+        try{
+            VerificationToken vt = authService.checkTokenValidity(token);
+
+            if (vt.getTokenType() != VerificationTokenType.PASSWORD_RESET) {
+                throw new TokenInvalidException("Invalid token type");
+            }
+            return ResponseEntity.status(HttpStatus.FOUND)
+                .location(URI.create(frontendUrl + "/reset-password?token=" + token))
+                .build();
+        }catch (TokenException ex) {
+            if (ex instanceof TokenExpiredException) {
+                throw new TokenExpiredException("Token expired");
+            } else
+                throw new TokenInvalidException("Invalid token");
+        }
+
+    }
 
 }
