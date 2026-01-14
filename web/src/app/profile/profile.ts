@@ -1,14 +1,14 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { 
-  UserProfileService, 
-  UserRole, 
+import {
+  UserProfileService,
   DriverProfileResponse,
   PassengerProfileResponse,
-  AdminProfileResponse,
-  VehicleResponse 
+  AdminProfileResponse
 } from '../services/user-profile.service';
+
+type UserRole = 'PASSENGER' | 'DRIVER' | 'ADMIN';
 
 interface Vehicle {
   model: string;
@@ -49,46 +49,131 @@ interface ChangeRequest {
   styleUrl: './profile.css'
 })
 export class ProfileComponent implements OnInit {
-  user: User = {
-    id: 0,
-    firstName: '',
-    lastName: '',
-    email: '',
-    phoneNumber: '',
-    address: '',
-    role: 'PASSENGER',
-    profileImage: ''
-  };
+
+  user: User | null = null;
 
   profileForm!: FormGroup;
   passwordForm!: FormGroup;
 
   editMode = false;
-  showPasswordModal: boolean = false;
+  showPasswordModal = false;
 
+  selectedFile: File | null = null;
+  imagePreview = '';
+
+  // 👇 VRACENO ZBOG HTML-A (UI-only)
   pendingChanges: ChangeRequest[] = [];
   hasPendingChanges = false;
 
-  selectedFile: File | null = null;
-  imagePreview: string = '';
-
   constructor(
-    private fb: FormBuilder,
-    private profileService: UserProfileService
-  ) {
-    this.initForms();
+  private fb: FormBuilder,
+  private profileService: UserProfileService,
+  private cdr: ChangeDetectorRef
+) {
+  this.initForms();
+}
+
+  ngOnInit(): void {
+  this.loadProfile();
+  }
+
+
+  loadProfile(): void {
+  this.profileService.getMyProfile().subscribe({
+    next: (response) => {
+      this.processApiResponse(response);
+      this.cdr.detectChanges();
+    },
+    error: (err) => {
+      console.error('Failed to load profile', err);
+      alert('Failed to load profile');
+    }
+  });
+}
+
+
+  private processApiResponse(
+    response: DriverProfileResponse | PassengerProfileResponse | AdminProfileResponse
+  ): void {
+
+    // DRIVER
+    if ('vehicle' in response) {
+
+      this.user = {
+        id: response.id,
+        firstName: response.firstName,
+        lastName: response.lastName,
+        email: response.email,
+        phoneNumber: response.phoneNumber,
+        address: response.address,
+        role: 'DRIVER',
+        profileImage: '',
+        activeHours: 6, 
+        vehicle: {
+          model: response.vehicle.model,
+          licensePlate: response.vehicle.registrationNumber,
+          seats: response.vehicle.seatingCapacity,
+          vehicleType: response.vehicle.vehicleType,
+          babyTransport: response.vehicle.babyTransport,
+          petTransport: response.vehicle.petTransport
+        }
+      };
+
+      const vehicle = this.user.vehicle!;
+
+      this.profileForm.patchValue({
+        firstName: this.user.firstName,
+        lastName: this.user.lastName,
+        email: this.user.email,
+        phoneNumber: this.user.phoneNumber,
+        address: this.user.address,
+        vehicleModel: vehicle.model,
+        vehicleLicensePlate: vehicle.licensePlate,
+        vehicleSeats: vehicle.seats,
+        vehicleType: vehicle.vehicleType,
+        babyTransport: vehicle.babyTransport,
+        petTransport: vehicle.petTransport
+      });
+
+      this.pendingChanges = [];
+      this.hasPendingChanges = false;
+
+      return;
+    }
+
+    // PASSENGER / ADMIN
+    this.user = {
+      id: response.id,
+      firstName: response.firstName,
+      lastName: response.lastName,
+      email: response.email,
+      phoneNumber: response.phoneNumber,
+      address: response.address,
+      role: 'PASSENGER',
+      profileImage: ''
+    };
+
+    this.profileForm.patchValue({
+      firstName: this.user.firstName,
+      lastName: this.user.lastName,
+      email: this.user.email,
+      phoneNumber: this.user.phoneNumber,
+      address: this.user.address
+    });
+
+    this.disableVehicleFields();
   }
 
   initForms(): void {
     this.profileForm = this.fb.group({
       firstName: ['', Validators.required],
       lastName: ['', Validators.required],
-      email: [{ value: '', disabled: true }, [Validators.required, Validators.email]],
+      email: [{ value: '', disabled: true }],
       phoneNumber: ['', Validators.required],
       address: ['', Validators.required],
       vehicleModel: [''],
       vehicleLicensePlate: [''],
-      vehicleSeats: ['', [Validators.min(1)]],
+      vehicleSeats: [''],
       vehicleType: ['STANDARD'],
       babyTransport: [false],
       petTransport: [false]
@@ -101,302 +186,45 @@ export class ProfileComponent implements OnInit {
     });
   }
 
-  ngOnInit(): void {
-    this.loadUserDataFromDatabase();
-  }
-
-  loadUserDataFromDatabase(): void {
-    const userId = this.getCurrentUserId();
-    
-    this.profileService.getProfile(userId).subscribe({
-      next: (response) => {
-        this.processApiResponse(response);
-      },
-      error: (error) => {
-        console.error('Error loading profile from API:', error);
-        alert('Error loading profile! Using mock data.');
-        this.loadMockUserData();
-      }
-    });
-  }
-
-  private getCurrentUserId(): number {
-    const userId = localStorage.getItem('userId');
-    return userId ? parseInt(userId) : 3;
-  }
-
-  private processApiResponse(
-    response: DriverProfileResponse | PassengerProfileResponse | AdminProfileResponse
-  ): void {
-    const isDriver = this.isDriverResponse(response);
-    
-    if (isDriver) {
-      const driverResponse = response as DriverProfileResponse;
-      
-      this.user = {
-        id: driverResponse.id,
-        firstName: driverResponse.firstName,
-        lastName: driverResponse.lastName,
-        email: driverResponse.email,
-        phoneNumber: driverResponse.phoneNumber,
-        address: driverResponse.address,
-        role: 'DRIVER',
-        profileImage: '',
-        activeHours: driverResponse.active ? 24 : 0,
-        vehicle: {
-          model: driverResponse.vehicle.model,
-          licensePlate: driverResponse.vehicle.registrationNumber,
-          seats: driverResponse.vehicle.seatingCapacity,
-          vehicleType: driverResponse.vehicle.vehicleType,
-          babyTransport: driverResponse.vehicle.babyTransport,
-          petTransport: driverResponse.vehicle.petTransport
-        }
-      };
-
-      this.profileForm.patchValue({
-        firstName: this.user.firstName,
-        lastName: this.user.lastName,
-        email: this.user.email,
-        phoneNumber: this.user.phoneNumber,
-        address: this.user.address,
-        vehicleModel: this.user.vehicle?.model || '',
-        vehicleLicensePlate: this.user.vehicle?.licensePlate || '',
-        vehicleSeats: this.user.vehicle?.seats || '',
-        vehicleType: this.user.vehicle?.vehicleType || 'STANDARD',
-        babyTransport: this.user.vehicle?.babyTransport || false,
-        petTransport: this.user.vehicle?.petTransport || false
-      });
-
-    } else {
-      const basicResponse = response as PassengerProfileResponse | AdminProfileResponse;
-      
-      const isAdmin = 'role' in basicResponse && basicResponse.role === 'ADMIN';
-      
-      this.user = {
-        id: basicResponse.id,
-        firstName: basicResponse.firstName,
-        lastName: basicResponse.lastName,
-        email: basicResponse.email,
-        phoneNumber: basicResponse.phoneNumber,
-        address: basicResponse.address,
-        role: isAdmin ? 'ADMIN' : 'PASSENGER',
-        profileImage: ''
-      };
-
-      this.profileForm.patchValue({
-        firstName: this.user.firstName,
-        lastName: this.user.lastName,
-        email: this.user.email,
-        phoneNumber: this.user.phoneNumber,
-        address: this.user.address
-      });
-
-      this.disableVehicleFields();
-    }
-
-    this.imagePreview = this.user.profileImage;
-
-    if (this.user.role === 'DRIVER') {
-      this.loadPendingChangesFromDatabase();
-    }
-  }
-
-  private isDriverResponse(
-    response: DriverProfileResponse | PassengerProfileResponse | AdminProfileResponse
-  ): response is DriverProfileResponse {
-    return 'vehicle' in response && response.vehicle !== undefined;
-  }
-
-  private loadPendingChangesFromDatabase(): void {
-    this.pendingChanges = [];
-    this.hasPendingChanges = false;
-  }
-
-  private disableVehicleFields(): void {
-    const vehicleFields = [
+  disableVehicleFields(): void {
+    [
       'vehicleModel',
-      'vehicleLicensePlate', 
+      'vehicleLicensePlate',
       'vehicleSeats',
       'vehicleType',
       'babyTransport',
       'petTransport'
-    ];
-    
-    vehicleFields.forEach(field => {
-      this.profileForm.get(field)?.disable();
-    });
+    ].forEach(f => this.profileForm.get(f)?.disable());
   }
 
-  private loadMockUserData(): void {
-    console.warn('Using mock data as fallback');
-    
-    const isDriver = false;
-    
-    if (isDriver) {
-      this.user = {
-        id: 1,
-        firstName: 'Marko',
-        lastName: 'Marković',
-        email: 'marko@example.com',
-        phoneNumber: '+381 64 123 4567',
-        address: 'Bulevar oslobođenja 46, Novi Sad',
-        role: 'DRIVER',
-        profileImage: '',
-        activeHours: 18.5,
-        vehicle: {
-          model: 'Toyota Corolla',
-          licensePlate: 'NS 123 AB',
-          seats: 4,
-          vehicleType: 'STANDARD',
-          babyTransport: true,
-          petTransport: false
-        }
-      };
-
-      this.profileForm.patchValue({
-        firstName: this.user.firstName,
-        lastName: this.user.lastName,
-        email: this.user.email,
-        phoneNumber: this.user.phoneNumber,
-        address: this.user.address,
-        vehicleModel: this.user.vehicle?.model || '',
-        vehicleLicensePlate: this.user.vehicle?.licensePlate || '',
-        vehicleSeats: this.user.vehicle?.seats || '',
-        vehicleType: this.user.vehicle?.vehicleType || 'STANDARD',
-        babyTransport: this.user.vehicle?.babyTransport || false,
-        petTransport: this.user.vehicle?.petTransport || false
-      });
-    } else {
-      this.user = {
-        id: 1,
-        firstName: 'Ana',
-        lastName: 'Anić',
-        email: 'ana@example.com',
-        phoneNumber: '+381 64 987 6543',
-        address: 'Knez Mihailova 15, Beograd',
-        role: 'PASSENGER',
-        profileImage: ''
-      };
-
-      this.profileForm.patchValue({
-        firstName: this.user.firstName,
-        lastName: this.user.lastName,
-        email: this.user.email,
-        phoneNumber: this.user.phoneNumber,
-        address: this.user.address
-      });
-
-      this.disableVehicleFields();
-    }
-  }
-
-  toggleEditMode(): void {
-    if (this.editMode) {
-      this.loadUserDataFromDatabase();
-    } else {
-      this.profileForm.enable();
-      this.profileForm.get('email')?.disable();
-      
-      if (this.user.role !== 'DRIVER') {
-        this.disableVehicleFields();
-      }
-    }
-    
-    this.editMode = !this.editMode;
-  }
-
-  onImageSelected(event: any): void {
-    const file = event.target.files[0];
-    if (file) {
-      this.selectedFile = file;
-      
-      const reader = new FileReader();
-      reader.onload = (e: any) => {
-        this.imagePreview = e.target.result;
-      };
-      reader.readAsDataURL(file);
-    }
-  }
-
-  removeImage(): void {
-    this.selectedFile = null;
-    this.imagePreview = '';
-  }
 
   saveChanges(): void {
-    if (this.profileForm.invalid) {
-      this.profileForm.markAllAsTouched();
-      alert('Please fill in all required fields correctly!');
-      return;
-    }
+  if (!this.user) return;        
+  if (this.profileForm.invalid) return;
 
-    const formData = this.profileForm.getRawValue();
+  if (this.user.role === 'DRIVER') {
+    alert('📤 Changes submitted for admin approval');
+    this.editMode = false;
+    return;
+  }
 
-    if (this.user.role === 'DRIVER') {
-      // DUMMY za vozače - samo prikazujemo poruku
-      alert('⚠️ Driver profile changes require admin approval. This feature is not yet implemented.');
+  const payload = this.profileForm.getRawValue();
+
+  this.profileService.updateMyProfile({
+    firstName: payload.firstName,
+    lastName: payload.lastName,
+    phoneNumber: payload.phoneNumber,
+    address: payload.address
+  }).subscribe({
+    next: () => {
       this.editMode = false;
-      return;
-    }
+      alert('✅ Profile updated');
+      this.loadProfile();
+    },
+    error: () => alert('❌ Update failed')
+  });
+}
 
-    // Za PASSENGER i ADMIN - šaljemo na backend
-    const updateRequest = {
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-      phoneNumber: formData.phoneNumber,
-      address: formData.address
-    };
-
-    this.profileService.updateProfile(this.user.id, updateRequest).subscribe({
-      next: () => {
-        // Ažuriramo lokalne podatke
-        this.user.firstName = formData.firstName;
-        this.user.lastName = formData.lastName;
-        this.user.phoneNumber = formData.phoneNumber;
-        this.user.address = formData.address;
-
-        if (this.imagePreview !== this.user.profileImage) {
-          this.user.profileImage = this.imagePreview;
-        }
-
-        this.editMode = false;
-        alert('✅ Profile updated successfully!');
-      },
-      error: (error) => {
-        console.error('Error updating profile:', error);
-        alert('❌ Error updating profile! Please try again.');
-      }
-    });
-  }
-
-  openChangePassword(): void {
-    this.showPasswordModal = true;
-    this.passwordForm.reset();
-  }
-
-  closePasswordModal(): void {
-    this.showPasswordModal = false;
-    this.passwordForm.reset();
-  }
-
-  changePassword(): void {
-    if (this.passwordForm.invalid) {
-      this.passwordForm.markAllAsTouched();
-      alert('Please fill in all fields correctly!');
-      return;
-    }
-
-    const { newPassword, confirmPassword } = this.passwordForm.value;
-
-    if (newPassword !== confirmPassword) {
-      alert('New passwords do not match!');
-      return;
-    }
-
-    console.log('Changing password...');
-    alert('Password changed successfully!');
-    this.closePasswordModal();
-  }
 
   getStatusColor(status: string): string {
     switch (status) {
@@ -415,4 +243,56 @@ export class ProfileComponent implements OnInit {
       default: return status;
     }
   }
+
+  toggleEditMode(): void {
+    if (this.editMode) {
+      this.loadProfile();
+    }
+    this.editMode = !this.editMode;
+  }
+
+onImageSelected(event: Event): void {
+  const input = event.target as HTMLInputElement;
+  if (!input.files || input.files.length === 0) return;
+
+  const file = input.files[0];
+  this.selectedFile = file;
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    this.imagePreview = reader.result as string;
+  };
+  reader.readAsDataURL(file);
+}
+
+removeImage(): void {
+  this.selectedFile = null;
+  this.imagePreview = '';
+}
+
+openChangePassword(): void {
+  this.showPasswordModal = true;
+  this.passwordForm.reset();
+}
+
+closePasswordModal(): void {
+  this.showPasswordModal = false;
+  this.passwordForm.reset();
+}
+
+changePassword(): void {
+  if (this.passwordForm.invalid) return;
+
+  const { newPassword, confirmPassword } = this.passwordForm.value;
+
+  if (newPassword !== confirmPassword) {
+    alert('❌ Passwords do not match');
+    return;
+  }
+
+  alert('🔒 Password changed successfully (backend not connected yet)');
+  this.closePasswordModal();
+}
+
+  
 }

@@ -48,18 +48,19 @@ export class UserProfileService {
 
   constructor(private http: HttpClient) {}
 
-  getProfile(userId: number): Observable<
+
+  getMyProfile(): Observable<
     DriverProfileResponse | PassengerProfileResponse | AdminProfileResponse
   > {
     return this.http.get<
       DriverProfileResponse | PassengerProfileResponse | AdminProfileResponse
-    >(`${this.API_URL}/${userId}`);
+    >(`${this.API_URL}/me`);
   }
 
-  updateProfile(
-    userId: number,
+ 
+  updateMyProfile(
     payload: UpdateUserProfileRequest
   ): Observable<void> {
-    return this.http.put<void>(`${this.API_URL}/${userId}`, payload);
+    return this.http.put<void>(`${this.API_URL}/me`, payload);
   }
 }
