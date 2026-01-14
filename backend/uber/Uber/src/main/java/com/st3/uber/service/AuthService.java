@@ -7,6 +7,7 @@ import com.st3.uber.dto.auth.*;
 import com.st3.uber.enums.UserRole;
 import com.st3.uber.enums.VerificationTokenType;
 import com.st3.uber.exception.TokenAlreadyUsedException;
+import com.st3.uber.exception.TokenException;
 import com.st3.uber.exception.TokenExpiredException;
 import com.st3.uber.exception.TokenInvalidException;
 import com.st3.uber.repository.UserRepository;
@@ -159,7 +160,6 @@ public class AuthService {
     return vt;
   }
 
-
   @Transactional
   public void verifyToken(String token) {
     VerificationToken vt = checkTokenValidity(token);
@@ -190,7 +190,7 @@ public class AuthService {
     verificationToken.setTokenType(VerificationTokenType.PASSWORD_RESET);
     tokenRepository.save(verificationToken);
 
-    String link = backendUrl + "  /reset-password?token=" + token;
+    String link = backendUrl + "/api/auth/reset-password/verify?token=" + token;
     String subject = "Reset your password";
     String body = "Click the link below to reset your password.";
     mailService.sendText(
@@ -203,7 +203,8 @@ public class AuthService {
   }
 
   @Transactional
-  public void resetPassword(ResetPasswordRequest req){
+  public void resetPassword(ResetPasswordRequest req) {
+
     VerificationToken vt = checkTokenValidity(req.getToken());
     if (vt.getTokenType() != VerificationTokenType.PASSWORD_RESET) {
       throw new TokenInvalidException("Invalid token type");
@@ -214,7 +215,8 @@ public class AuthService {
 
     vt.setUsed(true);
     userRepository.save(u);
+    tokenRepository.save(vt);
 
-    ResponseEntity.ok().build();
   }
+
 }

@@ -82,7 +82,7 @@ export class ResetPasswordComponent {
         console.error('RESET PASSWORD ERROR', err);
 
         if ([400, 401, 404].includes(err.status)) {
-          this.router.navigate(['/verification-result'], {
+            this.router.navigate(['/verification-result'], {
             queryParams: {status: 'invalid'}
           }).then(r => {});
           return;
