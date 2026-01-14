@@ -74,7 +74,8 @@ public class AuthService {
         throw new RuntimeException("Email not verified");
       }
     }
-    String role = u.getClass().getSimpleName().toUpperCase();
+   // String role2 = u.getClass().getSimpleName().toUpperCase();
+    String role = u.getRole().name();
 
     String token = generateToken(u, role);
     return new LoginResponse(u.getId(), u.getEmail(), role, token);
