@@ -1,50 +1,57 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import {CardModule} from 'primeng/card';
+import { CardModule } from 'primeng/card';
+import { ButtonModule } from 'primeng/button';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-verification-result',
   standalone: true,
   templateUrl: './verification-result.html',
-  imports: [
-    CardModule
-  ],
+  imports: [CardModule, ButtonModule],
   styleUrls: ['./verification-result.css']
 })
-export class VerificationResultComponent implements OnInit {
+export class VerificationResultComponent {
 
   title = '';
   message = '';
 
-  constructor(private route: ActivatedRoute) {}
+  constructor(
+    private route: ActivatedRoute,
+    private authService: AuthService
+  ) {
+    this.route.queryParamMap.subscribe(params => {
+      const status = params.get('status') ?? 'success';
 
-  ngOnInit(): void {
-    const status = this.route.snapshot.queryParamMap.get('status');
+      switch (status) {
+        case 'success':
+          this.title = 'Success 🎉';
+          this.message = 'Operation completed successfully. You can now log in.';
+          break;
 
-    switch (status) {
-      case 'success':
-        this.title = 'Email Verified 🎉';
-        this.message = 'Your account is now active. You can log in.';
-        break;
+        case 'expired':
+          this.title = 'Link Expired ⏰';
+          this.message = 'This verification link has expired.';
+          break;
 
-      case 'expired':
-        this.title = 'Link Expired ⏰';
-        this.message = 'This verification link has expired. Please register again.';
-        break;
+        case 'used':
+          this.title = 'Already Used ✅';
+          this.message = 'This verification link has already been used.';
+          break;
 
-      case 'used':
-        this.title = 'Already Verified ✅';
-        this.message = 'This email has already been verified. You can log in.';
-        break;
+        case 'invalid':
+          this.title = 'Invalid Link ❌';
+          this.message = 'This verification link is not valid.';
+          break;
 
-      case 'invalid':
-        this.title = 'Invalid Link ❌';
-        this.message = 'This verification link is not valid.';
-        break;
+        default:
+          this.title = 'Success 🎉';
+          this.message = 'Operation completed successfully. You can now log in.';
+      }
+    });
+  }
 
-      default:
-        this.title = 'Error';
-        this.message = 'Something went wrong.';
-    }
+  goToLogin() {
+    this.authService.logout();
   }
 }

@@ -25,7 +25,7 @@ public class Driver extends User {
     @Column(nullable = false)
     private boolean free = false;
 
-    @OneToOne(fetch = FetchType.EAGER)
+    @OneToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     @JoinColumn(name = "vehicle_id", nullable = false)
     private Vehicle vehicle;
 

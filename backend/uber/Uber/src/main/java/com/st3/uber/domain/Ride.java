@@ -13,6 +13,8 @@ import java.util.List;
 
 @Entity
 @Table(name = "rides")
+@Getter
+@Setter
 public class Ride {
 
     @Id
