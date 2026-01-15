@@ -19,6 +19,9 @@ export class MapComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private map: any;
 
+  /** ✅ DODATO – invalidacija asinhronih ruta */
+  private routeRequestId = 0;
+
   // Simple mode
   private startMarker: any = null;
   private endMarker: any = null;
@@ -51,41 +54,33 @@ export class MapComponent implements OnInit, OnDestroy {
   }
 
   private initMap(): void {
-  this.map = L.map('map').setView([45.2671, 19.8335], 13);
+    this.map = L.map('map').setView([45.2671, 19.8335], 13);
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '© OpenStreetMap'
-  }).addTo(this.map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap'
+    }).addTo(this.map);
 
-  // Left click
-  this.map.on('click', (e: any) => {
-    this.addLocationMarker(e.latlng);
-  });
-
-  // Right click - for booking mode only
-  if (this.mode === 'booking') {
-    this.map.on('contextmenu', (e: any) => {
-      this.addDestinationFromMap(e.latlng);
+    this.map.on('click', (e: any) => {
+      this.addLocationMarker(e.latlng);
     });
-  }
-}
 
-  // For non-registered users - simple mode
+    if (this.mode === 'booking') {
+      this.map.on('contextmenu', (e: any) => {
+        this.addDestinationFromMap(e.latlng);
+      });
+    }
+  }
+
+  // ================= SIMPLE MODE =================
 
   private subscribeToSimpleMode(): void {
     this.rideService.rideData$
       .pipe(takeUntil(this.destroy$))
       .subscribe(data => {
-        if (data.start) {
-          this.addStartMarker(data.start);
-        }
-        if (data.end) {
-          this.addEndMarker(data.end);
-        }
-        if (data.start && data.end) {
-          this.drawSimpleRoute();
-        }
+        if (data.start) this.addStartMarker(data.start);
+        if (data.end) this.addEndMarker(data.end);
+        if (data.start && data.end) this.drawSimpleRoute();
       });
 
     this.rideService.clearRoute$
@@ -102,9 +97,7 @@ export class MapComponent implements OnInit, OnDestroy {
   }
 
   private addStartMarker(location: Location): void {
-    if (this.startMarker) {
-      this.map.removeLayer(this.startMarker);
-    }
+    if (this.startMarker) this.map.removeLayer(this.startMarker);
 
     const latlng = { lat: location.lat, lng: location.lng };
 
@@ -123,9 +116,7 @@ export class MapComponent implements OnInit, OnDestroy {
   }
 
   private addEndMarker(location: Location): void {
-    if (this.endMarker) {
-      this.map.removeLayer(this.endMarker);
-    }
+    if (this.endMarker) this.map.removeLayer(this.endMarker);
 
     const latlng = { lat: location.lat, lng: location.lng };
 
@@ -144,68 +135,61 @@ export class MapComponent implements OnInit, OnDestroy {
   }
 
   private drawSimpleRoute(): void {
-    if (this.startMarker && this.endMarker) {
-      const startLatLng = this.startMarker.getLatLng();
-      const endLatLng = this.endMarker.getLatLng();
+    if (!this.startMarker || !this.endMarker) return;
 
-      const apiKey = 'add your key here'; //Add you key here
-      const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${apiKey}&start=${startLatLng.lng},${startLatLng.lat}&end=${endLatLng.lng},${endLatLng.lat}`;
+    /** ✅ DODATO */
+    this.routeRequestId++;
+    const requestId = this.routeRequestId;
 
-      fetch(url)
-        .then(response => response.json())
-        .then(data => {
-          const coordinates = data.features[0].geometry.coordinates;
-          const routeCoordinates = coordinates.map((coord: any) => [coord[1], coord[0]]);
+    const startLatLng = this.startMarker.getLatLng();
+    const endLatLng = this.endMarker.getLatLng();
 
-          if (this.routeLine) {
-            this.map.removeLayer(this.routeLine);
-          }
+    const apiKey = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjI2YjEzYWE0MjBjOWE5NDU1YWJlNzI1Y2Q1MjFhMmZmNmQ3NTM0YjcwMzk2NmRlNzBmMDIwZmJlIiwiaCI6Im11cm11cjY0In0=';
+    const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${apiKey}&start=${startLatLng.lng},${startLatLng.lat}&end=${endLatLng.lng},${endLatLng.lat}`;
 
-          this.routeLine = L.polyline(routeCoordinates, {
-            color: 'blue',
-            weight: 4
-          }).addTo(this.map);
+    fetch(url)
+      .then(r => r.json())
+      .then(data => {
+        /** ✅ DODATO */
+        if (requestId !== this.routeRequestId) return;
 
-          this.map.fitBounds(this.routeLine.getBounds(), { padding: [50, 50] });
-        })
-        .catch(error => {
-          console.error('Routing error:', error);
-          alert('Failed to calculate route. Please try again.');
-        });
-    }
+        const coordinates = data.features[0].geometry.coordinates;
+        const routeCoordinates = coordinates.map((c: any) => [c[1], c[0]]);
+
+        if (this.routeLine) this.map.removeLayer(this.routeLine);
+
+        this.routeLine = L.polyline(routeCoordinates, {
+          color: 'blue',
+          weight: 4
+        }).addTo(this.map);
+
+        this.map.fitBounds(this.routeLine.getBounds(), { padding: [50, 50] });
+      });
   }
 
   private clearSimpleMarkers(): void {
-    if (this.startMarker) {
-      this.map.removeLayer(this.startMarker);
-      this.startMarker = null;
-    }
-    if (this.endMarker) {
-      this.map.removeLayer(this.endMarker);
-      this.endMarker = null;
-    }
-    if (this.routeLine) {
-      this.map.removeLayer(this.routeLine);
-      this.routeLine = null;
-    }
+    /** ✅ DODATO */
+    this.routeRequestId++;
+
+    if (this.startMarker) this.map.removeLayer(this.startMarker);
+    if (this.endMarker) this.map.removeLayer(this.endMarker);
+    if (this.routeLine) this.map.removeLayer(this.routeLine);
+
+    this.startMarker = null;
+    this.endMarker = null;
+    this.routeLine = null;
   }
 
-  // For registered users - booking mode
+  // ================= BOOKING MODE =================
 
   private subscribeToBookingMode(): void {
     this.rideBookingService.rideBookingData$
       .pipe(takeUntil(this.destroy$))
       .subscribe(data => {
-        if (data.pickup) {
-          this.addPickupMarker(data.pickup);
-        }
+        if (data.pickup) this.addPickupMarker(data.pickup);
         this.updateStopMarkers(data.stops);
-        if (data.destination) {
-          this.addDestinationMarker(data.destination);
-        }
-        if (data.pickup && data.destination) {
-          this.drawBookingRoutes();
-        }
+        if (data.destination) this.addDestinationMarker(data.destination);
+        if (data.pickup && data.destination) this.drawBookingRoutes();
       });
 
     this.rideBookingService.clearRoute$
@@ -222,9 +206,7 @@ export class MapComponent implements OnInit, OnDestroy {
   }
 
   private addPickupMarker(location: Location): void {
-    if (this.pickupMarker) {
-      this.map.removeLayer(this.pickupMarker);
-    }
+    if (this.pickupMarker) this.map.removeLayer(this.pickupMarker);
 
     const latlng = { lat: location.lat, lng: location.lng };
 
@@ -238,14 +220,10 @@ export class MapComponent implements OnInit, OnDestroy {
         shadowSize: [41, 41]
       })
     }).addTo(this.map).bindPopup('Pickup').openPopup();
-
-    this.map.setView(latlng, 14);
   }
 
   private updateStopMarkers(stops: Location[]): void {
-    this.stopMarkers.forEach(marker => {
-      this.map.removeLayer(marker);
-    });
+    this.stopMarkers.forEach(m => this.map.removeLayer(m));
     this.stopMarkers = [];
 
     stops.forEach((stop, index) => {
@@ -267,9 +245,7 @@ export class MapComponent implements OnInit, OnDestroy {
   }
 
   private addDestinationMarker(location: Location): void {
-    if (this.destinationMarker) {
-      this.map.removeLayer(this.destinationMarker);
-    }
+    if (this.destinationMarker) this.map.removeLayer(this.destinationMarker);
 
     const latlng = { lat: location.lat, lng: location.lng };
 
@@ -283,21 +259,18 @@ export class MapComponent implements OnInit, OnDestroy {
         shadowSize: [41, 41]
       })
     }).addTo(this.map).bindPopup('Destination').openPopup();
-
-    this.map.setView(latlng, 14);
   }
 
   private drawBookingRoutes(): void {
-    this.routeLines.forEach(line => {
-      this.map.removeLayer(line);
-    });
+    /** ✅ DODATO */
+    this.routeRequestId++;
+    const requestId = this.routeRequestId;
+
+    this.routeLines.forEach(l => this.map.removeLayer(l));
     this.routeLines = [];
 
     const rideData = this.rideBookingService.getRideBookingData();
-
-    if (!rideData.pickup || !rideData.destination) {
-      return;
-    }
+    if (!rideData.pickup || !rideData.destination) return;
 
     const waypoints: Location[] = [
       rideData.pickup,
@@ -306,64 +279,55 @@ export class MapComponent implements OnInit, OnDestroy {
     ];
 
     for (let i = 0; i < waypoints.length - 1; i++) {
-      this.drawRouteBetween(waypoints[i], waypoints[i + 1], i);
+      this.drawRouteBetween(waypoints[i], waypoints[i + 1], i, requestId);
     }
   }
 
-  private drawRouteBetween(start: Location, end: Location, segmentIndex: number): void {
-    const apiKey = 'add your key here'; //Add you key here
+  private drawRouteBetween(
+    start: Location,
+    end: Location,
+    segmentIndex: number,
+    requestId: number
+  ): void {
+    const apiKey = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjI2YjEzYWE0MjBjOWE5NDU1YWJlNzI1Y2Q1MjFhMmZmNmQ3NTM0YjcwMzk2NmRlNzBmMDIwZmJlIiwiaCI6Im11cm11cjY0In0=';
     const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${apiKey}&start=${start.lng},${start.lat}&end=${end.lng},${end.lat}`;
 
     fetch(url)
-      .then(response => response.json())
+      .then(r => r.json())
       .then(data => {
-        const coordinates = data.features[0].geometry.coordinates;
-        const routeCoordinates = coordinates.map((coord: any) => [coord[1], coord[0]]);
+        /** ✅ DODATO */
+        if (requestId !== this.routeRequestId) return;
 
-        const routeLine = L.polyline(routeCoordinates, {
+        const coords = data.features[0].geometry.coordinates;
+        const routeCoords = coords.map((c: any) => [c[1], c[0]]);
+
+        const routeLine = L.polyline(routeCoords, {
           color: 'blue',
           weight: 4,
           opacity: 0.7
         }).addTo(this.map);
 
         this.routeLines.push(routeLine);
-
-        if (segmentIndex === 0 && this.routeLines.length === 1) {
-          const bounds = L.latLngBounds([]);
-
-          if (this.pickupMarker) bounds.extend(this.pickupMarker.getLatLng());
-          this.stopMarkers.forEach(marker => bounds.extend(marker.getLatLng()));
-          if (this.destinationMarker) bounds.extend(this.destinationMarker.getLatLng());
-
-          this.map.fitBounds(bounds, { padding: [50, 50] });
-        }
-      })
-      .catch(error => {
-        console.error('Routing error:', error);
       });
   }
 
   private clearBookingMarkers(): void {
-    if (this.pickupMarker) {
-      this.map.removeLayer(this.pickupMarker);
-      this.pickupMarker = null;
-    }
+    /** ✅ DODATO */
+    this.routeRequestId++;
 
-    this.stopMarkers.forEach(marker => {
-      this.map.removeLayer(marker);
-    });
+    if (this.pickupMarker) this.map.removeLayer(this.pickupMarker);
+    if (this.destinationMarker) this.map.removeLayer(this.destinationMarker);
+
+    this.stopMarkers.forEach(m => this.map.removeLayer(m));
+    this.routeLines.forEach(l => this.map.removeLayer(l));
+
+    this.pickupMarker = null;
+    this.destinationMarker = null;
     this.stopMarkers = [];
-
-    if (this.destinationMarker) {
-      this.map.removeLayer(this.destinationMarker);
-      this.destinationMarker = null;
-    }
-
-    this.routeLines.forEach(line => {
-      this.map.removeLayer(line);
-    });
     this.routeLines = [];
   }
+
+  // ================= MAP INTERACTION =================
 
   private addDestinationFromMap(latlng: any): void {
     const location: Location = {
@@ -375,37 +339,24 @@ export class MapComponent implements OnInit, OnDestroy {
     this.rideBookingService.setDestinationLocation(location);
   }
 
-
   private addLocationMarker(latlng: any): void {
-  const location: Location = {
-    lat: latlng.lat,
-    lng: latlng.lng,
-    name: `${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}`
-  };
+    const location: Location = {
+      lat: latlng.lat,
+      lng: latlng.lng,
+      name: `${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}`
+    };
 
-  if (this.mode === 'simple') {
-    const rideData = this.rideService.getRideData();
+    if (this.mode === 'simple') {
+      const rideData = this.rideService.getRideData();
 
-    if (!rideData.start) {
-      this.rideService.setStartLocation(location);
-    } else if (!rideData.end) {
-      this.rideService.setEndLocation(location);
+      if (!rideData.start) this.rideService.setStartLocation(location);
+      else if (!rideData.end) this.rideService.setEndLocation(location);
+      else this.rideService.clearRoute();
     } else {
-      this.rideService.clearRoute();
-      setTimeout(() => {
-        this.addLocationMarker(latlng);
-      }, 100);
-    }
-  } else {
-    // Left click adds pickup or stop
-    const rideData = this.rideBookingService.getRideBookingData();
+      const rideData = this.rideBookingService.getRideBookingData();
 
-    // Add stop or pickup
-    if (!rideData.pickup) {
-      this.rideBookingService.setPickupLocation(location);
-    } else {
-      this.rideBookingService.addStopLocation(location);
+      if (!rideData.pickup) this.rideBookingService.setPickupLocation(location);
+      else this.rideBookingService.addStopLocation(location);
     }
   }
-}
 }
