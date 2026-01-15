@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import {ActivatedRoute, Router} from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 
@@ -8,8 +8,8 @@ import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import { ToastModule } from 'primeng/toast';
-import {SplitterModule} from 'primeng/splitter';
-import {AuthService} from '../services/auth.service';
+import { SplitterModule } from 'primeng/splitter';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-reset-password',
@@ -28,23 +28,29 @@ import {AuthService} from '../services/auth.service';
   ]
 })
 export class ResetPasswordComponent {
+
   token = '';
   newPassword = '';
   confirmPassword = '';
 
+  mode: 'reset' | 'activate' = 'reset';
+
   strongRegex = '^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{8,}$';
 
-  constructor(private router: Router,
-              private messageService: MessageService,
-              private authService: AuthService,
-              private route: ActivatedRoute) {
+  constructor(
+    private router: Router,
+    private messageService: MessageService,
+    private authService: AuthService,
+    private route: ActivatedRoute
+  ) {
     this.route.queryParamMap.subscribe(params => {
       this.token = params.get('token') ?? '';
+      this.mode = params.get('mode') === 'activate' ? 'activate' : 'reset';
 
       if (!this.token) {
         this.router.navigate(['/verification-result'], {
-          queryParams: {status: 'invalid'}
-        }).then(r => {});
+          queryParams: { status: 'invalid' }
+        }).then(() => {});
       }
     });
   }
@@ -69,22 +75,29 @@ export class ResetPasswordComponent {
     }
 
     this.authService.resetPassword(this.token, this.newPassword).subscribe({
-      next: (res) => {
-        console.log('RESET PASSWORD SUCCESS', res);
+      next: () => {
         this.messageService.add({
           severity: 'success',
           summary: 'Success',
-          detail: 'Password updated successfully.',
+          detail:
+            this.mode === 'activate'
+              ? 'Account activated successfully. You can now log in.'
+              : 'Password updated successfully.',
         });
-        // this.router.navigate(['/login']).then();
+
+        setTimeout(() => {
+          this.router.navigate(['/verification-result'], {
+            queryParams: { status: 'success' }
+          });
+        }, 1200);
       },
       error: (err) => {
         console.error('RESET PASSWORD ERROR', err);
 
         if ([400, 401, 404].includes(err.status)) {
-            this.router.navigate(['/verification-result'], {
-            queryParams: {status: 'invalid'}
-          }).then(r => {});
+          this.router.navigate(['/verification-result'], {
+            queryParams: { status: 'invalid' }
+          }).then(() => {});
           return;
         }
 

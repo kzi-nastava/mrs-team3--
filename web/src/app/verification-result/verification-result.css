@@ -24,3 +24,34 @@
   margin-bottom: 2rem;
   line-height: 1.5;
 }
+
+.login-link {
+  background: linear-gradient(135deg, #9b7fc9 0%, #8566b3 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 999px;
+  padding: 0.75rem 2.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 6px 18px rgba(133, 102, 179, 0.35);
+}
+
+.login-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(133, 102, 179, 0.45);
+  background: linear-gradient(135deg, #a88ed2 0%, #8f71be 100%);
+}
+
+.login-link:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(133, 102, 179, 0.3);
+}
+
+.login-link:focus {
+  outline: none;
+  box-shadow:
+    0 0 0 3px rgba(155, 127, 201, 0.35),
+    0 6px 18px rgba(133, 102, 179, 0.35);
+}

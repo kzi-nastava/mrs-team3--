@@ -1,5 +1,6 @@
 package com.st3.uber.service;
 
+import com.st3.uber.domain.Driver;
 import com.st3.uber.domain.Passenger;
 import com.st3.uber.domain.User;
 import com.st3.uber.domain.VerificationToken;
@@ -205,18 +206,25 @@ public class AuthService {
   @Transactional
   public void resetPassword(ResetPasswordRequest req) {
 
-    VerificationToken vt = checkTokenValidity(req.getToken());
-    if (vt.getTokenType() != VerificationTokenType.PASSWORD_RESET) {
-      throw new TokenInvalidException("Invalid token type");
-    }
-    User u = vt.getUser();
-    String hashedPassword = passwordEncoder.encode(req.getNewPassword());
-    u.setPassword(hashedPassword);
+      VerificationToken vt = checkTokenValidity(req.getToken());
 
-    vt.setUsed(true);
-    userRepository.save(u);
-    tokenRepository.save(vt);
+      if (vt.getTokenType() != VerificationTokenType.PASSWORD_RESET) {
+          throw new TokenInvalidException("Invalid token type");
+      }
 
+      User u = vt.getUser();
+
+      u.setPassword(passwordEncoder.encode(req.getNewPassword()));
+
+      if (u instanceof Driver driver) {
+          driver.setActive(true);
+      }
+
+      vt.setUsed(true);
+
+      userRepository.save(u);
+      tokenRepository.save(vt);
   }
+
 
 }

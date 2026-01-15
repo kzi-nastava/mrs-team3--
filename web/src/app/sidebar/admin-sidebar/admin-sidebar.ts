@@ -55,4 +55,8 @@ export class AdminSidebarComponent {
       this.authService.logout();
     }
   }
+
+  registerDriver() {
+    this.router.navigate(['/driver-register']);
+  }
 }

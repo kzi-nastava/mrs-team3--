@@ -13,12 +13,14 @@ export const routes: Routes = [
   { path: 'profile', component: ProfileComponent, canActivate: [authGuard] },
   { path: 'login', component: Login },
   { path: 'register', component: RegisterComponent },
+  
 
   {
     path: 'driver-register',
     loadComponent: () =>
       import('./driver-register/driver-register')
-        .then(m => m.DriverRegisterComponent)
+        .then(m => m.DriverRegisterComponent),
+        canActivate: [authGuard]
   },
 
   { path: 'ride-history', component: RideHistoryComponent, canActivate: [authGuard] },

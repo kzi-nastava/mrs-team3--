@@ -5,6 +5,10 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
+import { ToastModule } from 'primeng/toast';
+import { MessageService } from 'primeng/api';
+
+import { DriverService } from '../services/driver.service';
 
 @Component({
   selector: 'app-driver-register',
@@ -15,31 +19,36 @@ import { InputTextModule } from 'primeng/inputtext';
 
     CardModule,
     ButtonModule,
-    InputTextModule
+    InputTextModule,
+    ToastModule
   ],
+  providers: [MessageService],
   templateUrl: './driver-register.html',
   styleUrls: ['./driver-register.css']
 })
 export class DriverRegisterComponent {
+
   submitting = false;
   form!: FormGroup;
 
-  constructor(private fb: FormBuilder) {
+  constructor(
+    private fb: FormBuilder,
+    private driverService: DriverService,
+    private messageService: MessageService
+  ) {
     this.form = this.fb.group({
-      // DRIVER
       firstName: ['', Validators.required],
       lastName: ['', Validators.required],
-      username: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
       phone: ['', Validators.required],
+      address: ['', Validators.required],
 
-      // VEHICLE
       vehicleModel: ['', Validators.required],
-      vehicleBrand: ['', Validators.required],
-      year: ['', Validators.required],
-      color: ['', Validators.required],
       plate: ['', Validators.required],
-      seats: ['', Validators.required]
+      seats: [1, [Validators.required, Validators.min(1)]],
+      vehicleType: ['STANDARD', Validators.required],
+      babyTransport: [false],
+      petTransport: [false]
     });
   }
 
@@ -50,10 +59,44 @@ export class DriverRegisterComponent {
     }
 
     this.submitting = true;
-    console.log('DRIVER REGISTER DATA:', this.form.value);
 
-    setTimeout(() => {
-      this.submitting = false;
-    }, 600);
+    const payload = {
+      email: this.form.value.email,
+      password: 'test123',
+      firstName: this.form.value.firstName,
+      lastName: this.form.value.lastName,
+      phoneNumber: this.form.value.phone,
+      address: this.form.value.address,
+      request: {
+        model: this.form.value.vehicleModel,
+        type: this.form.value.vehicleType,
+        registrationNumber: this.form.value.plate,
+        seatingCapacity: Number(this.form.value.seats),
+        babyTransport: this.form.value.babyTransport,
+        petTransport: this.form.value.petTransport
+      }
+    };
+
+    this.driverService.registerDriver(payload).subscribe({
+      next: (res) => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Driver registered',
+          detail: 'Driver has been successfully registered!'
+        });
+
+        this.submitting = false;
+        this.form.reset({ vehicleType: 'STANDARD', seats: 1 });
+      },
+      error: (err) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Registration failed',
+          detail: err?.error?.message || 'Something went wrong'
+        });
+
+        this.submitting = false;
+      }
+    });
   }
 }
