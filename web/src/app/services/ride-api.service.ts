@@ -1,0 +1,34 @@
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+
+export interface LocationRequest {
+  latitude: number;
+  longitude: number;
+  address: string;
+}
+
+export interface CreateRideRequest {
+  startLocation: LocationRequest;
+  endLocation: LocationRequest;
+  stops: LocationRequest[];
+  passengerEmails: string[];
+  vehicleType: 'STANDARD' | 'VAN' | 'LUXURY';
+  babyTransport: boolean;
+  petTransport: boolean;
+  scheduledAt?: string;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class RideApiService {
+
+  private apiUrl = 'http://localhost:8080/api/rides';
+
+  constructor(private http: HttpClient) {}
+
+  createRide(payload: CreateRideRequest): Observable<any> {
+    return this.http.post(this.apiUrl, payload);
+  }
+}

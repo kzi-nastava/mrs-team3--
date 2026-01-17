@@ -16,7 +16,9 @@
       @if (showPickupSuggestions && pickupSuggestions.length > 0) {
         <div class="suggestions">
           @for (suggestion of pickupSuggestions; track suggestion.place_id) {
-            <div class="suggestion-item" (click)="selectPickupSuggestion(suggestion)">
+            <div
+              class="suggestion-item"
+              (click)="selectPickupSuggestion(suggestion)">
               {{ suggestion.display_name }}
             </div>
           }
@@ -39,13 +41,18 @@
             class="location-input"
             [value]="stop.location"
             (input)="onStopInputChange(stop.id, $event)">
-          <button type="button" class="remove-stop-btn" (click)="removeStop(stop.id)">✕</button>
+          <button
+            type="button"
+            class="remove-stop-btn"
+            (click)="removeStop(stop.id)">✕</button>
         </div>
 
         @if (stop.showSuggestions && stop.suggestions.length > 0) {
           <div class="suggestions">
             @for (suggestion of stop.suggestions; track suggestion.place_id) {
-              <div class="suggestion-item" (click)="selectStopSuggestion(stop.id, suggestion)">
+              <div
+                class="suggestion-item"
+                (click)="selectStopSuggestion(stop.id, suggestion)">
                 {{ suggestion.display_name }}
               </div>
             }
@@ -67,7 +74,9 @@
       @if (showDestinationSuggestions && destinationSuggestions.length > 0) {
         <div class="suggestions">
           @for (suggestion of destinationSuggestions; track suggestion.place_id) {
-            <div class="suggestion-item" (click)="selectDestinationSuggestion(suggestion)">
+            <div
+              class="suggestion-item"
+              (click)="selectDestinationSuggestion(suggestion)">
               {{ suggestion.display_name }}
             </div>
           }
@@ -112,14 +121,40 @@
         🐶 Pet friendly
       </label>
 
-      <label class="passengers-option">
-        👥 Passengers:
+    </div>
+
+    <!-- ✅ DODATO – INVITE PASSENGERS (NIŠTA DRUGO NIJE DIRANO) -->
+    <div class="extras-section">
+      <h3>Invite passengers</h3>
+
+      <div class="input-group">
         <input
-          type="number"
-          min="1"
-          max="8"
-          formControlName="passengers">
-      </label>
+          #emailInput
+          type="email"
+          placeholder="Passenger email"
+          class="location-input">
+
+        <button
+          type="button"
+          class="remove-stop-btn"
+          (click)="addPassengerEmail(emailInput)">
+          +
+        </button>
+      </div>
+
+      <div style="margin-top: 0.5rem">
+        @for (ctrl of passengerEmails.controls; track $index; let i = $index) {
+          <div class="input-group stop-group">
+            <span>{{ ctrl.value }}</span>
+            <button
+              type="button"
+              class="remove-stop-btn"
+              (click)="removePassengerEmail(i)">
+              ✕
+            </button>
+          </div>
+        }
+      </div>
     </div>
 
     <div class="button-group">

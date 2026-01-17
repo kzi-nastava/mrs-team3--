@@ -2,11 +2,13 @@ package com.st3.uber.controller;
 
 import com.st3.uber.domain.Location;
 import com.st3.uber.domain.Ride;
+import com.st3.uber.domain.RideInvite;
 import com.st3.uber.dto.ride.*;
 import com.st3.uber.enums.CancelledBy;
 import com.st3.uber.enums.RideStatus;
 import com.st3.uber.dto.route.RouteEstimateRequest;
 import com.st3.uber.dto.route.RouteEstimateResponse;
+import com.st3.uber.repository.RideInviteRepository;
 import com.st3.uber.service.RideService;
 import com.st3.uber.util.ComparatorUtils;
 import jakarta.annotation.security.RolesAllowed;
@@ -14,8 +16,9 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
+import org.springframework.security.oauth2.jwt.Jwt;
 import java.util.concurrent.ThreadLocalRandom;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -26,9 +29,12 @@ import java.util.List;
 public class RideController {
 
     private final RideService rideService;
+    private final RideInviteRepository rideInviteRepository;
 
-    public RideController(RideService rideService) {
+
+    public RideController(RideService rideService, RideInviteRepository rideInviteRepository) {
         this.rideService = rideService;
+        this.rideInviteRepository = rideInviteRepository;
     }
 
 
@@ -38,9 +44,10 @@ public class RideController {
     )
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<RideResponse> createRide(
-            @RequestParam Long passengerId,
+            @AuthenticationPrincipal Jwt jwt,
             @RequestBody CreateRideRequest request
     ) {
+        Long passengerId = jwt.getClaim("uid");
 
         Ride ride = rideService.createRide(passengerId, request);
 
@@ -55,9 +62,36 @@ public class RideController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-    // =====================================================
-    // 2.4.3 PORUČIVANJE IZ OMILJENE RUTE – OSTAVLJENO (MOCK)
-    // =====================================================
+
+
+    @GetMapping(
+            value = "/track/{token}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<RideResponse> trackRide(@PathVariable String token) {
+
+        RideInvite invite = rideInviteRepository.findByTrackingToken(token)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid tracking token"));
+
+        Ride ride = invite.getRide();
+
+        RideResponse response = new RideResponse(
+                ride.getId(),
+                ride.getStatus(),
+                0,
+                ride.getCalculatedPrice(),
+                ride.getVehicleType()
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+
+
+
+
+
+
     @PostMapping(
             value = "/favorites/{favoriteRouteId}",
             consumes = MediaType.APPLICATION_JSON_VALUE,
@@ -80,6 +114,8 @@ public class RideController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
+
+
     // GET /api/rides - Get all rides (with optional filters)
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> getAllRides(
@@ -90,9 +126,7 @@ public class RideController {
         return ResponseEntity.ok().build();
     }
 
-    // =====================================================
-    // 2.6.1 POČETAK VOŽNJE – KT2 IMPLEMENTACIJA
-    // =====================================================
+
     @PostMapping(
             value = "/{rideId}/start",
             produces = MediaType.APPLICATION_JSON_VALUE
