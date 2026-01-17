@@ -1,13 +1,14 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { env } from '../../env/env';
 
 @Injectable({
   providedIn: 'root'
 })
 export class DriverService {
 
-  private apiUrl = 'http://localhost:8080/api/drivers';
+  private apiUrl = env.API_URL + "/api/drivers";
 
   constructor(private http: HttpClient) {}
 
