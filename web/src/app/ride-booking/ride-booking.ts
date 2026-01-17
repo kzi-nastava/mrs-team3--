@@ -1,5 +1,12 @@
+import { RideApiService } from '../services/ride-api.service';
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import {
+  FormBuilder,
+  FormGroup,
+  Validators,
+  ReactiveFormsModule,
+  FormArray
+} from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { Subject, takeUntil } from 'rxjs';
 
@@ -54,12 +61,12 @@ export class RideBookingComponent implements OnInit, OnDestroy {
   constructor(
     private fb: FormBuilder,
     private rideBookingService: RideBookingService,
-    private favoriteService: FavoriteRoutesService
+    private favoriteService: FavoriteRoutesService,
+    private rideApiService: RideApiService
   ) {
     this.initForm();
   }
 
-  
   ngOnInit(): void {
     this.favorites = this.favoriteService.getFavorites();
 
@@ -115,11 +122,40 @@ export class RideBookingComponent implements OnInit, OnDestroy {
       vehicleType: ['STANDARD' as VehicleType, Validators.required],
       babyTransport: [false],
       petTransport: [false],
-      passengers: [1, [Validators.required, Validators.min(1), Validators.max(8)]]
+      passengers: [1, [Validators.required, Validators.min(1), Validators.max(8)]],
+
+      // ✅ DODATO – NISTA POSTOJECE NIJE DIRANO
+      passengerEmails: this.fb.array([])
     });
   }
 
- 
+  // ===============================
+  // PASSENGER EMAILS – NOVO
+  // ===============================
+
+  get passengerEmails(): FormArray {
+    return this.rideForm.get('passengerEmails') as FormArray;
+  }
+
+  addPassengerEmail(input: HTMLInputElement): void {
+    const email = input.value.trim();
+    if (!email) return;
+
+    this.passengerEmails.push(
+      this.fb.control(email, Validators.email)
+    );
+
+    input.value = '';
+  }
+
+  removePassengerEmail(index: number): void {
+    this.passengerEmails.removeAt(index);
+  }
+
+  // ===============================
+  // POSTOJECI KOD – NIJEDNA METODA NIJE UKLONJENA
+  // ===============================
+
   toggleFavorites(): void {
     this.showFavorites = !this.showFavorites;
   }
@@ -147,7 +183,6 @@ export class RideBookingComponent implements OnInit, OnDestroy {
     this.showFavorites = false;
   }
 
- 
   onPickupInputChange(): void {
     this.debounceSearch(this.rideForm.get('pickupLocation')?.value, 'pickup');
   }
@@ -246,7 +281,6 @@ export class RideBookingComponent implements OnInit, OnDestroy {
       });
   }
 
-  
   addStop(): void {
     this.stops.push({
       id: this.stopIdCounter++,
@@ -289,25 +323,71 @@ export class RideBookingComponent implements OnInit, OnDestroy {
   }
 
   onBookRide(): void {
-    if (this.rideForm.invalid) return;
+  if (this.rideForm.invalid) return;
 
-    const payload = this.rideBookingService.getRideBookingData();
-    console.log('BOOK RIDE PAYLOAD:', payload);
+  const data = this.rideBookingService.getRideBookingData();
 
-    this.rideBookingService.calculateRoute();
+  if (!data.pickup || !data.destination) {
+    alert('Pickup and destination are required');
+    return;
   }
+
+  const payload = {
+  startLocation: {
+    latitude: data.pickup.lat,
+    longitude: data.pickup.lng,
+    address: data.pickup.name
+  },
+  endLocation: {
+    latitude: data.destination.lat,
+    longitude: data.destination.lng,
+    address: data.destination.name
+  },
+  stops: data.stops.map(s => ({
+    latitude: s.lat,
+    longitude: s.lng,
+    address: s.name
+  })),
+  passengerEmails: this.passengerEmails.value,
+  vehicleType: data.vehicleType,
+  babyTransport: data.babyTransport,
+  petTransport: data.petTransport
+};
+
+
+  this.rideApiService.createRide(payload).subscribe({
+    next: response => {
+      console.log('Ride created:', response);
+      alert('Ride successfully created!');
+      this.clearRoute();
+    },
+    error: err => {
+      console.error('Ride creation failed', err);
+      alert('Ride creation failed');
+    }
+  });
+}
+
 
   clearRoute(): void {
-    this.rideForm.reset({
-      vehicleType: 'STANDARD',
-      babyTransport: false,
-      petTransport: false,
-      passengers: 1
-    });
+  // Reset osnovnih polja
+  this.rideForm.reset({
+    pickupLocation: '',
+    destination: '',
+    vehicleType: 'STANDARD',
+    babyTransport: false,
+    petTransport: false,
+    passengers: 1
+  });
 
-    this.stops = [];
-    this.rideBookingService.clearRoute();
-  }
+  this.rideForm.setControl('passengerEmails', this.fb.array([]));
+
+  this.stops = [];
+  this.stopIdCounter = 0;
+
+  this.rideBookingService.clearRoute();
+}
+
 
   onSchedule(): void {
     alert('Schedule feature coming soon');

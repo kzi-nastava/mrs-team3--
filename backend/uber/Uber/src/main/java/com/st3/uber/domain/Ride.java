@@ -7,6 +7,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,6 +37,11 @@ public class Ride {
             inverseJoinColumns = @JoinColumn(name = "passenger_id")
     )
     private List<Passenger> passengers = new ArrayList<>();
+
+
+    @OneToMany(mappedBy = "ride", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<RideInvite> invites = new ArrayList<>();
+
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
