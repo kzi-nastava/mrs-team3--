@@ -4,6 +4,7 @@ import { Observable, BehaviorSubject } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { RegisterRequest } from '../register/register.model';
 import { Router } from '@angular/router';
+import { env } from '../../env/env';
 
 interface LoginResponse {
   id: number;
@@ -26,7 +27,7 @@ interface DecodedToken {
 })
 export class AuthService {
 
-  private apiUrl = 'http://localhost:8080/api/auth';
+  private apiUrl = env.API_URL +"/api/auth";
   private tokenKey = 'token';
 
   // Observable for components to subscribe to user changes

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { env } from '../../env/env';
 
 export interface LocationRequest {
   latitude: number;
@@ -24,7 +25,7 @@ export interface CreateRideRequest {
 })
 export class RideApiService {
 
-  private apiUrl = 'http://localhost:8080/api/rides';
+  private apiUrl = env.API_URL + "/api/rides";
 
   constructor(private http: HttpClient) {}
 
