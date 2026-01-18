@@ -8,7 +8,7 @@ import { AuthService } from '../../services/auth.service';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './driver-sidebar.html',
-  styleUrl: './driver-sidebar.css'
+  styleUrls: ['./driver-sidebar.css']
 })
 export class DriverSidebarComponent {
 
@@ -27,7 +27,7 @@ export class DriverSidebarComponent {
   }
 
   goHistory() {
-    this.router.navigate(['/ride-history']);
+    this.router.navigate(['/driver-history']);
   }
 
   goEarnings() {

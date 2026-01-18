@@ -1,0 +1,237 @@
+import { Injectable, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, BehaviorSubject } from 'rxjs';
+import { env } from '../../env/env';
+
+export interface DriverRide {
+  id: number;
+  startTime: string;
+  endTime: string;
+  startLocation: {
+    address: string;
+    latitude: number;
+    longitude: number;
+  };
+  endLocation: {
+    address: string;
+    latitude: number;
+    longitude: number;
+  };
+  stops: {
+    address: string;
+    latitude: number;
+    longitude: number;
+  }[];
+  passengers: string[];
+  price: number;
+  distance: number;
+  duration: number;
+  vehicleType: 'STANDARD' | 'VAN' | 'LUXURY';
+  status: 'COMPLETED' | 'CANCELLED_BY_DRIVER' | 'CANCELLED_BY_PASSENGER' | 'PANIC';
+  cancelledBy?: string;
+  cancelReason?: string;
+  rating?: number;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class DriverHistoryService {
+  private apiUrl = env.API_URL + '/api/driver/rides/history';
+
+  // Mock data for now
+  private mockRides: DriverRide[] = [
+    {
+      id: 1,
+      startTime: '2026-01-15T10:00:00',
+      endTime: '2026-01-15T10:25:00',
+      startLocation: {
+        address: 'Bulevar oslobođenja 46, Novi Sad',
+        latitude: 45.2671,
+        longitude: 19.8335
+      },
+      endLocation: {
+        address: 'Trg Dositeja Obradovića 6, Novi Sad',
+        latitude: 45.2537,
+        longitude: 19.8425
+      },
+      stops: [],
+      passengers: ['petar.petrovic@example.com', 'ana.jovic@example.com'],
+      price: 350,
+      distance: 3.2,
+      duration: 25,
+      vehicleType: 'STANDARD',
+      status: 'COMPLETED',
+      rating: 5
+    },
+    {
+      id: 2,
+      startTime: '2026-01-14T12:30:00',
+      endTime: '2026-01-14T13:15:00',
+      startLocation: {
+        address: 'Novosadski sajam, Novi Sad',
+        latitude: 45.2396,
+        longitude: 19.8227
+      },
+      endLocation: {
+        address: 'Petrovaradinska tvrđava, Novi Sad',
+        latitude: 45.2541,
+        longitude: 19.8656
+      },
+      stops: [
+        {
+          address: 'Štrand, Novi Sad',
+          latitude: 45.2467,
+          longitude: 19.8518
+        }
+      ],
+      passengers: ['milan.nikolic@example.com', 'jovana.ilic@example.com', 'stefan.jovic@example.com'],
+      price: 520,
+      distance: 5.8,
+      duration: 45,
+      vehicleType: 'VAN',
+      status: 'CANCELLED_BY_DRIVER',
+      cancelledBy: 'Driver',
+      cancelReason: 'Vehicle malfunction'
+    },
+    {
+      id: 3,
+      startTime: '2026-01-13T08:15:00',
+      endTime: '2026-01-13T08:40:00',
+      startLocation: {
+        address: 'Futoška 46, Novi Sad',
+        latitude: 45.2622,
+        longitude: 19.8156
+      },
+      endLocation: {
+        address: 'BIG Shopping Center, Novi Sad',
+        latitude: 45.2445,
+        longitude: 19.8092
+      },
+      stops: [],
+      passengers: ['dragana.petrovic@example.com'],
+      price: 410,
+      distance: 4.1,
+      duration: 25,
+      vehicleType: 'LUXURY',
+      status: 'COMPLETED',
+      rating: 4
+    },
+    {
+      id: 4,
+      startTime: '2026-01-12T18:45:00',
+      endTime: '2026-01-12T18:50:00',
+      startLocation: {
+        address: 'Narodna bašta, Novi Sad',
+        latitude: 45.2552,
+        longitude: 19.8451
+      },
+      endLocation: {
+        address: 'Dunavska 27, Novi Sad',
+        latitude: 45.2543,
+        longitude: 19.8468
+      },
+      stops: [],
+      passengers: ['milan.savic@example.com'],
+      price: 180,
+      distance: 0.8,
+      duration: 5,
+      vehicleType: 'STANDARD',
+      status: 'PANIC',
+      rating: 1
+    },
+    {
+      id: 5,
+      startTime: '2026-01-11T16:20:00',
+      endTime: '2026-01-11T17:05:00',
+      startLocation: {
+        address: 'Železnička stanica, Novi Sad',
+        latitude: 45.2511,
+        longitude: 19.8361
+      },
+      endLocation: {
+        address: 'Veternik, Novi Sad',
+        latitude: 45.2897,
+        longitude: 19.8189
+      },
+      stops: [
+        {
+          address: 'Limanski park, Novi Sad',
+          latitude: 45.2723,
+          longitude: 19.8312
+        }
+      ],
+      passengers: ['jelena.djordjevic@example.com', 'milos.stojanovic@example.com'],
+      price: 680,
+      distance: 7.4,
+      duration: 45,
+      vehicleType: 'STANDARD',
+      status: 'COMPLETED',
+      rating: 5
+    },
+    {
+      id: 6,
+      startTime: '2026-01-10T14:00:00',
+      endTime: "",
+      startLocation: {
+        address: 'Spens, Novi Sad',
+        latitude: 45.2501,
+        longitude: 19.8318
+      },
+      endLocation: {
+        address: 'Futog centar, Novi Sad',
+        latitude: 45.2384,
+        longitude: 19.7125
+      },
+      stops: [],
+      passengers: ['ana.pavlovic@example.com'],
+      price: 0,
+      distance: 0,
+      duration: 0,
+      vehicleType: 'STANDARD',
+      status: 'CANCELLED_BY_PASSENGER',
+      cancelledBy: 'Passenger',
+      cancelReason: 'Changed plans'
+    }
+  ];
+
+  private ridesSubject = new BehaviorSubject<DriverRide[]>(this.mockRides);
+  public rides$ = this.ridesSubject.asObservable();
+
+  constructor(private http: HttpClient) {}
+
+  // Get all rides (mock for now)
+  getRides(): Observable<DriverRide[]> {
+    // TODO: Replace with actual API call
+    // return this.http.get<DriverRide[]>(this.apiUrl);
+    return this.rides$;
+  }
+
+  // Get rides with filters
+  getRidesFiltered(startDate?: string, endDate?: string): DriverRide[] {
+    let rides = this.ridesSubject.value;
+
+    if (startDate) {
+      rides = rides.filter(r => r.startTime >= startDate);
+    }
+
+    if (endDate) {
+      rides = rides.filter(r => r.startTime <= endDate);
+    }
+
+    return rides;
+  }
+
+  // Get ride by ID
+  getRideById(id: number): DriverRide | undefined {
+    return this.ridesSubject.value.find(r => r.id === id);
+  }
+
+  // Update ride in local state
+  updateRide(ride: DriverRide): void {
+    const rides = this.ridesSubject.value.map(r =>
+      r.id === ride.id ? ride : r
+    );
+    this.ridesSubject.next(rides);
+  }
+}

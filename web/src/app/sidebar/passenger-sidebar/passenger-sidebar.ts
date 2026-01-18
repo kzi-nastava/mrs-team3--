@@ -8,7 +8,7 @@ import { AuthService } from '../../services/auth.service';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './passenger-sidebar.html',
-  styleUrl: './passenger-sidebar.css'
+  styleUrls: ['./passenger-sidebar.css']
 })
 export class PassengerSidebarComponent {
 
@@ -27,7 +27,7 @@ export class PassengerSidebarComponent {
   }
 
   goHistory() {
-    this.router.navigate(['/ride-history']);
+    this.router.navigate(['/passenger-history']);
   }
 
   goMessages() {
