@@ -1,13 +1,9 @@
 package com.st3.uber.service;
 
-import com.st3.uber.domain.Location;
-import com.st3.uber.domain.Passenger;
-import com.st3.uber.domain.Ride;
-import com.st3.uber.domain.RideInvite;
+import com.st3.uber.domain.*;
 import com.st3.uber.dto.ride.CreateRideRequest;
 import com.st3.uber.dto.route.RouteInfo;
 import com.st3.uber.enums.RideStatus;
-import com.st3.uber.enums.VehicleType;
 import com.st3.uber.repository.PassengerRepository;
 import com.st3.uber.repository.RideInviteRepository;
 import com.st3.uber.repository.RideRepository;
@@ -30,6 +26,8 @@ public class RideService {
     private final RideInviteRepository rideInviteRepository;
     private final RouteCalculationService routeCalculationService;
     private final PriceCalculationService priceCalculationService;
+    private final DriverService driverService;
+
 
 
     public RideService(
@@ -37,13 +35,15 @@ public class RideService {
             PassengerRepository passengerRepository,
             RideInviteRepository rideInviteRepository,
             RouteCalculationService routeCalculationService,
-            PriceCalculationService priceCalculationService
+            PriceCalculationService priceCalculationService,
+            DriverService driverService
     ) {
         this.rideRepository = rideRepository;
         this.passengerRepository = passengerRepository;
         this.rideInviteRepository = rideInviteRepository;
         this.routeCalculationService = routeCalculationService;
         this.priceCalculationService = priceCalculationService;
+        this.driverService = driverService;
     }
 
     public Ride startRide(Long rideId) {
@@ -68,6 +68,7 @@ public class RideService {
         Passenger creator = passengerRepository.findById(passengerId)
                 .orElseThrow(() -> new IllegalArgumentException("Passenger not found"));
 
+        // ❗ Ne može više od jedne aktivne / pending vožnje
         if (rideRepository.existsByCreatorAndStatusIn(
                 creator,
                 List.of(RideStatus.PENDING, RideStatus.IN_PROGRESS)
@@ -77,9 +78,15 @@ public class RideService {
 
         Ride ride = new Ride();
 
+        // =========================
+        // CREATOR + PASSENGERS
+        // =========================
         ride.setCreator(creator);
         ride.getPassengers().add(creator);
 
+        // =========================
+        // START / END
+        // =========================
         ride.setStartLocation(new Location(
                 request.startLocation().latitude(),
                 request.startLocation().longitude(),
@@ -92,7 +99,9 @@ public class RideService {
                 request.endLocation().address()
         ));
 
-
+        // =========================
+        // STOPS
+        // =========================
         if (request.stops() != null && !request.stops().isEmpty()) {
             request.stops().forEach(s ->
                     ride.getRideStops().add(
@@ -105,6 +114,9 @@ public class RideService {
             );
         }
 
+        // =========================
+        // INVITED PASSENGERS
+        // =========================
         if (request.passengerEmails() != null && !request.passengerEmails().isEmpty()) {
             for (String email : request.passengerEmails()) {
 
@@ -131,9 +143,26 @@ public class RideService {
             }
         }
 
+        // =========================
+        // RIDE REQUIREMENTS
+        // =========================
         ride.setVehicleType(request.vehicleType());
+        ride.setBabyTransport(request.babyTransport());
+        ride.setPetTransport(request.petTransport());
 
+        // =========================
+        // DRIVER MATCHING
+        // =========================
+        Driver driver = driverService.findDriverForRide(ride);
 
+        ride.setDriver(driver);
+        driver.setCurrentRide(ride);
+        driver.setFree(false);
+        driver.setAvailable(false);
+
+        // =========================
+        // ROUTE CALCULATION
+        // =========================
         RouteInfo routeInfo = routeCalculationService.calculateRoute(
                 ride.getStartLocation(),
                 ride.getEndLocation(),
@@ -143,7 +172,9 @@ public class RideService {
         ride.setDistance(routeInfo.distanceKm());
         ride.setEstimatedTimeMinutes(routeInfo.durationMinutes());
 
-
+        // =========================
+        // PRICE CALCULATION
+        // =========================
         double basePrice = priceCalculationService.getBasePrice(ride.getVehicleType());
         double calculatedPrice = priceCalculationService.calculatePrice(
                 ride.getVehicleType(),
@@ -153,9 +184,10 @@ public class RideService {
         ride.setBasePrice(basePrice);
         ride.setCalculatedPrice(calculatedPrice);
 
-
-
-        ride.setStatus(RideStatus.PENDING);
+        // =========================
+        // META
+        // =========================
+        ride.setStatus(RideStatus.PENDING); // ⬅️ ISPRAVNO PO SPECIFIKACIJI
         ride.setCreatedAt(LocalDateTime.now());
 
         return rideRepository.save(ride);

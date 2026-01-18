@@ -120,6 +120,13 @@ public class Ride {
     @Column(nullable = false)
     private double calculatedPrice;
 
+    @Column(nullable = false)
+    private boolean babyTransport;
+
+    @Column(nullable = false)
+    private boolean petTransport;
+
+
     @Enumerated(EnumType.STRING)
     private CancelledBy cancelledBy;
 
@@ -139,4 +146,19 @@ public class Ride {
 
     @OneToMany(mappedBy = "ride", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<InconsistencyReport> inconsistencyReports = new ArrayList<>();
+
+
+    public int getRemainingMinutes() {
+        if (startedAt == null) {
+            return Integer.MAX_VALUE;
+        }
+
+        LocalDateTime estimatedEnd =
+                startedAt.plusMinutes(estimatedTimeMinutes);
+
+        return (int) java.time.Duration
+                .between(LocalDateTime.now(), estimatedEnd)
+                .toMinutes();
+    }
+
 }

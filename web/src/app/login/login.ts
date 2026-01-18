@@ -62,11 +62,11 @@ export class Login {
         
         // Redirect to appropriate page based on role
         if (role === 'ADMIN') {
-          this.router.navigate(['/home']);
+          this.router.navigate(['']);
         } else if (role === 'DRIVER') {
-          this.router.navigate(['/home']);
+          this.router.navigate(['']);
         } else if (role === 'PASSENGER') {
-          this.router.navigate(['/home']);
+          this.router.navigate(['']);
         } else {
           this.router.navigate(['/']);
         }
