@@ -296,7 +296,6 @@ export class MapComponent implements OnInit, OnDestroy {
     fetch(url)
       .then(r => r.json())
       .then(data => {
-        /** ✅ DODATO */
         if (requestId !== this.routeRequestId) return;
 
         const coords = data.features[0].geometry.coordinates;
