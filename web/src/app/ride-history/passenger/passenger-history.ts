@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { RideHistoryService, Ride } from '../../services/passenger-history.service';
 import { FavoriteRoutesService } from '../../services/favorite-routes.service';
+import { env } from '../../../env/env';
 import * as L from 'leaflet';
 
 @Component({
@@ -229,7 +230,7 @@ export class PassengerHistoryComponent implements OnInit, AfterViewInit {
   }
 
   private drawRouteBetween(start: any, end: any): void {
-    const apiKey = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjI2YjEzYWE0MjBjOWE5NDU1YWJlNzI1Y2Q1MjFhMmZmNmQ3NTM0YjcwMzk2NmRlNzBmMDIwZmJlIiwiaCI6Im11cm11cjY0In0=';
+    const apiKey = env.MAPS_KEY;
     const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${apiKey}&start=${start.longitude},${start.latitude}&end=${end.longitude},${end.latitude}`;
 
     fetch(url)
