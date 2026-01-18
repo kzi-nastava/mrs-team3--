@@ -91,37 +91,6 @@ public class RideController {
     }
 
 
-
-
-
-
-
-    @PostMapping(
-            value = "/favorites/{favoriteRouteId}",
-            consumes = MediaType.APPLICATION_JSON_VALUE,
-            produces = MediaType.APPLICATION_JSON_VALUE
-    )
-    @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<RideResponse> createRideFromFavorite(
-            @PathVariable Long favoriteRouteId,
-            @RequestBody CreateRideFromFavoriteRequest request
-    ) {
-
-        RideResponse response = new RideResponse(
-                200L,
-                RideStatus.PENDING,
-                6.0,      // distanceKm
-                12,       // estimatedTimeMinutes
-                550.0,    // calculatedPrice
-                request.vehicleType()
-        );
-
-
-        return new ResponseEntity<>(response, HttpStatus.CREATED);
-    }
-
-
-
     // GET /api/rides - Get all rides (with optional filters)
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> getAllRides(
