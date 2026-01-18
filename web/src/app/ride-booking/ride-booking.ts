@@ -47,16 +47,21 @@ export class RideBookingComponent implements OnInit, OnDestroy {
   destinationSuggestions: any[] = [];
   showPickupSuggestions = false;
   showDestinationSuggestions = false;
+  
 
-  showRideInfo = false;
-  estimatedTime = '';
-  estimatedPrice = '';
+  showConfirmModal = false;
+
+  modalEstimatedTime = '';
+  modalEstimatedPrice = '';
+
 
   showFavorites = false;
   favorites!: ReturnType<FavoriteRoutesService['getFavorites']>;
 
   private stopIdCounter = 0;
   private searchTimeout: any = null;
+
+
 
   constructor(
     private fb: FormBuilder,
@@ -74,10 +79,17 @@ export class RideBookingComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(data => {
         if (data.pickup) {
-          this.rideForm.patchValue({ pickupLocation: data.pickup.name }, { emitEvent: false });
+          this.rideForm.patchValue(
+            { pickupLocation: data.pickup.name },
+            { emitEvent: false }
+          );
         }
+
         if (data.destination) {
-          this.rideForm.patchValue({ destination: data.destination.name }, { emitEvent: false });
+          this.rideForm.patchValue(
+            { destination: data.destination.name },
+            { emitEvent: false }
+          );
         }
 
         this.rideForm.patchValue({
@@ -88,7 +100,6 @@ export class RideBookingComponent implements OnInit, OnDestroy {
         }, { emitEvent: false });
 
         this.syncStops(data.stops);
-        this.updateRideInfo(data);
       });
 
     this.rideForm.valueChanges
@@ -108,6 +119,8 @@ export class RideBookingComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => this.onDestinationInputChange());
   }
+
+
 
   ngOnDestroy(): void {
     this.destroy$.next();
@@ -129,10 +142,6 @@ export class RideBookingComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ===============================
-  // PASSENGER EMAILS – NOVO
-  // ===============================
-
   get passengerEmails(): FormArray {
     return this.rideForm.get('passengerEmails') as FormArray;
   }
@@ -151,10 +160,6 @@ export class RideBookingComponent implements OnInit, OnDestroy {
   removePassengerEmail(index: number): void {
     this.passengerEmails.removeAt(index);
   }
-
-  // ===============================
-  // POSTOJECI KOD – NIJEDNA METODA NIJE UKLONJENA
-  // ===============================
 
   toggleFavorites(): void {
     this.showFavorites = !this.showFavorites;
@@ -310,19 +315,9 @@ export class RideBookingComponent implements OnInit, OnDestroy {
     }
   }
 
-  private updateRideInfo(data: any): void {
-    if (data.pickup && data.destination) {
-      this.showRideInfo = true;
-      const baseTime = 5 + data.stops.length * 3;
-      const basePrice = 300 + data.stops.length * 100 + (data.vehicleType === 'LUXURY' ? 300 : 0);
-      this.estimatedTime = `${baseTime} min`;
-      this.estimatedPrice = `${basePrice} din`;
-    } else {
-      this.showRideInfo = false;
-    }
-  }
 
-  onBookRide(): void {
+
+ onBookRide(): void {
   if (this.rideForm.invalid) return;
 
   const data = this.rideBookingService.getRideBookingData();
@@ -332,45 +327,96 @@ export class RideBookingComponent implements OnInit, OnDestroy {
     return;
   }
 
+  this.openConfirmModal(data);
+}
+
+
+openConfirmModal(data: any): void {
+
   const payload = {
-  startLocation: {
-    latitude: data.pickup.lat,
-    longitude: data.pickup.lng,
-    address: data.pickup.name
-  },
-  endLocation: {
-    latitude: data.destination.lat,
-    longitude: data.destination.lng,
-    address: data.destination.name
-  },
-  stops: data.stops.map(s => ({
-    latitude: s.lat,
-    longitude: s.lng,
-    address: s.name
-  })),
-  passengerEmails: this.passengerEmails.value,
-  vehicleType: data.vehicleType,
-  babyTransport: data.babyTransport,
-  petTransport: data.petTransport
-};
+    startLocation: {
+      latitude: data.pickup.lat,
+      longitude: data.pickup.lng,
+      address: data.pickup.name
+    },
+    endLocation: {
+      latitude: data.destination.lat,
+      longitude: data.destination.lng,
+      address: data.destination.name
+    },
+    stops: data.stops.map((s: any) => ({
+      latitude: s.lat,
+      longitude: s.lng,
+      address: s.name
+    })),
+    vehicleType: data.vehicleType,
+    babyTransport: data.babyTransport,
+    petTransport: data.petTransport
+  };
 
+  this.rideApiService.estimateRoute(payload).subscribe({
+    next: res => {
+      this.modalEstimatedTime = `${res.estimatedTimeMinutes} min`;
+      this.modalEstimatedPrice = `${res.estimatedPrice} din`;
 
-  this.rideApiService.createRide(payload).subscribe({
-    next: response => {
-      console.log('Ride created:', response);
-      alert('Ride successfully created!');
-      this.clearRoute();
+      this.showConfirmModal = true;
     },
     error: err => {
-      console.error('Ride creation failed', err);
+      console.error(err);
+      alert('Failed to calculate ride estimate');
+    }
+  });
+}
+
+
+closeConfirmModal(): void {
+  this.showConfirmModal = false;
+}
+
+
+confirmCreateRide(): void {
+  this.showConfirmModal = false;
+
+  const data = this.rideBookingService.getRideBookingData();
+
+  const payload = {
+    startLocation: {
+      latitude: data.pickup!.lat,
+      longitude: data.pickup!.lng,
+      address: data.pickup!.name
+    },
+    endLocation: {
+      latitude: data.destination!.lat,
+      longitude: data.destination!.lng,
+      address: data.destination!.name
+    },
+    stops: data.stops.map(s => ({
+      latitude: s.lat,
+      longitude: s.lng,
+      address: s.name
+    })),
+    passengerEmails: this.passengerEmails.value,
+    vehicleType: data.vehicleType,
+    babyTransport: data.babyTransport,
+    petTransport: data.petTransport
+  };
+
+  this.rideApiService.createRide(payload).subscribe({
+    next: () => {
+      alert('Ride successfully created!');
+      this.clearRoute();},
+    error: err => {
+      console.error(err);
       alert('Ride creation failed');
     }
   });
 }
 
 
+
+
+
   clearRoute(): void {
-  // Reset osnovnih polja
   this.rideForm.reset({
     pickupLocation: '',
     destination: '',
@@ -386,6 +432,7 @@ export class RideBookingComponent implements OnInit, OnDestroy {
   this.stopIdCounter = 0;
 
   this.rideBookingService.clearRoute();
+
 }
 
 

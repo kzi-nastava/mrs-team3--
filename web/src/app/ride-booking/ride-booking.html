@@ -123,7 +123,6 @@
 
     </div>
 
-    <!-- ✅ DODATO – INVITE PASSENGERS (NIŠTA DRUGO NIJE DIRANO) -->
     <div class="extras-section">
       <h3>Invite passengers</h3>
 
@@ -181,12 +180,6 @@
       </button>
     </div>
 
-    @if (showRideInfo) {
-      <div class="ride-info">
-        <span class="time">{{ estimatedTime }}</span>
-        <span class="price">{{ estimatedPrice }}</span>
-      </div>
-    }
 
     @if (showFavorites) {
       <div class="favorites-list">
@@ -211,6 +204,30 @@
         }
       </div>
     }
-
   </form>
 </div>
+
+
+@if (showConfirmModal) {
+  <div class="modal-backdrop" (click)="closeConfirmModal()"></div>
+
+  <div class="confirm-modal">
+    <h3>Confirm ride</h3>
+
+    <div class="ride-info">
+      <span class="time">{{ modalEstimatedTime }}</span>
+      <span class="price">{{ modalEstimatedPrice }}</span>
+    </div>
+
+    <div class="confirm-actions">
+      <button class="refresh-btn" (click)="closeConfirmModal()">
+        Cancel
+      </button>
+
+      <button class="book-ride-btn" (click)="confirmCreateRide()">
+        Confirm
+      </button>
+    </div>
+  </div>
+}
+
