@@ -70,7 +70,7 @@ export class AuthService {
   logout(): void {
     localStorage.removeItem(this.tokenKey);
     this.currentUserSubject.next(null);
-    this.router.navigate(['/login']);
+    this.router.navigate(['/login'], { replaceUrl: true }).then(() => window.location.reload());
   }
 
   // Token management

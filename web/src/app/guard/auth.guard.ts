@@ -7,7 +7,7 @@ export const authGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
   const authService = inject(AuthService);
 
   if (!authService.isAuthenticated()) {
-    router.navigate(['/login']);
+    router.navigate(['/login'], { replaceUrl: true });
     return false;
   }
 
@@ -15,7 +15,7 @@ export const authGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
   const requiredRole = route.data['role'] as string;
   if (requiredRole && !authService.hasRole(requiredRole)) {
     // User doesn't have the required role
-    router.navigate(['/']);
+    router.navigate(['/'], { replaceUrl: true });
     return false;
   }
 
@@ -28,12 +28,12 @@ export const passengerGuard: CanActivateFn = () => {
   const authService = inject(AuthService);
 
   if (!authService.isAuthenticated()) {
-    router.navigate(['/login']);
+    router.navigate(['/login'], { replaceUrl: true });
     return false;
   }
 
   if (!authService.isPassenger()) {
-    router.navigate(['/']);
+    router.navigate(['/'], { replaceUrl: true });
     return false;
   }
 
@@ -45,12 +45,12 @@ export const driverGuard: CanActivateFn = () => {
   const authService = inject(AuthService);
 
   if (!authService.isAuthenticated()) {
-    router.navigate(['/login']);
+    router.navigate(['/login'], { replaceUrl: true });
     return false;
   }
 
   if (!authService.isDriver()) {
-    router.navigate(['/']);
+    router.navigate(['/'], { replaceUrl: true });
     return false;
   }
 
@@ -62,12 +62,25 @@ export const adminGuard: CanActivateFn = () => {
   const authService = inject(AuthService);
 
   if (!authService.isAuthenticated()) {
-    router.navigate(['/login']);
+    router.navigate(['/login'], { replaceUrl: true });
     return false;
   }
 
   if (!authService.isAdmin()) {
-    router.navigate(['/']);
+    router.navigate(['/'], { replaceUrl: true });
+    return false;
+  }
+
+  return true;
+};
+
+export const guestGuard: CanActivateFn = () => {
+  const router = inject(Router);
+  const authService = inject(AuthService);
+
+  // If user is already logged in, block /login and /register
+  if (authService.isAuthenticated()) {
+    router.navigate(['/'], { replaceUrl: true });
     return false;
   }
 
