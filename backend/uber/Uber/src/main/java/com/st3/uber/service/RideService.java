@@ -27,6 +27,8 @@ public class RideService {
     private final RouteCalculationService routeCalculationService;
     private final PriceCalculationService priceCalculationService;
     private final DriverService driverService;
+    private final RideInviteMailService rideInviteMailService;
+
 
 
 
@@ -36,7 +38,8 @@ public class RideService {
             RideInviteRepository rideInviteRepository,
             RouteCalculationService routeCalculationService,
             PriceCalculationService priceCalculationService,
-            DriverService driverService
+            DriverService driverService,
+            RideInviteMailService rideInviteMailService
     ) {
         this.rideRepository = rideRepository;
         this.passengerRepository = passengerRepository;
@@ -44,6 +47,7 @@ public class RideService {
         this.routeCalculationService = routeCalculationService;
         this.priceCalculationService = priceCalculationService;
         this.driverService = driverService;
+        this.rideInviteMailService = rideInviteMailService;
     }
 
     public Ride startRide(Long rideId) {
@@ -68,7 +72,6 @@ public class RideService {
         Passenger creator = passengerRepository.findById(passengerId)
                 .orElseThrow(() -> new IllegalArgumentException("Passenger not found"));
 
-        // ❗ Ne može više od jedne aktivne / pending vožnje
         if (rideRepository.existsByCreatorAndStatusIn(
                 creator,
                 List.of(RideStatus.PENDING, RideStatus.IN_PROGRESS)
@@ -78,15 +81,10 @@ public class RideService {
 
         Ride ride = new Ride();
 
-        // =========================
-        // CREATOR + PASSENGERS
-        // =========================
         ride.setCreator(creator);
         ride.getPassengers().add(creator);
 
-        // =========================
-        // START / END
-        // =========================
+
         ride.setStartLocation(new Location(
                 request.startLocation().latitude(),
                 request.startLocation().longitude(),
@@ -99,9 +97,7 @@ public class RideService {
                 request.endLocation().address()
         ));
 
-        // =========================
-        // STOPS
-        // =========================
+
         if (request.stops() != null && !request.stops().isEmpty()) {
             request.stops().forEach(s ->
                     ride.getRideStops().add(
@@ -114,9 +110,7 @@ public class RideService {
             );
         }
 
-        // =========================
-        // INVITED PASSENGERS
-        // =========================
+
         if (request.passengerEmails() != null && !request.passengerEmails().isEmpty()) {
             for (String email : request.passengerEmails()) {
 
@@ -143,16 +137,11 @@ public class RideService {
             }
         }
 
-        // =========================
-        // RIDE REQUIREMENTS
-        // =========================
+
         ride.setVehicleType(request.vehicleType());
         ride.setBabyTransport(request.babyTransport());
         ride.setPetTransport(request.petTransport());
 
-        // =========================
-        // DRIVER MATCHING
-        // =========================
         Driver driver = driverService.findDriverForRide(ride);
 
         ride.setDriver(driver);
@@ -160,9 +149,7 @@ public class RideService {
         driver.setFree(false);
         driver.setAvailable(false);
 
-        // =========================
-        // ROUTE CALCULATION
-        // =========================
+
         RouteInfo routeInfo = routeCalculationService.calculateRoute(
                 ride.getStartLocation(),
                 ride.getEndLocation(),
@@ -172,9 +159,7 @@ public class RideService {
         ride.setDistance(routeInfo.distanceKm());
         ride.setEstimatedTimeMinutes(routeInfo.durationMinutes());
 
-        // =========================
-        // PRICE CALCULATION
-        // =========================
+
         double basePrice = priceCalculationService.getBasePrice(ride.getVehicleType());
         double calculatedPrice = priceCalculationService.calculatePrice(
                 ride.getVehicleType(),
@@ -184,13 +169,22 @@ public class RideService {
         ride.setBasePrice(basePrice);
         ride.setCalculatedPrice(calculatedPrice);
 
-        // =========================
-        // META
-        // =========================
-        ride.setStatus(RideStatus.PENDING); // ⬅️ ISPRAVNO PO SPECIFIKACIJI
+
+        ride.setStatus(RideStatus.PENDING);
         ride.setCreatedAt(LocalDateTime.now());
 
-        return rideRepository.save(ride);
+        Ride savedRide = rideRepository.save(ride);
+
+        for (RideInvite invite : savedRide.getInvites()) {
+            rideInviteMailService.sendInvite(
+                    invite,
+                    creator,
+                    savedRide
+            );
+        }
+
+
+        return savedRide;
     }
 
 
@@ -209,7 +203,6 @@ public class RideService {
                 request.getEndLocation().address()
         );
 
-        // STOPS
         List<Location> stops = new ArrayList<>();
         if (request.getStops() != null) {
             for (LocationRequest s : request.getStops()) {
