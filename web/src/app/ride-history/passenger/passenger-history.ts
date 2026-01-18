@@ -49,9 +49,10 @@ export class PassengerHistoryComponent implements OnInit, AfterViewInit {
       const updatedRides = rides.map(r => ({
         ...r,
         favorite: favorites().some(f =>
-          f.from === r.startLocation.address && 
-          f.to === r.endLocation.address
-        )
+  f.from.address === r.startLocation.address &&
+  f.to.address === r.endLocation.address
+)
+
       }));
       this.rides.set(updatedRides);
     });
@@ -111,32 +112,48 @@ export class PassengerHistoryComponent implements OnInit, AfterViewInit {
   }
 
   protected toggleFavorite(ride: Ride): void {
-    const route = {
-      from: ride.startLocation.address,
-      to: ride.endLocation.address,
-      stops: ride.stops.map(s => s.address)
-    };
 
-    if (ride.favorite) {
-      this.favoriteService.remove(route);
-    } else {
-      this.favoriteService.add(route);
-    }
+  const route = {
+    from: {
+      address: ride.startLocation.address,
+      latitude: ride.startLocation.latitude,
+      longitude: ride.startLocation.longitude
+    },
+    to: {
+      address: ride.endLocation.address,
+      latitude: ride.endLocation.latitude,
+      longitude: ride.endLocation.longitude
+    },
+    stops: ride.stops.map(s => ({
+      address: s.address,
+      latitude: s.latitude,
+      longitude: s.longitude
+    })),
 
-    // Update local state
-    const updatedRides = this.rides().map(r =>
-      r.id === ride.id ? { ...r, favorite: !r.favorite } : r
-    );
-    this.rides.set(updatedRides);
+    vehicleType: ride.vehicleType,
+    babyTransport: ride.babyTransport,
+    petTransport: ride.petTransport
+  };
 
-    // Update selected ride if it's open
-    if (this.selectedRide()?.id === ride.id) {
-      this.selectedRide.set({ ...ride, favorite: !ride.favorite });
-    }
-
-    // Also update via service
-    this.driverHistoryService.toggleFavorite(ride.id);
+  if (ride.favorite) {
+    this.favoriteService.remove(route);
+  } else {
+    this.favoriteService.add(route);
   }
+
+  // локални update
+  this.rides.set(
+    this.rides().map(r =>
+      r.id === ride.id ? { ...r, favorite: !r.favorite } : r
+    )
+  );
+
+  if (this.selectedRide()?.id === ride.id) {
+    this.selectedRide.set({ ...ride, favorite: !ride.favorite });
+  }
+}
+
+
 
   private initDetailMap(ride: Ride): void {
     if (this.detailMap) {
