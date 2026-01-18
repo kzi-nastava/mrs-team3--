@@ -538,3 +538,69 @@ h1 {
     padding: var(--spacing-sm);
   }
 }
+
+/* =========================
+   CONFIRM MODAL (CENTER)
+   ========================= */
+
+.confirm-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  width: 22rem;
+  max-width: 90vw;
+
+  background: var(--color-white);
+  border-radius: var(--radius-lg);
+  border: 0.0625rem solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+
+  padding: var(--spacing-xl);
+  z-index: 1001;
+
+  animation: popIn 0.15s ease-out;
+}
+
+.confirm-modal h3 {
+  margin: 0 0 var(--spacing-md) 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  text-align: center;
+  color: var(--color-black);
+}
+
+.confirm-modal .ride-info {
+  margin-top: var(--spacing-md);
+}
+
+.confirm-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-lg);
+}
+
+.confirm-actions button {
+  flex: 1;
+}
+
+/* backdrop */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 1000;
+}
+
+/* animation */
+@keyframes popIn {
+  from {
+    transform: translate(-50%, -48%) scale(0.96);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+}

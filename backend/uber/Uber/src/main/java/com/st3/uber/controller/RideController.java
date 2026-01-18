@@ -54,10 +54,12 @@ public class RideController {
         RideResponse response = new RideResponse(
                 ride.getId(),
                 ride.getStatus(),
-                0,
+                ride.getDistance(),              // ✅ distanceKm
+                ride.getEstimatedTimeMinutes(),  // ✅ estimatedTimeMinutes
                 ride.getCalculatedPrice(),
                 ride.getVehicleType()
         );
+
 
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
@@ -78,10 +80,12 @@ public class RideController {
         RideResponse response = new RideResponse(
                 ride.getId(),
                 ride.getStatus(),
-                0,
+                ride.getDistance(),
+                ride.getEstimatedTimeMinutes(),
                 ride.getCalculatedPrice(),
                 ride.getVehicleType()
         );
+
 
         return ResponseEntity.ok(response);
     }
@@ -106,10 +110,12 @@ public class RideController {
         RideResponse response = new RideResponse(
                 200L,
                 RideStatus.PENDING,
-                6,
-                550.0,
+                6.0,      // distanceKm
+                12,       // estimatedTimeMinutes
+                550.0,    // calculatedPrice
                 request.vehicleType()
         );
+
 
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
@@ -399,14 +405,18 @@ public class RideController {
 
     @PostMapping(
             value = "/estimate-route",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public ResponseEntity<RouteEstimateResponse> estimateRoute(
             @RequestBody RouteEstimateRequest request
     ) {
-        int random = ThreadLocalRandom.current().nextInt(0, 16);
-        return ResponseEntity.ok(new RouteEstimateResponse(random * 2));
+        return ResponseEntity.ok(
+                rideService.estimateRoute(request)
+        );
     }
+
+
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)

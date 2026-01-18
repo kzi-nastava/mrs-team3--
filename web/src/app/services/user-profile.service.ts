@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { env } from '../../env/env';
 
 export type UserRole = 'PASSENGER' | 'DRIVER' | 'ADMIN';
 
@@ -44,7 +45,7 @@ export interface UpdateUserProfileRequest {
 })
 export class UserProfileService {
 
-  private readonly API_URL = 'http://localhost:8080/api/profile';
+  private readonly API_URL = env.API_URL + "/api/profile";
 
   constructor(private http: HttpClient) {}
 

@@ -3,6 +3,7 @@ import * as L from 'leaflet';
 import { RideService, Location as RideLocation } from '../services/ride.service';
 import { RideBookingService, Location as BookingLocation } from '../services/ride-booking.service';
 import { Subject, takeUntil } from 'rxjs';
+import { env } from '../../env/env';
 
 type Location = RideLocation | BookingLocation;
 
@@ -144,7 +145,7 @@ export class MapComponent implements OnInit, OnDestroy {
     const startLatLng = this.startMarker.getLatLng();
     const endLatLng = this.endMarker.getLatLng();
 
-    const apiKey = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjI2YjEzYWE0MjBjOWE5NDU1YWJlNzI1Y2Q1MjFhMmZmNmQ3NTM0YjcwMzk2NmRlNzBmMDIwZmJlIiwiaCI6Im11cm11cjY0In0=';
+    const apiKey = env.MAPS_KEY;
     const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${apiKey}&start=${startLatLng.lng},${startLatLng.lat}&end=${endLatLng.lng},${endLatLng.lat}`;
 
     fetch(url)
@@ -289,13 +290,12 @@ export class MapComponent implements OnInit, OnDestroy {
     segmentIndex: number,
     requestId: number
   ): void {
-    const apiKey = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjI2YjEzYWE0MjBjOWE5NDU1YWJlNzI1Y2Q1MjFhMmZmNmQ3NTM0YjcwMzk2NmRlNzBmMDIwZmJlIiwiaCI6Im11cm11cjY0In0=';
+    const apiKey = env.MAPS_KEY;
     const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${apiKey}&start=${start.lng},${start.lat}&end=${end.lng},${end.lat}`;
 
     fetch(url)
       .then(r => r.json())
       .then(data => {
-        /** ✅ DODATO */
         if (requestId !== this.routeRequestId) return;
 
         const coords = data.features[0].geometry.coordinates;

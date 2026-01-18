@@ -8,6 +8,7 @@ export const authGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
 
   if (!authService.isAuthenticated()) {
     router.navigate(['/login'], { replaceUrl: true });
+    //router.navigate(['/go to error page']);
     return false;
   }
 
