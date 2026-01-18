@@ -21,14 +21,14 @@ export class RideService {
     start: null,
     end: null
   });
-  
+
   // Observable which components can subscribe to
   public rideData$ = this.rideDataSubject.asObservable();
-  
+
   // Event for clearing the route
   private clearRouteSubject = new Subject<void>();
   public clearRoute$ = this.clearRouteSubject.asObservable();
-  
+
   // Event for calculating the route
   private calculateRouteSubject = new Subject<void>();
   public calculateRoute$ = this.calculateRouteSubject.asObservable();

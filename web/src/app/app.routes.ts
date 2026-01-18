@@ -6,16 +6,16 @@ import { RegisterComponent } from './register/register';
 import { ResetPasswordComponent } from './reset-password/reset-password';
 import { ForgotPassword } from './forgot-password/forgot-password';
 import {VerificationResultComponent} from './verification-result/verification-result';
+import {authGuard, guestGuard} from './guard/auth.guard';
 import { ErrorComponent } from './error/error';
 import { DriverHistoryComponent } from './ride-history/driver/driver-history';  
 import { PassengerHistoryComponent } from './ride-history/passenger/passenger-history';
-import { authGuard } from './guard/auth.guard';
 export const routes: Routes = [
-  { path: '', component: LandingPageComponent },
+  { path: '', component: LandingPageComponent, canActivate: [authGuard] },
   { path: 'profile', component: ProfileComponent, canActivate: [authGuard] },
-  { path: 'login', component: Login },
-  { path: 'register', component: RegisterComponent },
-  
+  { path: 'login', component: Login, canActivate: [guestGuard] },
+  { path: 'register', component: RegisterComponent, canActivate: [guestGuard] },
+
 
   {
     path: 'driver-register',
