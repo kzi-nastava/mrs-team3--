@@ -58,6 +58,41 @@
                 <label>Number of seats</label>
                 <input pInputText type="number" formControlName="seats" />
               </div>
+
+              <div class="flex flex-column gap-1">
+              <label>Vehicle type</label>
+              <p-select
+                formControlName="vehicleType"
+                [options]="vehicleTypes"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Select vehicle type"
+              ></p-select>
+              </div>
+
+
+              <div class="flex flex-column gap-2 mt-3">
+              <label>Additional options</label>
+
+              <div class="flex align-items-center gap-2">
+                <p-checkbox
+                  formControlName="babyTransport"
+                  [binary]="true"
+                  inputId="baby"
+                ></p-checkbox>
+                <label for="baby">Baby transport</label>
+              </div>
+
+              <div class="flex align-items-center gap-2">
+                <p-checkbox
+                  formControlName="petTransport"
+                  [binary]="true"
+                  inputId="pet"
+                ></p-checkbox>
+                <label for="pet">Pet friendly</label>
+              </div>
+            </div>
+
             </div>
 
           </div>
