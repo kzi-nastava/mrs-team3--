@@ -2,14 +2,12 @@ package com.st3.uber.controller;
 
 import com.st3.uber.dto.register.RegisterDriverRequest;
 import com.st3.uber.dto.register.RegisterDriverResponse;
-import com.st3.uber.dto.ride.ReportInconsistencyResponse;
 import com.st3.uber.dto.user.driver.DriverActivityRequest;
 import com.st3.uber.dto.user.driver.DriverActivityResponse;
 import com.st3.uber.dto.user.driver.DriverRideDetailResponse;
 import com.st3.uber.dto.user.driver.DriverRideHistoryResponse;
-import com.st3.uber.enums.RideStatus;
-import com.st3.uber.enums.VehicleType;
 import com.st3.uber.service.DriverRegistrationService;
+import com.st3.uber.service.DriverRideHistoryService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -26,9 +24,14 @@ import java.util.List;
 public class DriverController {
 
     private final DriverRegistrationService driverRegistrationService;
+    private final DriverRideHistoryService driverRideHistoryService;
 
-    public DriverController(DriverRegistrationService driverRegistrationService) {
+    public DriverController(
+            DriverRegistrationService driverRegistrationService,
+            DriverRideHistoryService driverRideHistoryService
+    ) {
         this.driverRegistrationService = driverRegistrationService;
+        this.driverRideHistoryService = driverRideHistoryService;
     }
 
     @PreAuthorize("hasRole('ADMIN')")
@@ -42,15 +45,12 @@ public class DriverController {
     ) {
         return driverRegistrationService.register(req);
     }
-
-
     // GET /api/drivers/{id}
     @GetMapping(
             value = "/{id}",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public ResponseEntity<RegisterDriverResponse> getDriver(@PathVariable Long id) {
-
         RegisterDriverResponse response = new RegisterDriverResponse(
                 id,
                 "driver@test.com",
@@ -59,23 +59,22 @@ public class DriverController {
                 null,
                 true
         );
-
         return ResponseEntity.ok(response);
     }
 
-    // GET /api/drivers
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<RegisterDriverResponse>> getAllDrivers() {
-
         List<RegisterDriverResponse> drivers = List.of(
                 new RegisterDriverResponse(1L, "driver1@test.com", "Marko", "Markovic", null, true),
                 new RegisterDriverResponse(2L, "driver2@test.com", "Jovan", "Jovanovic", null, true)
         );
-
         return ResponseEntity.ok(drivers);
     }
 
-    // GET /api/drivers/{id}/rides
+    // ============ RIDE HISTORY ENDPOINTS ============
+
+    // GET api/drivers/{id}/rides
+    @PreAuthorize("hasRole('DRIVER')")
     @GetMapping(
             value = "/{id}/rides",
             produces = MediaType.APPLICATION_JSON_VALUE
@@ -83,33 +82,15 @@ public class DriverController {
     public ResponseEntity<List<DriverRideHistoryResponse>> getDriverRideHistory(
             @PathVariable Long id,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
-            @RequestParam(required = false) RideStatus status,
-            @RequestParam(required = false, defaultValue = "createdAt") String sortBy,
-            @RequestParam(required = false, defaultValue = "DESC") String sortDirection
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate
     ) {
-
-        List<DriverRideHistoryResponse> rides = List.of(
-                new DriverRideHistoryResponse(
-                        1L,
-                        "Bulevar oslobođenja 46",
-                        "Futoška 10",
-                        LocalDateTime.now().minusHours(2),
-                        LocalDateTime.now().minusHours(1),
-                        RideStatus.COMPLETED,
-                        450.0,
-                        8.5,
-                        false,
-                        null,
-                        false,
-                        List.of("John Doe", "Jane Smith")
-                )
+        List<DriverRideHistoryResponse> rides = driverRideHistoryService.getDriverRideHistory(
+                id, startDate, endDate
         );
-
         return ResponseEntity.ok(rides);
     }
 
-    // GET /api/drivers/{driverId}/rides/{rideId}
+    @PreAuthorize("hasRole('DRIVER')")
     @GetMapping(
             value = "/{driverId}/rides/{rideId}",
             produces = MediaType.APPLICATION_JSON_VALUE
@@ -118,39 +99,13 @@ public class DriverController {
             @PathVariable Long driverId,
             @PathVariable Long rideId
     ) {
-
-        DriverRideDetailResponse response = new DriverRideDetailResponse(
-                rideId,
-                "Bulevar oslobođenja 46",
-                "Futoška 10",
-                LocalDateTime.now().minusHours(2),
-                LocalDateTime.now().minusHours(1),
-                RideStatus.COMPLETED,
-                450.0,
-                8.5,
-                VehicleType.STANDARD,
-                false,
-                null,
-                null,
-                false,
-                List.of("John Doe", "Jane Smith"),
-                List.of(),
-                List.of(),
-                5,
-                4,
-                "Great ride!",
-                List.of(
-                        new ReportInconsistencyResponse(
-                                1L,
-                                2L,
-                                "Driver took a longer route",
-                                LocalDateTime.now().minusHours(1).minusMinutes(30)
-                        )
-                )
+        DriverRideDetailResponse response = driverRideHistoryService.getDriverRideDetail(
+                driverId, rideId
         );
-
         return ResponseEntity.ok(response);
     }
+
+    // ============ OTHER ENDPOINTS ============
 
     @PutMapping(
             value = "/{id}",
@@ -169,7 +124,6 @@ public class DriverController {
                 null,
                 true
         );
-
         return ResponseEntity.ok(response);
     }
 

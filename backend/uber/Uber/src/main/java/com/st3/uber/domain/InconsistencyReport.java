@@ -8,6 +8,8 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "inconsistency_reports")
+@Getter
+@Setter
 public class InconsistencyReport {
 
     @Id
