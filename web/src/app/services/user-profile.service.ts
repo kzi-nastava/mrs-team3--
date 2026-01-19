@@ -17,7 +17,7 @@ export interface BaseProfile {
 export interface VehicleResponse {
   id: number;
   model: string;
-  vehicleType: 'STANDARD' | 'VAN' | 'LUXURY';
+  type: 'STANDARD' | 'VAN' | 'LUXURY';
   registrationNumber: string;
   seatingCapacity: number;
   babyTransport: boolean;
@@ -58,7 +58,7 @@ export class UserProfileService {
     >(`${this.API_URL}/me`);
   }
 
- 
+
   updateMyProfile(
     payload: UpdateUserProfileRequest
   ): Observable<void> {

@@ -1,16 +1,13 @@
 package com.st3.uber.service;
 
-import com.st3.uber.domain.Driver;
-import com.st3.uber.domain.Passenger;
-import com.st3.uber.domain.User;
-import com.st3.uber.domain.VerificationToken;
+import com.st3.uber.domain.*;
 import com.st3.uber.dto.auth.*;
 import com.st3.uber.enums.UserRole;
 import com.st3.uber.enums.VerificationTokenType;
 import com.st3.uber.exception.TokenAlreadyUsedException;
-import com.st3.uber.exception.TokenException;
 import com.st3.uber.exception.TokenExpiredException;
 import com.st3.uber.exception.TokenInvalidException;
+import com.st3.uber.repository.RideRepository;
 import com.st3.uber.repository.UserRepository;
 import com.st3.uber.repository.VerificationTokenRepository;
 import jakarta.transaction.Transactional;
@@ -30,6 +27,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
   import static java.util.Base64.getDecoder;
@@ -50,16 +49,19 @@ public class AuthService {
 
   @Value("${jwt.ttl-seconds:3600}")
   private long jwtTtlSeconds;
+  private final RideRepository rideRepository;
 
   public AuthService(UserRepository userRepository, MailService mailService, VerificationTokenRepository tokenRepository,
-                     PasswordEncoder passwordEncoder, JwtEncoder jwtEncoder) {
+                     PasswordEncoder passwordEncoder, JwtEncoder jwtEncoder, RideRepository rideRepository) {
     this.userRepository = userRepository;
     this.mailService = mailService;
     this.tokenRepository = tokenRepository;
     this.passwordEncoder = passwordEncoder;
     this.jwtEncoder = jwtEncoder;
+    this.rideRepository = rideRepository;
   }
 
+  @Transactional
   public LoginResponse login(LoginRequest req) {
     User u = userRepository.findByEmail(req.email())
         .orElseThrow(() -> new RuntimeException("Invalid credentials"));
@@ -75,6 +77,19 @@ public class AuthService {
       if (!passenger.isVerified()) {
         throw new RuntimeException("Email not verified");
       }
+    }
+
+    if(u instanceof Driver driver){
+      driver.setAvailable(true);
+      driver.setFree(true);
+      driver.setActive(true);
+      Ride r = rideRepository.getReferenceById(2L);
+      List<Ride> rides = new ArrayList<>();
+      rides.add(r);
+      driver.setPastRides(rides);
+      driver.setNextRides(new ArrayList<>());
+
+      userRepository.save(driver);
     }
    // String role2 = u.getClass().getSimpleName().toUpperCase();
     String role = u.getRole().name();
@@ -225,6 +240,4 @@ public class AuthService {
       userRepository.save(u);
       tokenRepository.save(vt);
   }
-
-
 }

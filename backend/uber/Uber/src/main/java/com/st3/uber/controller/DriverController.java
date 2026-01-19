@@ -8,11 +8,14 @@ import com.st3.uber.dto.user.driver.DriverRideDetailResponse;
 import com.st3.uber.dto.user.driver.DriverRideHistoryResponse;
 import com.st3.uber.service.DriverRegistrationService;
 import com.st3.uber.service.DriverRideHistoryService;
+import com.st3.uber.service.DriverService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -25,12 +28,12 @@ public class DriverController {
 
     private final DriverRegistrationService driverRegistrationService;
     private final DriverRideHistoryService driverRideHistoryService;
+    private final DriverService driverService;
 
-    public DriverController(
-            DriverRegistrationService driverRegistrationService,
-            DriverRideHistoryService driverRideHistoryService
-    ) {
+    public DriverController(DriverRegistrationService driverRegistrationService, DriverService driverService, 
+                            DriverRideHistoryService driverRideHistoryService) {
         this.driverRegistrationService = driverRegistrationService;
+        this.driverService = driverService;
         this.driverRideHistoryService = driverRideHistoryService;
     }
 
@@ -140,4 +143,23 @@ public class DriverController {
     public ResponseEntity<Void> deleteDriver(@PathVariable Long id) {
         return ResponseEntity.noContent().build();
     }
+
+    @PutMapping("/logout")
+    public ResponseEntity<Void> logoutDriver(Authentication authentication) {
+        JwtAuthenticationToken jwt = (JwtAuthenticationToken) authentication;
+        Long uid = jwt.getToken().getClaim("uid");
+
+        driverService.logoutDriver(uid);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/change-active-status")
+    public ResponseEntity<Void> changeActiveStatus(Authentication authentication){
+        JwtAuthenticationToken jwt = (JwtAuthenticationToken) authentication;
+        Long uid = jwt.getToken().getClaim("uid");
+
+        driverService.changeActiveStatus(uid);
+        return ResponseEntity.noContent().build();
+    }
+
 }

@@ -27,12 +27,15 @@ export interface Ride {
   distance: number;
   duration: number;
   vehicleType: 'STANDARD' | 'VAN' | 'LUXURY';
+  babyTransport: boolean;
+  petTransport: boolean;
   driverName: string;
   status: 'COMPLETED' | 'CANCELLED_BY_DRIVER' | 'CANCELLED_BY_PASSENGER' | 'PANIC';
   cancelledBy?: string;
   cancelReason?: string;
   rating?: number;
   favorite: boolean;
+  inconsistencyReport?: string[];
 }
 
 @Injectable({
@@ -63,6 +66,8 @@ export class RideHistoryService {
       distance: 3.2,
       duration: 25,
       vehicleType: 'STANDARD',
+      babyTransport: false,
+      petTransport: true,
       driverName: 'Marko Marković',
       status: 'COMPLETED',
       rating: 5,
@@ -94,6 +99,8 @@ export class RideHistoryService {
       distance: 5.8,
       duration: 45,
       vehicleType: 'VAN',
+      babyTransport: false,
+      petTransport: true,
       driverName: 'Nikola Nikolić',
       status: 'CANCELLED_BY_DRIVER',
       cancelledBy: 'Driver',
@@ -119,11 +126,14 @@ export class RideHistoryService {
       price: 410,
       distance: 4.1,
       duration: 25,
+      babyTransport: false,
+      petTransport: true,
       vehicleType: 'LUXURY',
       driverName: 'Igor Jovanović',
       status: 'COMPLETED',
       rating: 4,
-      favorite: true
+      favorite: true,
+      inconsistencyReport: ['Driver took a longer route than necessary']
     },
     {
       id: 4,
@@ -144,6 +154,8 @@ export class RideHistoryService {
       price: 180,
       distance: 0.8,
       duration: 5,
+      babyTransport: false,
+      petTransport: true,
       vehicleType: 'STANDARD',
       driverName: 'Aleksandar Ilić',
       status: 'PANIC',
@@ -175,6 +187,8 @@ export class RideHistoryService {
       price: 680,
       distance: 7.4,
       duration: 45,
+      babyTransport: false,
+      petTransport: true,
       vehicleType: 'STANDARD',
       driverName: 'Darko Petrović',
       status: 'COMPLETED',
@@ -200,13 +214,62 @@ export class RideHistoryService {
       price: 0,
       distance: 0,
       duration: 0,
+      babyTransport: false,
+      petTransport: true,
       vehicleType: 'STANDARD',
       driverName: 'Predrag Jović',
       status: 'CANCELLED_BY_PASSENGER',
       cancelledBy: 'Passenger',
       cancelReason: 'Changed plans',
       favorite: false
+    },
+    {
+  id: 7,
+  startTime: '2026-01-16T09:10:00',
+  endTime: '2026-01-16T09:55:00',
+  startLocation: {
+    address: 'Detelinarska pijaca, Novi Sad',
+    latitude: 45.2679,
+    longitude: 19.8056
+  },
+  endLocation: {
+    address: 'Klinički centar Vojvodine, Novi Sad',
+    latitude: 45.2586,
+    longitude: 19.8321
+  },
+  stops: [
+    {
+      address: 'Limanski park, Novi Sad',
+      latitude: 45.2723,
+      longitude: 19.8312
+    },
+    {
+      address: 'Promenada Shopping Mall, Novi Sad',
+      latitude: 45.2619,
+      longitude: 19.8338
+    },
+    {
+      address: 'Spens, Novi Sad',
+      latitude: 45.2501,
+      longitude: 19.8318
     }
+  ],
+  passengers: [
+    'ivan.mitrovic@example.com',
+    'milica.stanic@example.com'
+  ],
+  price: 640,
+  distance: 6.9,
+  duration: 45,
+  vehicleType: 'VAN',
+  babyTransport: true,
+  petTransport: false,
+  driverName: 'Vladimir Stojanović',
+  status: 'COMPLETED',
+  rating: 5,
+  favorite: false
+}
+
   ];
 
   private ridesSubject = new BehaviorSubject<Ride[]>(this.mockRides);

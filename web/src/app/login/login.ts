@@ -59,25 +59,19 @@ export class Login {
 
         // Navigate based on role
         const role = this.authService.getUserRole();
-        
+
         // Redirect to appropriate page based on role
-        if (role === 'ADMIN') {
-          this.router.navigate(['/home']);
-        } else if (role === 'DRIVER') {
-          this.router.navigate(['/home']);
-        } else if (role === 'PASSENGER') {
-          this.router.navigate(['/home']);
-        } else {
-          this.router.navigate(['/']);
-        }
+
+        this.router.navigate(['/']);
+
 
         this.loading = false;
       },
       error: (err) => {
         console.error('LOGIN ERROR', err);
-        
+
         let errorMessage = 'Invalid email or password.';
-        
+
         // Handle specific error messages from backend
         if (err.error) {
           if (typeof err.error === 'string') {

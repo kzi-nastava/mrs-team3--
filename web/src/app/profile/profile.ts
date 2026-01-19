@@ -113,7 +113,7 @@ export class ProfileComponent implements OnInit {
           model: response.vehicle.model,
           licensePlate: response.vehicle.registrationNumber,
           seats: response.vehicle.seatingCapacity,
-          vehicleType: response.vehicle.vehicleType,
+          vehicleType: response.vehicle.type,
           babyTransport: response.vehicle.babyTransport,
           petTransport: response.vehicle.petTransport
         }

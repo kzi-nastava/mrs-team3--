@@ -32,4 +32,11 @@ export class RideApiService {
   createRide(payload: CreateRideRequest): Observable<any> {
     return this.http.post(this.apiUrl, payload);
   }
+
+  estimateRoute(payload: any): Observable<any> {
+    return this.http.post<any>(
+      `${this.apiUrl}/estimate-route`,
+      payload
+    );
+  }
 }

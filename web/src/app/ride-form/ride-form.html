@@ -1,55 +1,64 @@
-<div class="content-section">
+<div class="booking-section">
   <h1>Let's ride!</h1>
-  
-  <form [formGroup]="rideForm" class="form">
-    <!-- Start location input -->
+
+  <form [formGroup]="rideForm" class="booking-form">
+
     <div class="input-wrapper">
-      <input type="text" 
-             placeholder="Choose start location" 
-             class="input-field" 
-             formControlName="startLocation">
-      
-      @if (showStartSuggestions && startSuggestions.length > 0) {
-        <div class="suggestions">
-          @for (suggestion of startSuggestions; track suggestion.place_id) {
-            <div class="suggestion-item" (click)="selectStartSuggestion(suggestion)">
-              {{ suggestion.display_name }}
-            </div>
-          }
-        </div>
-      }
-    </div>
-
-    <!-- End location input -->
-    <div class="input-wrapper">
-      <input type="text" 
-             placeholder="Choose end location" 
-             class="input-field" 
-             formControlName="endLocation">
-      
-      @if (showEndSuggestions && endSuggestions.length > 0) {
-        <div class="suggestions">
-          @for (suggestion of endSuggestions; track suggestion.place_id) {
-            <div class="suggestion-item" (click)="selectEndSuggestion(suggestion)">
-              {{ suggestion.display_name }}
-            </div>
-          }
-        </div>
-      }
-    </div>
-
-    <!-- Buttons -->
-    <div class="button-group">
-      <button type="button" class="calculate-btn" (click)="onCalculate()" [disabled]="rideForm.invalid">Calculate</button>
-      <button type="button" class="refresh-btn" (click)="clearRoute()">Reset</button>
-    </div>
-
-    <!-- Ride info -->
-    @if (showRideInfo) {
-      <div class="ride-info">
-        <span class="time">4 min</span> 
-        <span class="price">520 din</span>
+      <div class="input-group">
+        <div class="input-icon">⚫</div>
+        <input
+          type="text"
+          placeholder="Choose start location"
+          class="location-input"
+          formControlName="startLocation">
       </div>
-    }
+
+      @if (showStartSuggestions && startSuggestions.length > 0) {
+      <div class="suggestions">
+        @for (suggestion of startSuggestions; track suggestion.place_id) {
+      <div class="suggestion-item" (click)="selectStartSuggestion(suggestion)">
+        {{ suggestion.display_name }}
+      </div>
+      }
+      </div>
+      }
+    </div>
+
+    <div class="input-wrapper">
+      <div class="input-group">
+        <div class="input-icon">⬛</div>
+        <input
+          type="text"
+          placeholder="Choose end location"
+          class="location-input"
+          formControlName="endLocation">
+      </div>
+
+      @if (showEndSuggestions && endSuggestions.length > 0) {
+      <div class="suggestions">
+        @for (suggestion of endSuggestions; track suggestion.place_id) {
+      <div class="suggestion-item" (click)="selectEndSuggestion(suggestion)">
+        {{ suggestion.display_name }}
+      </div>
+      }
+      </div>
+      }
+    </div>
+
+    <div class="button-group">
+      <button type="button" class="book-ride-btn" (click)="onCalculate()" [disabled]="rideForm.invalid">
+        Calculate
+      </button>
+
+      <button type="button" class="refresh-btn" (click)="clearRoute()">
+        Reset
+      </button>
+    </div>
+
+    <div *ngIf="showRideInfo && modalEstimatedTime" class="ride-info">
+      <span class="time">{{ modalEstimatedTime }}</span>
+    </div>
+
+
   </form>
 </div>

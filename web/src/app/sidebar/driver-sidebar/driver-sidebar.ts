@@ -2,6 +2,8 @@ import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
+import { DriverService } from '../../services/driver.service';
+import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-driver-sidebar',
@@ -14,7 +16,9 @@ export class DriverSidebarComponent {
 
   constructor(
     private router: Router,
-    private authService: AuthService
+    private authService: AuthService,
+    private driverService: DriverService,
+    private messageService: MessageService
   ) {}
 
   goHome() {
@@ -49,4 +53,26 @@ export class DriverSidebarComponent {
       this.authService.logout();
     }
   }
+
+  isActive = true;
+
+  toggleActiveStatus(): void {
+    const prev = this.isActive;
+    this.isActive = !this.isActive;
+    this.driverService.setActiveStatus().subscribe({
+      next: () => {
+      },
+      error: (err) => {
+        this.isActive = prev;
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Status Change Failed',
+          detail: err.error?.message || 'Unable to change status.'
+        });
+      }
+    });
+  }
+
+
+
 }
