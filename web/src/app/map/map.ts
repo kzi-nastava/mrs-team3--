@@ -81,7 +81,6 @@ export class MapComponent implements OnInit, OnDestroy {
       .subscribe(data => {
         if (data.start) this.addStartMarker(data.start);
         if (data.end) this.addEndMarker(data.end);
-        if (data.start && data.end) this.drawSimpleRoute();
       });
 
     this.rideService.clearRoute$
@@ -135,37 +134,80 @@ export class MapComponent implements OnInit, OnDestroy {
     this.map.setView(latlng, 14);
   }
 
+  // private drawSimpleRoute(): void {
+  //   if (!this.startMarker || !this.endMarker) return;
+  //
+  //   /** ✅ DODATO */
+  //   this.routeRequestId++;
+  //   const requestId = this.routeRequestId;
+  //
+  //   const startLatLng = this.startMarker.getLatLng();
+  //   const endLatLng = this.endMarker.getLatLng();
+  //
+  //   const apiKey = env.MAPS_KEY;
+  //   const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${apiKey}&start=${startLatLng.lng},${startLatLng.lat}&end=${endLatLng.lng},${endLatLng.lat}`;
+  //
+  //   fetch(url)
+  //     .then(r => r.json())
+  //     .then(data => {
+  //       /** ✅ DODATO */
+  //       if (requestId !== this.routeRequestId) return;
+  //
+  //       const durationSeconds = data.features[0].properties.summary.duration;
+  //       this.rideService.setDurationSeconds(durationSeconds);
+  //
+  //       const coordinates = data.features[0].geometry.coordinates;
+  //       const routeCoordinates = coordinates.map((c: any) => [c[1], c[0]]);
+  //
+  //       if (this.routeLine) this.map.removeLayer(this.routeLine);
+  //
+  //       this.routeLine = L.polyline(routeCoordinates, {
+  //         color: 'blue',
+  //         weight: 4
+  //       }).addTo(this.map);
+  //
+  //       this.map.fitBounds(this.routeLine.getBounds(), { padding: [50, 50] });
+  //     })
+  //     .catch(err => console.error('ORS error:', err));
+  // }
   private drawSimpleRoute(): void {
     if (!this.startMarker || !this.endMarker) return;
 
-    /** ✅ DODATO */
     this.routeRequestId++;
     const requestId = this.routeRequestId;
 
     const startLatLng = this.startMarker.getLatLng();
     const endLatLng = this.endMarker.getLatLng();
 
-    const apiKey = env.MAPS_KEY;
-    const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${apiKey}&start=${startLatLng.lng},${startLatLng.lat}&end=${endLatLng.lng},${endLatLng.lat}`;
+    const payload = {
+      startLocation: {
+        lat: startLatLng.lat,
+        lng: startLatLng.lng,
+        name: ''
+      },
+      endLocation: {
+        lat: endLatLng.lat,
+        lng: endLatLng.lng,
+        name: ''
+      }
+    };
 
-    fetch(url)
+    fetch('http://localhost:8080/simple-routes/time', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+        // Authorization: `Bearer ${token}` ← if endpoint is protected
+      },
+      body: JSON.stringify(payload)
+    })
       .then(r => r.json())
-      .then(data => {
-        /** ✅ DODATO */
+      .then((info: any) => {
         if (requestId !== this.routeRequestId) return;
 
-        const coordinates = data.features[0].geometry.coordinates;
-        const routeCoordinates = coordinates.map((c: any) => [c[1], c[0]]);
-
-        if (this.routeLine) this.map.removeLayer(this.routeLine);
-
-        this.routeLine = L.polyline(routeCoordinates, {
-          color: 'blue',
-          weight: 4
-        }).addTo(this.map);
-
-        this.map.fitBounds(this.routeLine.getBounds(), { padding: [50, 50] });
-      });
+        // ✅ RouteInfo.durationMinutes
+        this.rideService.setDurationSeconds(info.durationMinutes * 60);
+      })
+      .catch(err => console.error('Route time error:', err));
   }
 
   private clearSimpleMarkers(): void {

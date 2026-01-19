@@ -58,7 +58,7 @@ export class UserProfileService {
     >(`${this.API_URL}/me`);
   }
 
- 
+
   updateMyProfile(
     payload: UpdateUserProfileRequest
   ): Observable<void> {

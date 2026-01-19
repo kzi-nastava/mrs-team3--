@@ -8,14 +8,13 @@ import { ForgotPassword } from './forgot-password/forgot-password';
 import {VerificationResultComponent} from './verification-result/verification-result';
 import {authGuard, guestGuard} from './guard/auth.guard';
 import { ErrorComponent } from './error/error';
-import { DriverHistoryComponent } from './ride-history/driver/driver-history';  
+import { DriverHistoryComponent } from './ride-history/driver/driver-history';
 import { PassengerHistoryComponent } from './ride-history/passenger/passenger-history';
 export const routes: Routes = [
-  { path: '', component: LandingPageComponent, canActivate: [authGuard] },
+  { path: '', component: LandingPageComponent },
   { path: 'profile', component: ProfileComponent, canActivate: [authGuard] },
   { path: 'login', component: Login, canActivate: [guestGuard] },
   { path: 'register', component: RegisterComponent, canActivate: [guestGuard] },
-
 
   {
     path: 'driver-register',
