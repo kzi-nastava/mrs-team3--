@@ -17,4 +17,5 @@ public interface DriverRepository extends JpaRepository<Driver, Long> {
           AND d.currentRide IS NULL
     """)
     List<Driver> findAvailableDrivers();
+    Driver findByEmail(String email);
 }

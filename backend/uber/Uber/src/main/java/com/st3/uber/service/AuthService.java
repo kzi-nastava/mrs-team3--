@@ -1,14 +1,10 @@
 package com.st3.uber.service;
 
-import com.st3.uber.domain.Driver;
-import com.st3.uber.domain.Passenger;
-import com.st3.uber.domain.User;
-import com.st3.uber.domain.VerificationToken;
+import com.st3.uber.domain.*;
 import com.st3.uber.dto.auth.*;
 import com.st3.uber.enums.UserRole;
 import com.st3.uber.enums.VerificationTokenType;
 import com.st3.uber.exception.TokenAlreadyUsedException;
-import com.st3.uber.exception.TokenException;
 import com.st3.uber.exception.TokenExpiredException;
 import com.st3.uber.exception.TokenInvalidException;
 import com.st3.uber.repository.UserRepository;
@@ -60,6 +56,7 @@ public class AuthService {
     this.jwtEncoder = jwtEncoder;
   }
 
+  @Transactional
   public LoginResponse login(LoginRequest req) {
     User u = userRepository.findByEmail(req.email())
         .orElseThrow(() -> new RuntimeException("Invalid credentials"));
@@ -75,6 +72,14 @@ public class AuthService {
       if (!passenger.isVerified()) {
         throw new RuntimeException("Email not verified");
       }
+    }
+
+    if(u instanceof Driver driver){
+      driver.setAvailable(true);
+      driver.setFree(true);
+      driver.setActive(true);
+
+      userRepository.save(driver);
     }
    // String role2 = u.getClass().getSimpleName().toUpperCase();
     String role = u.getRole().name();
@@ -225,6 +230,4 @@ public class AuthService {
       userRepository.save(u);
       tokenRepository.save(vt);
   }
-
-
 }

@@ -8,9 +8,12 @@ import com.st3.uber.exception.RideRejectedException;
 import com.st3.uber.repository.DriverRepository;
 import com.st3.uber.util.DistanceCalculator;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Comparator;
 import java.util.List;
+
+import static org.springframework.http.HttpStatus.*;
 
 @Service
 public class DriverService {
@@ -83,6 +86,20 @@ public class DriverService {
                 .orElseThrow(() ->
                         new RideRejectedException(RideRejectReason.NO_DRIVER_WITH_LOCATION)
                 );
+    }
+
+    public void logoutDriver(Long driverId){
+        Driver driver = driverRepository.findById(driverId)
+            .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Driver not found"));
+
+        if (driver.getCurrentRide() != null) {
+            throw new ResponseStatusException(FORBIDDEN, "Driver cannot logout while in a ride");
+        }
+
+        driver.setActive(false);
+        driver.setAvailable(false);
+        driver.setFree(false);
+        driverRepository.save(driver);
     }
 
 }

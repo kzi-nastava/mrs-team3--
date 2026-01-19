@@ -37,6 +37,13 @@ public class Driver extends User {
     @JoinColumn(name = "current_ride_id")
     private Ride currentRide;
 
+    @OneToMany
+    @JoinColumn(name = "driver_id")
+    private List<Ride> nextRides = new ArrayList<>();
+
+    @Column(nullable = false)
+    private boolean activityRequest = false;
+
     @Column(nullable = false)
     private int workingMinutesPerDay = 0;
 
