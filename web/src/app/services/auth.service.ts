@@ -23,10 +23,6 @@ interface DecodedToken {
   exp: number;      // expires at
 }
 
-interface DriverLogoutResponse {
-  canLogout: boolean;
-}
-
 @Injectable({
   providedIn: 'root'
 })
@@ -81,7 +77,7 @@ export class AuthService {
         next: () => {
           this.clearSession();
         },
-        error: (error) => {
+        error: () => {
           this.messageService.add({
             severity: 'error',
             summary: 'Logout Failed',

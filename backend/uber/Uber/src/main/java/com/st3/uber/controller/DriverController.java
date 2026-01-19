@@ -201,4 +201,13 @@ public class DriverController {
         return ResponseEntity.noContent().build();
     }
 
+    @PutMapping("/change-active-status")
+    public ResponseEntity<Void> changeActiveStatus(Authentication authentication){
+        JwtAuthenticationToken jwt = (JwtAuthenticationToken) authentication;
+        Long uid = jwt.getToken().getClaim("uid");
+
+        driverService.changeActiveStatus(uid);
+        return ResponseEntity.noContent().build();
+    }
+
 }

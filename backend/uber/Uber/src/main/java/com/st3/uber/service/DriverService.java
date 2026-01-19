@@ -102,4 +102,25 @@ public class DriverService {
         driverRepository.save(driver);
     }
 
+  public void changeActiveStatus(Long driverId){
+      Driver driver = driverRepository.findById(driverId)
+          .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Driver not found"));
+
+    if(driver.getNextRides().isEmpty()){
+        throw new ResponseStatusException(FORBIDDEN, "Driver cannot change status because of next rides");
+    }
+    if(driver.getCurrentRide() != null){
+      driver.setActivityRequest(true);
+      driverRepository.save(driver);
+      return;
+    }
+
+      boolean newActive = !driver.isActive();
+      driver.setActive(newActive);
+      driver.setAvailable(newActive);
+      driver.setFree(newActive);
+
+      driverRepository.save(driver);
+  }
+
 }
