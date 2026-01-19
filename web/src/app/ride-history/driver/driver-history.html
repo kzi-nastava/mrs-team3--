@@ -40,11 +40,11 @@
         <div class="ride-card" (click)="openRideDetails(ride)">
           
           <div class="ride-card-header">
-            <span class="ride-id">Ride #{{ ride.id }}</span>
+            <span class="ride-date">{{ formatDate(ride.startTime) }}</span>
             <span class="status-badge" 
                   [class.completed]="ride.status === 'COMPLETED'"
                   [class.cancelled]="ride.status.includes('CANCELLED')"
-                  [class.panic]="ride.status === 'PANIC'">
+                  [class.finished-early]="ride.status === 'FINISHED_EARLY'">
               {{ getStatusText(ride.status) }}
             </span>
           </div>
@@ -62,11 +62,6 @@
           </div>
 
           <div class="ride-info">
-            <div class="info-item">
-              <span class="info-label">Date</span>
-              <span class="info-value">{{ formatDate(ride.startTime) }}</span>
-            </div>
-
             <div class="info-item">
               <span class="info-label">Earned</span>
               <span class="info-value price-value">{{ ride.price }} din</span>
@@ -94,7 +89,7 @@
       <div class="modal-content" (click)="$event.stopPropagation()">
         
         <div class="modal-header">
-          <h2 class="modal-title">Ride #{{ selectedRide()!.id }} Details</h2>
+          <h2 class="modal-title">Ride Details</h2>
           <button class="close-btn" (click)="closeModal($event)">×</button>
         </div>
 
@@ -112,7 +107,7 @@
             <span class="status-badge" 
                   [class.completed]="selectedRide()!.status === 'COMPLETED'"
                   [class.cancelled]="selectedRide()!.status.includes('CANCELLED')"
-                  [class.panic]="selectedRide()!.status === 'PANIC'">
+                  [class.finished-early]="selectedRide()!.status === 'FINISHED_EARLY'">
               {{ getStatusText(selectedRide()!.status) }}
             </span>
           </div>
@@ -188,27 +183,103 @@
                 <span class="detail-value price-value">{{ selectedRide()!.price }} din</span>
               </div>
 
-              @if (selectedRide()!.rating) {
-                <div class="detail-item">
-                  <span class="detail-label">Rating</span>
-                  <div class="rating-stars">
-                    @for (star of [1,2,3,4,5]; track star) {
-                      <span>{{ star <= selectedRide()!.rating! ? '⭐' : '☆' }}</span>
-                    }
-                  </div>
-                </div>
-              }
+              <div class="detail-item">
+                <span class="detail-label">Panic Button</span>
+                <span class="detail-value" [class.panic-yes]="selectedRide()!.hadPanic">
+                  {{ selectedRide()!.hadPanic ? '⚠️ Yes' : '✓ No' }}
+                </span>
+              </div>
 
             </div>
           </div>
 
-          <!-- Passengers -->
-          @if (selectedRide()!.passengers.length > 0) {
+          <!-- Passengers & Invites -->
+          @if (selectedRide()!.registeredPassengers.length > 0 || selectedRide()!.invitedPassengers.length > 0) {
             <div class="detail-section">
-              <h3 class="section-title">👥 Passengers ({{ selectedRide()!.passengers.length }})</h3>
+              <h3 class="section-title">👥 Passengers ({{ selectedRide()!.registeredPassengers.length + selectedRide()!.invitedPassengers.length }})</h3>
+              
               <div class="passengers-list">
-                @for (passenger of selectedRide()!.passengers; track passenger) {
-                  <div class="passenger-item">{{ passenger }}</div>
+                <!-- Registered Passengers -->
+                @for (passenger of selectedRide()!.registeredPassengers; track passenger) {
+                  <div class="passenger-item registered">
+                    <span class="passenger-icon">👤</span>
+                    <span class="passenger-name">{{ passenger }}</span>
+                    <span class="passenger-badge">Registered</span>
+                  </div>
+                }
+                
+                <!-- Invited Passengers (not in system) -->
+                @for (invite of selectedRide()!.invitedPassengers; track invite) {
+                  <div class="passenger-item invited">
+                    <span class="passenger-icon">✉️</span>
+                    <span class="passenger-name">{{ invite }}</span>
+                    <span class="passenger-badge">Invited</span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Reviews Section -->
+          @if (selectedRide()!.reviews && selectedRide()!.reviews!.length > 0) {
+            <div class="detail-section">
+              <h3 class="section-title">⭐ Reviews ({{ selectedRide()!.reviews!.length }})</h3>
+              
+              <div class="reviews-list">
+                @for (review of selectedRide()!.reviews!; track $index) {
+                  <div class="review-card">
+                    
+                    <div class="review-ratings">
+                      @if (review.driverRating) {
+                        <div class="rating-item">
+                          <span class="rating-label">Driver:</span>
+                          <div class="rating-stars">
+                            @for (filled of getStarArray(review.driverRating); track $index) {
+                              <span [class.filled]="filled">{{ filled ? '⭐' : '☆' }}</span>
+                            }
+                          </div>
+                        </div>
+                      }
+                      
+                      @if (review.vehicleRating) {
+                        <div class="rating-item">
+                          <span class="rating-label">Vehicle:</span>
+                          <div class="rating-stars">
+                            @for (filled of getStarArray(review.vehicleRating); track $index) {
+                              <span [class.filled]="filled">{{ filled ? '⭐' : '☆' }}</span>
+                            }
+                          </div>
+                        </div>
+                      }
+                    </div>
+                    
+                    @if (review.comment) {
+                      <div class="review-comment">
+                        <p>{{ review.comment }}</p>
+                      </div>
+                    }
+                    
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Inconsistency Reports -->
+          @if (selectedRide()!.inconsistencyReports && selectedRide()!.inconsistencyReports!.length > 0) {
+            <div class="detail-section">
+              <h3 class="section-title">⚠️ Inconsistency Reports ({{ selectedRide()!.inconsistencyReports!.length }})</h3>
+              
+              <div class="reports-list">
+                @for (report of selectedRide()!.inconsistencyReports!; track report.id) {
+                  <div class="report-card">
+                    <div class="report-header">
+                      <span class="report-date">{{ formatDateTime(report.reportedAt) }}</span>
+                    </div>
+                    <div class="report-text">
+                      <p>{{ report.message }}</p>
+                    </div>
+                  </div>
                 }
               </div>
             </div>
