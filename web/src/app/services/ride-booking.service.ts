@@ -144,4 +144,33 @@ export class RideBookingService {
   calculateRoute(): void {
     this.calculateRouteSubject.next();
   }
+  setPickupLocationDirect(location: Location): void {
+    const current = this.rideBookingDataSubject.value;
+    this.rideBookingDataSubject.next({
+      ...current,
+      pickup: location
+    });
+  }
+  setDestinationLocationDirect(location: Location): void {
+    const current = this.rideBookingDataSubject.value;
+    this.rideBookingDataSubject.next({
+      ...current,
+      destination: location
+    });
+  }
+  clearStops(): void {
+    const current = this.rideBookingDataSubject.value;
+    this.rideBookingDataSubject.next({
+      ...current,
+      stops: []
+    });
+  }
+  addStopLocationDirect(location: Location): void {
+    const current = this.rideBookingDataSubject.value;
+    this.rideBookingDataSubject.next({
+      ...current,
+      stops: [...current.stops, location]
+    });
+  }
+
 }
