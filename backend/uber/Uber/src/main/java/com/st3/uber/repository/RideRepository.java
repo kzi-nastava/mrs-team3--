@@ -10,5 +10,4 @@ import java.util.List;
 public interface RideRepository extends JpaRepository<Ride, Long> {
 
     boolean existsByCreatorAndStatusIn(Passenger creator, List<RideStatus> statuses);
-
 }

@@ -15,4 +15,8 @@ export class DriverService {
   registerDriver(payload: any): Observable<any> {
     return this.http.post(this.apiUrl, payload);
   }
+
+  setActiveStatus(): Observable<any> {
+    return this.http.put(`${this.apiUrl}/change-active-status`, {});
+  }
 }

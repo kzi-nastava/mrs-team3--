@@ -5,6 +5,7 @@ import { tap } from 'rxjs/operators';
 import { RegisterRequest } from '../register/register.model';
 import { Router } from '@angular/router';
 import { env } from '../../env/env';
+import { MessageService } from 'primeng/api';
 
 interface LoginResponse {
   id: number;
@@ -28,6 +29,7 @@ interface DecodedToken {
 export class AuthService {
 
   private apiUrl = env.API_URL +"/api/auth";
+  private apiDriverUrl = env.API_URL +"/api/drivers";
   private tokenKey = 'token';
 
   // Observable for components to subscribe to user changes
@@ -36,7 +38,8 @@ export class AuthService {
 
   constructor(
     private http: HttpClient,
-    private router: Router
+    private router: Router,
+    private messageService: MessageService
   ) {}
 
   login(email: string, password: string): Observable<LoginResponse> {
@@ -69,9 +72,28 @@ export class AuthService {
   }
 
   logout(): void {
+    if (this.isDriver()) {
+      this.http.put<void>(`${this.apiDriverUrl}/logout`, {}).subscribe({
+        next: () => {
+          this.clearSession();
+        },
+        error: () => {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Logout Failed',
+            detail: 'Cannot logout while on an active ride. Please complete or cancel your ride first.'
+          });
+        }
+      });
+      return;
+    }
+    this.clearSession();
+  }
+
+  clearSession(): void {
     localStorage.removeItem(this.tokenKey);
     this.currentUserSubject.next(null);
-    this.router.navigate(['/login'], { replaceUrl: true }).then(() => window.location.reload());
+    this.router.navigate(['/'], { replaceUrl: true }).then(() => window.location.reload());
   }
 
   // Token management
