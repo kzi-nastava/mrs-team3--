@@ -1,5 +1,5 @@
 <div class="ride-history-container">
-  
+
   <div class="ride-history-header">
     <h1>My Ride History</h1>
   </div>
@@ -8,19 +8,38 @@
     <div class="filter">
       <label>
         From:
-        <input 
-          type="date" 
+        <input
+          type="date"
           [(ngModel)]="startDate"
           (change)="onFilterChange()">
       </label>
 
       <label>
         To:
-        <input 
-          type="date" 
+        <input
+          type="date"
           [(ngModel)]="endDate"
           (change)="onFilterChange()">
       </label>
+
+      <div class="sort">
+        <label class="sort-label">Sort by</label>
+
+        <div class="select-wrap">
+          <select class="select" [(ngModel)]="sortOption" (change)="onSortChange()">
+            <option value="startTime-desc">Start time (newest)</option>
+            <option value="startTime-asc">Start time (oldest)</option>
+            <option value="endTime-desc">End time (newest)</option>
+            <option value="endTime-asc">End time (oldest)</option>
+            <option value="route-asc">Route (A → Z)</option>
+            <option value="route-desc">Route (Z → A)</option>
+          </select>
+
+          <span class="select-arrow">▾</span>
+        </div>
+      </div>
+
+
     </div>
 
     <div class="actions">
@@ -38,7 +57,7 @@
     <div class="rides-grid">
       @for (ride of filteredRides(); track ride.id) {
         <div class="ride-card" (click)="openRideDetails(ride)">
-          
+
           <!-- Favorite Heart -->
           <div class="favorite-heart" (click)="toggleFavoriteFromCard($event, ride)">
             {{ ride.favorite ? '❤️' : '🤍' }}
@@ -46,7 +65,7 @@
 
           <div class="ride-card-header">
             <span class="ride-id">Ride #{{ ride.id }}</span>
-            <span class="status-badge" 
+            <span class="status-badge"
                   [class.completed]="ride.status === 'COMPLETED'"
                   [class.cancelled]="ride.status.includes('CANCELLED')"
                   [class.panic]="ride.status === 'PANIC'">
@@ -59,7 +78,7 @@
               <div class="route-icon start"></div>
               <div class="route-address">{{ ride.startLocation.address }}</div>
             </div>
-            
+
             <div class="route-point">
               <div class="route-icon end"></div>
               <div class="route-address">{{ ride.endLocation.address }}</div>
@@ -68,24 +87,28 @@
 
           <div class="ride-info">
             <div class="info-item">
-              <span class="info-label">Date</span>
+              <span class="info-label">Start date</span>
               <span class="info-value">{{ formatDate(ride.startTime) }}</span>
             </div>
-
             <div class="info-item">
-              <span class="info-label">Price</span>
-              <span class="info-value price-value">{{ ride.price }} din</span>
+              <span class="info-label">End date</span>
+              <span class="info-value">{{ ride.endTime ? formatDate(ride.endTime) : '-' }}</span>
             </div>
 
-            <div class="info-item">
-              <span class="info-label">Distance</span>
-              <span class="info-value">{{ ride.distance }} km</span>
-            </div>
+<!--            <div class="info-item">-->
+<!--              <span class="info-label">Price</span>-->
+<!--              <span class="info-value price-value">{{ ride.price }} din</span>-->
+<!--            </div>-->
 
-            <div class="info-item">
-              <span class="info-label">Duration</span>
-              <span class="info-value">{{ ride.duration }} min</span>
-            </div>
+<!--            <div class="info-item">-->
+<!--              <span class="info-label">Distance</span>-->
+<!--              <span class="info-value">{{ ride.distance }} km</span>-->
+<!--            </div>-->
+
+<!--            <div class="info-item">-->
+<!--              <span class="info-label">Duration</span>-->
+<!--              <span class="info-value">{{ ride.duration }} min</span>-->
+<!--            </div>-->
           </div>
 
         </div>
@@ -97,14 +120,14 @@
   @if (selectedRide()) {
     <div class="modal-overlay" (click)="closeModal($event)">
       <div class="modal-content" (click)="$event.stopPropagation()">
-        
+
         <div class="modal-header">
           <h2 class="modal-title">Ride #{{ selectedRide()!.id }} Details</h2>
           <button class="close-btn" (click)="closeModal($event)">×</button>
         </div>
 
         <div class="modal-body">
-          
+
           <!-- Map -->
           <div class="detail-section">
             <div class="map-container" id="map-container">
@@ -114,7 +137,7 @@
 
           <!-- Status -->
           <div class="detail-section">
-            <span class="status-badge" 
+            <span class="status-badge"
                   [class.completed]="selectedRide()!.status === 'COMPLETED'"
                   [class.cancelled]="selectedRide()!.status.includes('CANCELLED')"
                   [class.panic]="selectedRide()!.status === 'PANIC'">
@@ -126,7 +149,7 @@
           <div class="detail-section">
             <h3 class="section-title">📍 Route</h3>
             <div class="route-details">
-              
+
               <div class="route-detail-item">
                 <div class="route-detail-icon start">A</div>
                 <div class="route-detail-text">
@@ -160,7 +183,7 @@
           <div class="detail-section">
             <h3 class="section-title">ℹ️ Ride Information</h3>
             <div class="info-grid">
-              
+
               <div class="detail-item">
                 <span class="detail-label">Start Time</span>
                 <span class="detail-value">{{ formatDateTime(selectedRide()!.startTime) }}</span>
@@ -173,30 +196,30 @@
                 </div>
               }
 
-              <div class="detail-item">
-                <span class="detail-label">Duration</span>
-                <span class="detail-value">{{ selectedRide()!.duration }} minutes</span>
-              </div>
+<!--              <div class="detail-item">-->
+<!--                <span class="detail-label">Duration</span>-->
+<!--                <span class="detail-value">{{ selectedRide()!.duration }} minutes</span>-->
+<!--              </div>-->
 
-              <div class="detail-item">
-                <span class="detail-label">Distance</span>
-                <span class="detail-value">{{ selectedRide()!.distance }} km</span>
-              </div>
+<!--              <div class="detail-item">-->
+<!--                <span class="detail-label">Distance</span>-->
+<!--                <span class="detail-value">{{ selectedRide()!.distance }} km</span>-->
+<!--              </div>-->
 
-              <div class="detail-item">
-                <span class="detail-label">Vehicle Type</span>
-                <span class="detail-value">{{ selectedRide()!.vehicleType }}</span>
-              </div>
+<!--              <div class="detail-item">-->
+<!--                <span class="detail-label">Vehicle Type</span>-->
+<!--                <span class="detail-value">{{ selectedRide()!.vehicleType }}</span>-->
+<!--              </div>-->
 
               <div class="detail-item">
                 <span class="detail-label">Driver</span>
                 <span class="detail-value">{{ selectedRide()!.driverName }}</span>
               </div>
 
-              <div class="detail-item">
-                <span class="detail-label">Price</span>
-                <span class="detail-value price-value">{{ selectedRide()!.price }} din</span>
-              </div>
+<!--              <div class="detail-item">-->
+<!--                <span class="detail-label">Price</span>-->
+<!--                <span class="detail-value price-value">{{ selectedRide()!.price }} din</span>-->
+<!--              </div>-->
 
               @if (selectedRide()!.rating) {
                 <div class="detail-item">
@@ -212,17 +235,17 @@
             </div>
           </div>
 
-          <!-- Passengers -->
-          @if (selectedRide()!.passengers.length > 0) {
-            <div class="detail-section">
-              <h3 class="section-title">👥 Passengers ({{ selectedRide()!.passengers.length }})</h3>
-              <div class="passengers-list">
-                @for (passenger of selectedRide()!.passengers; track passenger) {
-                  <div class="passenger-item">{{ passenger }}</div>
-                }
-              </div>
-            </div>
-          }
+<!--          &lt;!&ndash; Passengers &ndash;&gt;-->
+<!--          @if (selectedRide()!.passengers.length > 0) {-->
+<!--            <div class="detail-section">-->
+<!--              <h3 class="section-title">👥 Passengers ({{ selectedRide()!.passengers.length }})</h3>-->
+<!--              <div class="passengers-list">-->
+<!--                @for (passenger of selectedRide()!.passengers; track passenger) {-->
+<!--                  <div class="passenger-item">{{ passenger }}</div>-->
+<!--                }-->
+<!--              </div>-->
+<!--            </div>-->
+<!--          }-->
 
           <!-- Cancellation Info -->
           @if (selectedRide()!.status.includes('CANCELLED')) {
@@ -237,16 +260,45 @@
             </div>
           }
 
+          @if (selectedRide()!.inconsistencyReport?.length) {
+          <div class="detail-section">
+            <h3 class="section-title">⚠️ Inconsistency reports</h3>
+
+            <div class="inconsistency-list">
+              @for (rep of selectedRide()!.inconsistencyReport!; track $index) {
+          <div class="inconsistency-item">
+            {{ rep }}
+          </div>
+          }
+          </div>
+        </div>
+          }
+
         </div>
 
         <div class="modal-footer">
-          <button 
-            type="button" 
+          <button
+            type="button"
             class="favorite-btn"
             [class.is-favorite]="selectedRide()!.favorite"
             (click)="toggleFavorite(selectedRide()!)">
             {{ selectedRide()!.favorite ? '❤️ Remove from Favorites' : '⭐ Add to Favorites' }}
           </button>
+          <div class="ride-actions">
+            <button
+              type="button"
+              class="favorite-btn book-btn"
+              (click)="bookAgain($event, selectedRide()!)">
+              🚕 Book now
+            </button>
+
+            <button
+              type="button"
+              class="favorite-btn schedule-btn"
+              (click)="scheduleRide($event, selectedRide()!)">
+              🕒 Schedule
+            </button>
+          </div>
         </div>
 
       </div>

@@ -54,7 +54,7 @@ export class DriverSidebarComponent {
     }
   }
 
-  isActive = false;
+  isActive = true;
 
   toggleActiveStatus(): void {
     const prev = this.isActive;

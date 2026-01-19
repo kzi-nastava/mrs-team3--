@@ -236,12 +236,6 @@
   font-weight: 600;
 }
 
-.price-value {
-  color: #059669;
-  font-size: 1rem;
-}
-
-/* Modal Overlay */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -430,28 +424,6 @@
   font-weight: 600;
 }
 
-.passengers-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm, 0.625rem);
-}
-
-.passenger-item {
-  padding: var(--spacing-sm, 0.625rem) var(--spacing-md, 1rem);
-  background: #f9fafb;
-  border-radius: var(--radius-md, 8px);
-  font-size: 0.875rem;
-  color: #111827;
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm, 0.625rem);
-}
-
-.passenger-item::before {
-  content: "👤";
-  font-size: 1rem;
-}
-
 .rating-stars {
   display: flex;
   gap: 0.25rem;
@@ -617,4 +589,115 @@
   .modal-footer {
     padding: var(--spacing-lg, 1.5rem);
   }
+}
+
+.sort {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sort-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.select-wrap {
+  position: relative;
+  min-width: 240px;
+}
+
+.select {
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  padding: 10px 40px 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+
+  background: #fff;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 500;
+
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  outline: none;
+
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.select:hover {
+  border-color: #cbd5e1;
+}
+
+.select:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+}
+
+.select:disabled {
+  background: #f8fafc;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.select-arrow {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+
+  color: #64748b;
+  font-size: 14px;
+}
+.inconsistency-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.inconsistency-item {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: #7c2d12;
+  font-size: 14px;
+}
+
+.ride-actions {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.ride-actions .favorite-btn {
+  flex: 1;
+  justify-content: center;
+}
+
+.book-btn {
+  border-color: #6366f1;
+  color: #6366f1;
+}
+
+.book-btn:hover {
+  background: #eef2ff;
+  border-color: #4f46e5;
+  color: #4f46e5;
+}
+
+.schedule-btn {
+  border-color: #e5e7eb;
+  color: #374151;
+}
+
+.schedule-btn:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
 }

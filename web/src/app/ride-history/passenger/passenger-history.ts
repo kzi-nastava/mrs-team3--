@@ -1,7 +1,6 @@
 import { Component, signal, computed, OnInit, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
 import { RideHistoryService, Ride } from '../../services/passenger-history.service';
 import { FavoriteRoutesService } from '../../services/favorite-routes.service';
 import { env } from '../../../env/env';
@@ -18,10 +17,12 @@ export class PassengerHistoryComponent implements OnInit, AfterViewInit {
 
   protected rides = signal<Ride[]>([]);
   protected selectedRide = signal<Ride | null>(null);
-  
+
   // Filter states
   startDate: string = '';
   endDate: string = '';
+
+  sortOption: string = 'startTime-desc';
 
   // Map
   private detailMap: any = null;
@@ -31,7 +32,6 @@ export class PassengerHistoryComponent implements OnInit, AfterViewInit {
   constructor(
     private driverHistoryService: RideHistoryService,
     private favoriteService: FavoriteRoutesService,
-    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -40,6 +40,53 @@ export class PassengerHistoryComponent implements OnInit, AfterViewInit {
 
   ngAfterViewInit(): void {
     // Map will be initialized when modal opens
+  }
+
+  protected filteredRides = computed(() => {
+    let rides = this.rides();
+
+    if (this.startDate) {
+      const from = new Date(this.startDate);
+      from.setHours(0, 0, 0, 0);
+      rides = rides.filter(r => new Date(r.startTime) >= from);
+    }
+
+    if (this.endDate) {
+      const to = new Date(this.endDate);
+      to.setHours(23, 59, 59, 999);
+      rides = rides.filter(r => new Date(r.startTime) <= to);
+    }
+
+    const sorted = [...rides];
+
+    switch (this.sortOption) {
+      case 'startTime-asc':
+        sorted.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+        break;
+      case 'startTime-desc':
+        sorted.sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
+        break;
+
+      case 'endTime-asc':
+        sorted.sort((a, b) => this.endMillis(a) - this.endMillis(b));
+        break;
+      case 'endTime-desc':
+        sorted.sort((a, b) => this.endMillis(b) - this.endMillis(a));
+        break;
+
+      case 'route-asc':
+        sorted.sort((a, b) => this.routeText(a).localeCompare(this.routeText(b)));
+        break;
+      case 'route-desc':
+        sorted.sort((a, b) => this.routeText(b).localeCompare(this.routeText(a)));
+        break;
+    }
+
+    return sorted;
+  });
+
+  protected onSortChange(): void {
+    this.rides.set([...this.rides()]);
   }
 
   private loadRides(): void {
@@ -58,34 +105,13 @@ export class PassengerHistoryComponent implements OnInit, AfterViewInit {
     });
   }
 
-  protected filteredRides = computed(() => {
-    let rides = this.rides();
-
-    if (this.startDate) {
-      rides = rides.filter(r => r.startTime >= this.startDate);
-    }
-
-    if (this.endDate) {
-      const endDateTime = new Date(this.endDate);
-      endDateTime.setHours(23, 59, 59, 999);
-      rides = rides.filter(r => new Date(r.startTime) <= endDateTime);
-    }
-
-    // Sort by date, newest first
-    return rides.sort((a, b) => 
-      new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
-    );
-  });
-
   protected onFilterChange(): void {
-    // Trigger recomputation of filtered rides
     this.rides.set([...this.rides()]);
   }
 
   protected openRideDetails(ride: Ride): void {
     this.selectedRide.set(ride);
-    
-    // Initialize map after a brief delay to ensure DOM is ready
+
     setTimeout(() => {
       this.initDetailMap(ride);
     }, 100);
@@ -93,17 +119,24 @@ export class PassengerHistoryComponent implements OnInit, AfterViewInit {
 
   protected closeModal(event?: Event): void {
     if (event) {
-      event.stopPropagation();
+      event?.stopPropagation();
     }
     this.selectedRide.set(null);
-    
-    // Clean up map
+
     if (this.detailMap) {
       this.detailMap.remove();
       this.detailMap = null;
       this.mapMarkers = [];
       this.mapRouteLines = [];
     }
+  }
+
+  private routeText(r: Ride): string {
+    return `${r.startLocation.address} -> ${r.endLocation.address}`;
+  }
+
+  private endMillis(r: Ride): number {
+    return r.endTime ? new Date(r.endTime).getTime() : 0;
   }
 
   protected toggleFavoriteFromCard(event: Event, ride: Ride): void {
@@ -141,7 +174,6 @@ export class PassengerHistoryComponent implements OnInit, AfterViewInit {
     this.favoriteService.add(route);
   }
 
-  // локални update
   this.rides.set(
     this.rides().map(r =>
       r.id === ride.id ? { ...r, favorite: !r.favorite } : r
@@ -153,8 +185,6 @@ export class PassengerHistoryComponent implements OnInit, AfterViewInit {
   }
 }
 
-
-
   private initDetailMap(ride: Ride): void {
     if (this.detailMap) {
       this.detailMap.remove();
@@ -163,7 +193,6 @@ export class PassengerHistoryComponent implements OnInit, AfterViewInit {
     const mapElement = document.getElementById('detailMap');
     if (!mapElement) return;
 
-    // Initialize map centered on start location
     this.detailMap = L.map('detailMap').setView(
       [ride.startLocation.latitude, ride.startLocation.longitude],
       13
@@ -174,7 +203,6 @@ export class PassengerHistoryComponent implements OnInit, AfterViewInit {
       attribution: '© OpenStreetMap'
     }).addTo(this.detailMap);
 
-    // Add start marker
     const startMarker = L.marker(
       [ride.startLocation.latitude, ride.startLocation.longitude],
       {
@@ -190,7 +218,6 @@ export class PassengerHistoryComponent implements OnInit, AfterViewInit {
     ).addTo(this.detailMap).bindPopup('Pickup: ' + ride.startLocation.address);
     this.mapMarkers.push(startMarker);
 
-    // Add stop markers
     ride.stops.forEach((stop, index) => {
       const stopMarker = L.marker(
         [stop.latitude, stop.longitude],
@@ -208,7 +235,6 @@ export class PassengerHistoryComponent implements OnInit, AfterViewInit {
       this.mapMarkers.push(stopMarker);
     });
 
-    // Add end marker
     const endMarker = L.marker(
       [ride.endLocation.latitude, ride.endLocation.longitude],
       {
@@ -312,5 +338,23 @@ export class PassengerHistoryComponent implements OnInit, AfterViewInit {
       hour: '2-digit',
       minute: '2-digit'
     });
+  }
+
+  protected bookAgain(event: Event, ride: Ride): void {
+    event.stopPropagation();
+
+    // Example: navigate with route data
+    // this.router.navigate(['/book'], { state: { ride } });
+
+    console.log('Book again:', ride);
+  }
+
+  protected scheduleRide(event: Event, ride: Ride): void {
+    event.stopPropagation();
+
+    // Example: navigate to scheduling screen
+    // this.router.navigate(['/schedule'], { state: { ride } });
+
+    console.log('Schedule ride:', ride);
   }
 }
