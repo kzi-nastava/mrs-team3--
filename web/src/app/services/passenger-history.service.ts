@@ -35,6 +35,7 @@ export interface Ride {
   cancelReason?: string;
   rating?: number;
   favorite: boolean;
+  inconsistencyReport?: string[];
 }
 
 @Injectable({
@@ -131,7 +132,8 @@ export class RideHistoryService {
       driverName: 'Igor Jovanović',
       status: 'COMPLETED',
       rating: 4,
-      favorite: true
+      favorite: true,
+      inconsistencyReport: ['Driver took a longer route than necessary']
     },
     {
       id: 4,

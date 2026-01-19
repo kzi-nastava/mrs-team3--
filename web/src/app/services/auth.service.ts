@@ -93,7 +93,7 @@ export class AuthService {
   clearSession(): void {
     localStorage.removeItem(this.tokenKey);
     this.currentUserSubject.next(null);
-    this.router.navigate(['/'], { replaceUrl: true }).then(() => window.location.reload());
+    this.router.navigate(['/login'], { replaceUrl: true }).then(() => window.location.reload());
   }
 
   // Token management
