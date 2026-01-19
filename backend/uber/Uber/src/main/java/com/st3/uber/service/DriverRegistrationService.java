@@ -70,8 +70,15 @@ public class DriverRegistrationService {
         );
         vehicle.setRegistrationNumber(request.request().registrationNumber());
         vehicle.setSeatingCapacity(request.request().seatingCapacity());
-        vehicle.setBabyTransport(request.request().babyTransport());
-        vehicle.setPetTransport(request.request().petTransport());
+        vehicle.setBabyTransport(
+                Boolean.TRUE.equals(request.request().babyTransport())
+        );
+
+        vehicle.setPetTransport(
+                Boolean.TRUE.equals(request.request().petTransport())
+        );
+
+
 
         Driver driver = new Driver();
         driver.setEmail(request.email());
@@ -120,7 +127,6 @@ public class DriverRegistrationService {
 
         Vehicle savedVehicle = driver.getVehicle();
 
-        // 8️⃣ response
         return new RegisterDriverResponse(
                 driver.getId(),
                 driver.getEmail(),

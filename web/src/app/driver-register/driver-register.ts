@@ -1,14 +1,15 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
-
+import { CheckboxModule } from 'primeng/checkbox';
 import { DriverService } from '../services/driver.service';
+import { SelectModule } from 'primeng/select';
+
 
 @Component({
   selector: 'app-driver-register',
@@ -16,11 +17,13 @@ import { DriverService } from '../services/driver.service';
   imports: [
     CommonModule,
     ReactiveFormsModule,
-
+    CheckboxModule,
+    SelectModule,
     CardModule,
     ButtonModule,
     InputTextModule,
-    ToastModule
+    ToastModule,
+    
   ],
   providers: [MessageService],
   templateUrl: './driver-register.html',
@@ -30,6 +33,12 @@ export class DriverRegisterComponent {
 
   submitting = false;
   form!: FormGroup;
+
+  vehicleTypes = [
+  { label: 'Standard', value: 'STANDARD' },
+  { label: 'Luxury', value: 'LUXURY' },
+  { label: 'Van', value: 'VAN' }
+  ];
 
   constructor(
     private fb: FormBuilder,

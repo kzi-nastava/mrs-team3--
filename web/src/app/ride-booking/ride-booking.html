@@ -1,3 +1,5 @@
+<p-toast position="top-right"></p-toast>
+
 <div class="booking-section">
   <h1>Let's ride!</h1>
 
@@ -181,29 +183,43 @@
     </div>
 
 
-    @if (showFavorites) {
-      <div class="favorites-list">
-        <h3>Your Favorite Routes</h3>
+   @if (showFavorites) {
+  <div class="favorites-list">
+    <h3>Your Favorite Routes</h3>
 
-        @if (favorites().length === 0) {
-          <p class="no-favorites">No favorite routes yet.</p>
-        } @else {
-          @for (route of favorites(); track route.id) {
-            <div class="favorite-item">
-              <div class="favorite-route">
-                {{ route.from }} → {{ route.to }}
-              </div>
-              <button
-                type="button"
-                class="use-btn"
-                (click)="useFavoriteRoute(route)">
-                Use
-              </button>
+    @if (favorites().length === 0) {
+      <p class="no-favorites">No favorite routes yet.</p>
+    } @else {
+      @for (route of favorites(); track route.id) {
+        <div class="favorite-item">
+
+          <div class="favorite-route">
+            {{ route.from.address }} → {{ route.to.address }}
+          </div>
+
+          @if (route.stops.length > 0) {
+            <div class="favorite-stops">
+              <span class="stops-label">Stops:</span>
+              <span class="stop">
+                @for (stop of route.stops; track $index) {
+                  {{ stop.address }}{{ $index < route.stops.length - 1 ? ', ' : '' }}
+                }
+              </span>
             </div>
           }
-        }
-      </div>
+
+          <button
+            type="button"
+            class="use-btn"
+            (click)="useFavoriteRoute(route)">
+            Use
+          </button>
+        </div>
+      }
     }
+  </div>
+}
+
   </form>
 </div>
 

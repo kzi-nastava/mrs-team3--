@@ -1,13 +1,9 @@
 package com.st3.uber.service;
 
-import com.st3.uber.domain.Location;
-import com.st3.uber.domain.Passenger;
-import com.st3.uber.domain.Ride;
-import com.st3.uber.domain.RideInvite;
+import com.st3.uber.domain.*;
 import com.st3.uber.dto.ride.CreateRideRequest;
 import com.st3.uber.dto.route.RouteInfo;
 import com.st3.uber.enums.RideStatus;
-import com.st3.uber.enums.VehicleType;
 import com.st3.uber.repository.PassengerRepository;
 import com.st3.uber.repository.RideInviteRepository;
 import com.st3.uber.repository.RideRepository;
@@ -30,6 +26,10 @@ public class RideService {
     private final RideInviteRepository rideInviteRepository;
     private final RouteCalculationService routeCalculationService;
     private final PriceCalculationService priceCalculationService;
+    private final DriverService driverService;
+    private final RideInviteMailService rideInviteMailService;
+
+
 
 
     public RideService(
@@ -37,13 +37,17 @@ public class RideService {
             PassengerRepository passengerRepository,
             RideInviteRepository rideInviteRepository,
             RouteCalculationService routeCalculationService,
-            PriceCalculationService priceCalculationService
+            PriceCalculationService priceCalculationService,
+            DriverService driverService,
+            RideInviteMailService rideInviteMailService
     ) {
         this.rideRepository = rideRepository;
         this.passengerRepository = passengerRepository;
         this.rideInviteRepository = rideInviteRepository;
         this.routeCalculationService = routeCalculationService;
         this.priceCalculationService = priceCalculationService;
+        this.driverService = driverService;
+        this.rideInviteMailService = rideInviteMailService;
     }
 
     public Ride startRide(Long rideId) {
@@ -80,6 +84,7 @@ public class RideService {
         ride.setCreator(creator);
         ride.getPassengers().add(creator);
 
+
         ride.setStartLocation(new Location(
                 request.startLocation().latitude(),
                 request.startLocation().longitude(),
@@ -104,6 +109,7 @@ public class RideService {
                     )
             );
         }
+
 
         if (request.passengerEmails() != null && !request.passengerEmails().isEmpty()) {
             for (String email : request.passengerEmails()) {
@@ -131,7 +137,17 @@ public class RideService {
             }
         }
 
+
         ride.setVehicleType(request.vehicleType());
+        ride.setBabyTransport(request.babyTransport());
+        ride.setPetTransport(request.petTransport());
+
+        Driver driver = driverService.findDriverForRide(ride);
+
+        ride.setDriver(driver);
+        driver.setCurrentRide(ride);
+        driver.setFree(false);
+        driver.setAvailable(false);
 
 
         RouteInfo routeInfo = routeCalculationService.calculateRoute(
@@ -154,11 +170,21 @@ public class RideService {
         ride.setCalculatedPrice(calculatedPrice);
 
 
-
         ride.setStatus(RideStatus.PENDING);
         ride.setCreatedAt(LocalDateTime.now());
 
-        return rideRepository.save(ride);
+        Ride savedRide = rideRepository.save(ride);
+
+        for (RideInvite invite : savedRide.getInvites()) {
+            rideInviteMailService.sendInvite(
+                    invite,
+                    creator,
+                    savedRide
+            );
+        }
+
+
+        return savedRide;
     }
 
 
@@ -177,7 +203,6 @@ public class RideService {
                 request.getEndLocation().address()
         );
 
-        // STOPS
         List<Location> stops = new ArrayList<>();
         if (request.getStops() != null) {
             for (LocationRequest s : request.getStops()) {
