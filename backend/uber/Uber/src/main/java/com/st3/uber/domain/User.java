@@ -9,6 +9,8 @@ import lombok.Setter;
 import java.util.ArrayList;
 import java.util.List;
 
+@Getter
+@Setter
 @Data
 @Entity
 @Inheritance(strategy = InheritanceType.JOINED)

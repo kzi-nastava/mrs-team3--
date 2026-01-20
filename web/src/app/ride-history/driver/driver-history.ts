@@ -3,15 +3,16 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { DriverHistoryService, DriverRide } from '../../services/driver-history.service';
+import { AuthService } from '../../services/auth.service';
 import * as L from 'leaflet';
-import { env } from '../../../env/env_example';
+import { env } from '../../../env/env';
 
 @Component({
   selector: 'app-driver-history',
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './driver-history.html',
-  styleUrl: './driver-history.css',
+  styleUrls: ['./driver-history.css'],
 })
 export class DriverHistoryComponent implements OnInit, AfterViewInit {
 
@@ -26,10 +27,12 @@ export class DriverHistoryComponent implements OnInit, AfterViewInit {
   private detailMap: any = null;
   private mapMarkers: any[] = [];
   private mapRouteLines: any[] = [];
+  private routeRequestId = 0;
 
   constructor(
     private driverHistoryService: DriverHistoryService,
-    private router: Router
+    private router: Router,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
@@ -41,8 +44,22 @@ export class DriverHistoryComponent implements OnInit, AfterViewInit {
   }
 
   private loadRides(): void {
-    this.driverHistoryService.rides$.subscribe(rides => {
-      this.rides.set(rides);
+    const driverId = this.authService.getUserId();
+    
+    if (!driverId) {
+      console.error('No driver ID found');
+      this.rides.set([]);
+      return;
+    }
+    
+    this.driverHistoryService.getRides(driverId).subscribe({
+      next: (rides) => {
+        this.rides.set(rides);
+      },
+      error: (err) => {
+        console.error('Error loading rides:', err);
+        this.rides.set([]);
+      }
     });
   }
 
@@ -59,24 +76,58 @@ export class DriverHistoryComponent implements OnInit, AfterViewInit {
       rides = rides.filter(r => new Date(r.startTime) <= endDateTime);
     }
 
-    // Sort by date, newest first
     return rides.sort((a, b) => 
       new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
     );
   });
 
   protected onFilterChange(): void {
-    // Trigger recomputation of filtered rides
-    this.rides.set([...this.rides()]);
+    const driverId = this.authService.getUserId();
+    
+    if (!driverId) {
+      console.error('No driver ID found');
+      return;
+    }
+    
+    this.driverHistoryService.getRides(
+      driverId,
+      this.startDate || undefined,
+      this.endDate || undefined
+    ).subscribe({
+      next: (rides) => {
+        this.rides.set(rides);
+      },
+      error: (err) => {
+        console.error('Error filtering rides:', err);
+        this.rides.set([]);
+      }
+    });
   }
 
   protected openRideDetails(ride: DriverRide): void {
-    this.selectedRide.set(ride);
+    const driverId = this.authService.getUserId();
     
-    // Initialize map after a brief delay to ensure DOM is ready
-    setTimeout(() => {
-      this.initDetailMap(ride);
-    }, 100);
+    if (!driverId) {
+      console.error('No driver ID found');
+      return;
+    }
+    
+    this.driverHistoryService.getRideDetail(driverId, ride.id).subscribe({
+      next: (detailedRide) => {
+        this.selectedRide.set(detailedRide);
+        
+        setTimeout(() => {
+          this.initDetailMap(detailedRide);
+        }, 100);
+      },
+      error: (err) => {
+        console.error('Error loading ride details:', err);
+        this.selectedRide.set(ride);
+        setTimeout(() => {
+          this.initDetailMap(ride);
+        }, 100);
+      }
+    });
   }
 
   protected closeModal(event?: Event): void {
@@ -85,7 +136,6 @@ export class DriverHistoryComponent implements OnInit, AfterViewInit {
     }
     this.selectedRide.set(null);
     
-    // Clean up map
     if (this.detailMap) {
       this.detailMap.remove();
       this.detailMap = null;
@@ -95,14 +145,22 @@ export class DriverHistoryComponent implements OnInit, AfterViewInit {
   }
 
   private initDetailMap(ride: DriverRide): void {
+    // console.log('Initializing map with ride:', ride);
+    // console.log('Start location:', ride.startLocation);
+    // console.log('Stops:', ride.stops);
+    // console.log('End location:', ride.endLocation);
+    
     if (this.detailMap) {
       this.detailMap.remove();
     }
 
     const mapElement = document.getElementById('detailMap');
-    if (!mapElement) return;
+    if (!mapElement) {
+      console.error('Map element not found!');
+      return;
+    }
+    
 
-    // Initialize map centered on start location
     this.detailMap = L.map('detailMap').setView(
       [ride.startLocation.latitude, ride.startLocation.longitude],
       13
@@ -163,11 +221,13 @@ export class DriverHistoryComponent implements OnInit, AfterViewInit {
     ).addTo(this.detailMap).bindPopup('Destination: ' + ride.endLocation.address);
     this.mapMarkers.push(endMarker);
 
-    // Draw route
     this.drawRideRoute(ride);
   }
 
   private drawRideRoute(ride: DriverRide): void {
+    this.routeRequestId++;
+    const requestId = this.routeRequestId;
+
     const waypoints = [
       ride.startLocation,
       ...ride.stops,
@@ -175,23 +235,24 @@ export class DriverHistoryComponent implements OnInit, AfterViewInit {
     ];
 
     for (let i = 0; i < waypoints.length - 1; i++) {
-      this.drawRouteBetween(waypoints[i], waypoints[i + 1]);
+      this.drawRouteBetween(waypoints[i], waypoints[i + 1], requestId);
     }
 
-    // Fit map to show all markers
     if (this.mapMarkers.length > 0) {
       const group = L.featureGroup(this.mapMarkers);
       this.detailMap.fitBounds(group.getBounds().pad(0.1));
     }
   }
 
-  private drawRouteBetween(start: any, end: any): void {
+  private drawRouteBetween(start: any, end: any, requestId: number): void {
     const apiKey = env.MAPS_KEY;
     const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${apiKey}&start=${start.longitude},${start.latitude}&end=${end.longitude},${end.latitude}`;
 
     fetch(url)
       .then(r => r.json())
       .then(data => {
+        if (requestId !== this.routeRequestId) return;
+
         const coords = data.features[0].geometry.coordinates;
         const routeCoords = coords.map((c: any) => [c[1], c[0]]);
 
@@ -209,7 +270,6 @@ export class DriverHistoryComponent implements OnInit, AfterViewInit {
   }
 
   protected viewReport(): void {
-    // TODO: Navigate to reports page or generate PDF
     console.log('View report clicked');
   }
 
@@ -221,14 +281,15 @@ export class DriverHistoryComponent implements OnInit, AfterViewInit {
         return 'Cancelled by Driver';
       case 'CANCELLED_BY_PASSENGER':
         return 'Cancelled by Passenger';
-      case 'PANIC':
-        return 'Panic';
+      case 'FINISHED_EARLY':
+        return 'Finished Early';
       default:
         return status;
     }
   }
 
-  protected formatDate(dateString: string): string {
+  protected formatDate(dateString: string | null): string {
+    if (!dateString) return '';
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
       month: 'short',
@@ -237,7 +298,8 @@ export class DriverHistoryComponent implements OnInit, AfterViewInit {
     });
   }
 
-  protected formatDateTime(dateString: string): string {
+  protected formatDateTime(dateString: string | null): string {
+    if (!dateString) return '';
     const date = new Date(dateString);
     return date.toLocaleString('en-US', {
       month: 'short',
@@ -246,5 +308,9 @@ export class DriverHistoryComponent implements OnInit, AfterViewInit {
       hour: '2-digit',
       minute: '2-digit'
     });
+  }
+
+  protected getStarArray(rating: number): boolean[] {
+    return [1, 2, 3, 4, 5].map(star => star <= rating);
   }
 }
