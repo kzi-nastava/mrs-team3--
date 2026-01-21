@@ -303,16 +303,66 @@ INSERT INTO passenger_favorite_rides (passenger_id, ride_id) VALUES
 -- INSERT NOTIFICATIONS
 -- ========================================
 INSERT INTO notifications (id, user_id, message, created_at) VALUES
-                                                                 (1, 2, 'Your ride has been accepted by driver Nikola', NOW() - INTERVAL 4 HOUR - INTERVAL 50 MINUTE),
-                                                                 (2, 6, 'New ride request nearby!', NOW() - INTERVAL 4 HOUR - INTERVAL 52 MINUTE),
-                                                                 (3, 3, 'Your ride is starting now', NOW() - INTERVAL 10 MINUTE),
-                                                                 (4, 7, 'Passenger Ana has rated your ride 5 stars', NOW() - INTERVAL 4 HOUR - INTERVAL 25 MINUTE),
-                                                                 (5, 2, 'Your scheduled ride is in 3 hours', NOW()),
-                                                                 (6, 4, 'Your ride has been accepted', NOW() - INTERVAL 5 MINUTE),
-                                                                 (7, 6, 'A panic event was reported on your ride. Support will contact you.', NOW() - INTERVAL 10 DAY + INTERVAL 35 MINUTE),
-                                                                 (8, 1, 'New inconsistency report received from passenger Ana', NOW() - INTERVAL 10 DAY + INTERVAL 1 HOUR),
-                                                                 (9, 10, 'Your account has been blocked due to: Multiple complaints', NOW() - INTERVAL 1 HOUR),
-                                                                 (10, 2, 'Thank you for your review!', NOW() - INTERVAL 4 HOUR - INTERVAL 20 MINUTE);
+-- Notification #1: Passenger notified about accepted ride
+(1, 2, 'Your ride request has been created. Driver Nikola Milosevic will pick you up soon!',
+ NOW() - INTERVAL 4 HOUR - INTERVAL 50 MINUTE),
+
+-- Notification #2: Driver notified about new ride
+(2, 6, 'New ride assigned! Pickup at Freedom Square, Novi Sad',
+ NOW() - INTERVAL 4 HOUR - INTERVAL 52 MINUTE),
+
+-- Notification #3: Passenger notified ride is starting
+(3, 3, 'Your ride is now in progress!',
+ NOW() - INTERVAL 10 MINUTE),
+
+-- Notification #4: Ride finished notification
+(4, 2, 'Your ride is complete! Total cost: 1220.00 RSD. Please rate your experience.',
+ NOW() - INTERVAL 4 HOUR - INTERVAL 30 MINUTE),
+
+-- Notification #5: Scheduled ride reminder
+(5, 2, 'Your scheduled ride is in 3 hours. Pickup at Freedom Square, Novi Sad',
+ NOW()),
+
+-- Notification #6: Ride accepted notification
+(6, 4, 'Your ride request has been created. Driver Nikola Milosevic will pick you up soon!',
+ NOW() - INTERVAL 5 MINUTE),
+
+-- Notification #7: Panic event for driver
+(7, 6, '⚠️ PANIC ALERT! Ride #8 - Location: Liman, Novi Sad. Passenger/Driver needs immediate assistance!',
+ NOW() - INTERVAL 10 DAY + INTERVAL 32 MINUTE),
+
+-- Notification #8: Panic event for admin
+(8, 1, '⚠️ PANIC ALERT! Ride #8 - Location: Liman, Novi Sad. Passenger/Driver needs immediate assistance!',
+ NOW() - INTERVAL 10 DAY + INTERVAL 32 MINUTE),
+
+-- Notification #9: Driver account blocked
+(9, 10, 'Your account status has been changed: Multiple complaints',
+ NOW() - INTERVAL 1 HOUR),
+
+-- Notification #10: Ride cancelled notification to passenger
+(10, 3, 'Your ride has been canceled by PASSENGER. Reason: Changed plans',
+ NOW() - INTERVAL 1 DAY + INTERVAL 5 MINUTE),
+
+-- Notification #11: Ride finished for another passenger
+(11, 3, 'Your ride is complete! Total cost: 784.00 RSD. Please rate your experience.',
+ NOW() - INTERVAL 2 HOUR - INTERVAL 35 MINUTE),
+
+-- Notification #12: Ride finished for passenger with multiple people
+(12, 4, 'Your ride is complete! Total cost: 836.00 RSD. Please rate your experience.',
+ NOW() - INTERVAL 2 DAY + INTERVAL 25 MINUTE),
+
+-- Notification #13: Driver status change
+(13, 7, 'You are now active and available for rides.',
+ NOW() - INTERVAL 30 MINUTE),
+
+-- Notification #14: Declined ride
+(14, 4, 'No available drivers match your ride requirements. Please try again later.',
+ NOW() - INTERVAL 2 HOUR),
+
+-- Notification #15: Another ride reminder for driver
+(15, 7, 'Reminder: You have a ride scheduled. Pickup at Bulevar Oslobodjenja, Novi Sad',
+ NOW() - INTERVAL 15 MINUTE);
+
 
 -- ========================================
 -- INSERT CHAT ROOMS
