@@ -2,7 +2,9 @@ package com.st3.uber.service;
 
 import com.st3.uber.domain.Driver;
 import com.st3.uber.domain.Location;
+import com.st3.uber.domain.Passenger;
 import com.st3.uber.domain.Ride;
+import com.st3.uber.enums.NotificationType;
 import com.st3.uber.enums.RideRejectReason;
 import com.st3.uber.exception.RideRejectedException;
 import com.st3.uber.repository.DriverRepository;
@@ -19,9 +21,14 @@ import static org.springframework.http.HttpStatus.*;
 public class DriverService {
 
     private final DriverRepository driverRepository;
+    private final NotificationService notificationService; // ADD THIS
 
-    public DriverService(DriverRepository driverRepository) {
+    public DriverService(
+            DriverRepository driverRepository,
+            NotificationService notificationService // ADD THIS
+    ) {
         this.driverRepository = driverRepository;
+        this.notificationService = notificationService; // ADD THIS
     }
 
     public List<Driver> findAvailableDrivers() {
@@ -29,10 +36,11 @@ public class DriverService {
     }
 
     public Driver findDriverForRide(Ride ride) {
-
         List<Driver> drivers = driverRepository.findAvailableDrivers();
 
         if (drivers.isEmpty()) {
+            // NOTIFICATION: Notify all passengers that no drivers are available
+            notifyPassengersRideDeclined(ride, "No active drivers are currently available. Please try again later.");
             throw new RideRejectedException(RideRejectReason.NO_ACTIVE_DRIVERS);
         }
 
@@ -44,6 +52,8 @@ public class DriverService {
                 .toList();
 
         if (eligibleDrivers.isEmpty()) {
+            // NOTIFICATION: Notify all passengers that no matching drivers found
+            notifyPassengersRideDeclined(ride, "No drivers match your ride requirements (vehicle type, baby/pet transport). Please adjust your request.");
             throw new RideRejectedException(RideRejectReason.NO_MATCHING_DRIVERS);
         }
 
@@ -64,12 +74,14 @@ public class DriverService {
         } else if (!almostFreeDrivers.isEmpty()) {
             candidates = almostFreeDrivers;
         } else {
+            // NOTIFICATION: Notify all passengers that all drivers are busy
+            notifyPassengersRideDeclined(ride, "All drivers are currently busy. Please try again in a few minutes.");
             throw new RideRejectedException(RideRejectReason.NO_ACTIVE_DRIVERS);
         }
 
         Location pickup = ride.getStartLocation();
 
-        return candidates.stream()
+        Driver selectedDriver = candidates.stream()
                 .filter(d ->
                         d.getCurrentLocation() != null &&
                                 d.getCurrentLocation().getLat() != null &&
@@ -83,14 +95,34 @@ public class DriverService {
                                 d.getCurrentLocation().getLng()
                         )
                 ))
-                .orElseThrow(() ->
-                        new RideRejectedException(RideRejectReason.NO_DRIVER_WITH_LOCATION)
-                );
+                .orElse(null);
+
+        if (selectedDriver == null) {
+            // NOTIFICATION: Notify all passengers that no driver has location
+            notifyPassengersRideDeclined(ride, "Unable to find drivers with active location tracking. Please try again.");
+            throw new RideRejectedException(RideRejectReason.NO_DRIVER_WITH_LOCATION);
+        }
+
+        return selectedDriver;
+    }
+
+    /**
+     * Helper method to notify all passengers in a ride that it was declined
+     */
+    private void notifyPassengersRideDeclined(Ride ride, String reason) {
+        for (Passenger passenger : ride.getPassengers()) {
+            notificationService.createNotification(
+                    passenger.getId(),
+                    reason,
+                    NotificationType.DECLINED_RIDE,
+                    null  // No ride ID since it wasn't created
+            );
+        }
     }
 
     public void logoutDriver(Long driverId){
         Driver driver = driverRepository.findById(driverId)
-            .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Driver not found"));
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Driver not found"));
 
         if (driver.getCurrentRide() != null) {
             throw new ResponseStatusException(FORBIDDEN, "Driver cannot logout while in a ride");
@@ -100,27 +132,47 @@ public class DriverService {
         driver.setAvailable(false);
         driver.setFree(false);
         driverRepository.save(driver);
+            }
+
+    public void changeActiveStatus(Long driverId){
+        Driver driver = driverRepository.findById(driverId)
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Driver not found"));
+
+        if(!driver.getNextRides().isEmpty()){
+            throw new ResponseStatusException(FORBIDDEN, "Driver cannot change status because of next rides");
+        }
+
+        if(driver.getCurrentRide() != null){
+            driver.setActivityRequest(true);
+            driverRepository.save(driver);
+
+            // NOTIFICATION: Notify driver that status change is pending
+            notificationService.createNotification(
+                    driverId,
+                    "Your status change request will be processed after completing the current ride.",
+                    NotificationType.PROFILE_CHANGE,
+                    driver.getCurrentRide().getId()
+            );
+            return;
+        }
+
+        boolean newActive = !driver.isActive();
+        driver.setActive(newActive);
+        driver.setAvailable(newActive);
+        driver.setFree(newActive);
+
+        driverRepository.save(driver);
+
+        // NOTIFICATION: Notify driver about status change
+        String statusMessage = newActive
+                ? "You are now active and available for rides."
+                : "You are now inactive and will not receive ride requests.";
+
+        notificationService.createNotification(
+                driverId,
+                statusMessage,
+                NotificationType.PROFILE_CHANGE,
+                null
+        );
     }
-
-  public void changeActiveStatus(Long driverId){
-      Driver driver = driverRepository.findById(driverId)
-          .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Driver not found"));
-
-    if(driver.getNextRides().isEmpty()){
-        throw new ResponseStatusException(FORBIDDEN, "Driver cannot change status because of next rides");
-    }
-    if(driver.getCurrentRide() != null){
-      driver.setActivityRequest(true);
-      driverRepository.save(driver);
-      return;
-    }
-
-      boolean newActive = !driver.isActive();
-      driver.setActive(newActive);
-      driver.setAvailable(newActive);
-      driver.setFree(newActive);
-
-      driverRepository.save(driver);
-  }
-
 }
