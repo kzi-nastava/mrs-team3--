@@ -38,6 +38,11 @@ public class NotificationService {
      */
     @Transactional
     public NotificationResponse createNotification(CreateNotificationRequest request) {
+        System.out.println("=== Creating Notification ===");
+        System.out.println("User ID: " + request.userId());
+        System.out.println("Message: " + request.message());
+        System.out.println("Type: " + request.type());
+
         User user = userRepository.findById(request.userId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -50,14 +55,31 @@ public class NotificationService {
         notification.setCreatedAt(LocalDateTime.now());
 
         Notification saved = notificationRepository.save(notification);
+        System.out.println("✅ Notification saved to database with ID: " + saved.getId());
 
         // Send via WebSocket to user's personal channel
         NotificationResponse response = mapToResponse(saved);
-        messagingTemplate.convertAndSendToUser(
-                user.getId().toString(),
-                "/queue/notifications",
-                response
-        );
+
+        String destination = "/queue/notifications";
+        String userIdString = user.getId().toString();
+
+        System.out.println("📡 Sending WebSocket notification:");
+        System.out.println("   User ID: " + userIdString);
+        System.out.println("   Destination: " + destination);
+        System.out.println("   Full path will be: /user/" + userIdString + destination);
+        System.out.println("   Response: " + response);
+
+        try {
+            messagingTemplate.convertAndSendToUser(
+                    userIdString,           // Must match the Principal name set in WebSocketAuthInterceptor
+                    destination,
+                    response
+            );
+            System.out.println("✅ WebSocket message sent successfully!");
+        } catch (Exception e) {
+            System.err.println("❌ Failed to send WebSocket message: " + e.getMessage());
+            e.printStackTrace();
+        }
 
         return response;
     }
