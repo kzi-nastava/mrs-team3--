@@ -86,3 +86,29 @@
     font-size: 1.25rem;
   }
 }
+
+.notification-btn {
+  position: relative;
+}
+
+.notification-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: var(--color-red);
+  color: white;
+  border-radius: 50%;
+  min-width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: bold;
+  padding: 2px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.bell-icon {
+  font-size: 1.5rem;
+}
