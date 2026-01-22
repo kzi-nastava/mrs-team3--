@@ -12,6 +12,10 @@
   <button class="icon-btn" (click)="goMessages()" title="Messages">
     💬
   </button>
+  <button class="icon-btn notification-btn" (click)="goNotifications()" title="Notifications">
+    <span class="bell-icon">🔔</span>
+    <span class="notification-badge" *ngIf="unreadCount > 0">{{unreadCount}}</span>
+  </button>
 
   <div class="spacer"></div>
 

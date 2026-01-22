@@ -6,6 +6,7 @@ import { RegisterRequest } from '../register/register.model';
 import { Router } from '@angular/router';
 import { env } from '../../env/env';
 import { MessageService } from 'primeng/api';
+import { NotificationService } from './notification.service';
 
 interface LoginResponse {
   id: number;
@@ -39,7 +40,8 @@ export class AuthService {
   constructor(
     private http: HttpClient,
     private router: Router,
-    private messageService: MessageService
+    private messageService: MessageService,
+    private notificationService: NotificationService
   ) {}
 
   login(email: string, password: string): Observable<LoginResponse> {
@@ -48,10 +50,11 @@ export class AuthService {
       password: password
     }).pipe(
       tap(response => {
-        // Save token to localStorage
+        // Save token to sessionStorage
         this.setToken(response.token);
         // Update current user observable
         this.currentUserSubject.next(this.getDecodedToken());
+        this.notificationService.initialize(response.token);
       })
     );
   }
@@ -91,18 +94,19 @@ export class AuthService {
   }
 
   clearSession(): void {
-    localStorage.removeItem(this.tokenKey);
+    sessionStorage.removeItem(this.tokenKey);
+    this.notificationService.disconnect();
     this.currentUserSubject.next(null);
     this.router.navigate(['/login'], { replaceUrl: true }).then(() => window.location.reload());
   }
 
   // Token management
   setToken(token: string): void {
-    localStorage.setItem(this.tokenKey, token);
+    sessionStorage.setItem(this.tokenKey, token);
   }
 
   getToken(): string | null {
-    return localStorage.getItem(this.tokenKey);
+    return sessionStorage.getItem(this.tokenKey);
   }
 
   // Decode JWT token manually (without external library)

@@ -7,6 +7,7 @@ import com.st3.uber.service.NotificationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
@@ -29,6 +30,7 @@ public class NotificationController {
      * GET /api/notifications
      * Get all notifications for the authenticated user
      */
+    @PreAuthorize("hasAnyRole('ADMIN','PASSENGER','DRIVER')")
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<NotificationResponse>> getUserNotifications(
             Authentication authentication
@@ -42,6 +44,7 @@ public class NotificationController {
      * GET /api/notifications/unread
      * Get only unread notifications for the authenticated user
      */
+    @PreAuthorize("hasAnyRole('ADMIN','PASSENGER','DRIVER')")
     @GetMapping(value = "/unread", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<NotificationResponse>> getUnreadNotifications(
             Authentication authentication
@@ -55,6 +58,7 @@ public class NotificationController {
      * GET /api/notifications/unread/count
      * Get count of unread notifications
      */
+    @PreAuthorize("hasAnyRole('ADMIN','PASSENGER','DRIVER')")
     @GetMapping(value = "/unread/count", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, Long>> getUnreadCount(
             Authentication authentication
@@ -68,6 +72,7 @@ public class NotificationController {
      * GET /api/notifications/type/{type}
      * Get notifications by type for the authenticated user
      */
+    @PreAuthorize("hasAnyRole('ADMIN','PASSENGER','DRIVER')")
     @GetMapping(value = "/type/{type}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<NotificationResponse>> getNotificationsByType(
             Authentication authentication,
@@ -82,6 +87,7 @@ public class NotificationController {
      * PUT /api/notifications/{id}/read
      * Mark a single notification as read
      */
+    @PreAuthorize("hasAnyRole('ADMIN','PASSENGER','DRIVER')")
     @PutMapping(value = "/{id}/read", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<NotificationResponse> markAsRead(
             @PathVariable Long id,
@@ -96,6 +102,7 @@ public class NotificationController {
      * PUT /api/notifications/read
      * Mark multiple notifications as read
      */
+    @PreAuthorize("hasAnyRole('ADMIN','PASSENGER','DRIVER')")
     @PutMapping(
             value = "/read",
             consumes = MediaType.APPLICATION_JSON_VALUE,
@@ -113,6 +120,7 @@ public class NotificationController {
      * PUT /api/notifications/read-all
      * Mark all notifications as read for the authenticated user
      */
+    @PreAuthorize("hasAnyRole('ADMIN','PASSENGER','DRIVER')")
     @PutMapping("/read-all")
     public ResponseEntity<Void> markAllAsRead(
             Authentication authentication
@@ -126,6 +134,7 @@ public class NotificationController {
      * DELETE /api/notifications/{id}
      * Delete a notification
      */
+    @PreAuthorize("hasAnyRole('ADMIN','PASSENGER','DRIVER')")
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public ResponseEntity<Void> deleteNotification(
@@ -141,6 +150,7 @@ public class NotificationController {
      * DELETE /api/notifications/cleanup
      * Cleanup old read notifications (older than 30 days)
      */
+    @PreAuthorize("hasAnyRole('ADMIN','PASSENGER','DRIVER')")
     @DeleteMapping("/cleanup")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public ResponseEntity<Void> cleanupOldNotifications(

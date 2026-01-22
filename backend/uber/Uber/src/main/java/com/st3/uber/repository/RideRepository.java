@@ -60,4 +60,11 @@ public interface RideRepository extends JpaRepository<Ride, Long> {
             @Param("now") LocalDateTime now,
             @Param("futureTime") LocalDateTime futureTime
     );
+
+    @Query("SELECT r FROM Ride r " +
+            "LEFT JOIN FETCH r.passengers " +
+            "LEFT JOIN FETCH r.driver " +
+            "WHERE r.status = :status AND r.scheduledAt IS NOT NULL")
+    List<Ride> findPendingRidesWithPassengersAndDriver(@Param("status") RideStatus status);
+
 }

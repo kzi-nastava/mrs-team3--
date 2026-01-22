@@ -5,7 +5,7 @@ import { catchError, throwError } from 'rxjs';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
-  const token = localStorage.getItem('token');
+  const token = sessionStorage.getItem('token');
 
   // Skip adding token for ALL auth endpoints
   if (req.url.includes('/api/auth/')) {
@@ -27,7 +27,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     catchError((error: HttpErrorResponse) => {
       if (error.status === 401) {
         // Token expired or invalid - logout and redirect to login
-        localStorage.removeItem('token');
+        sessionStorage.removeItem('token');
         router.navigate(['/login']);
       }
       return throwError(() => error);

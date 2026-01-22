@@ -14,15 +14,18 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
  * Service for sending scheduled ride reminders
  * Requirements:
  * - 15 minutes before ride start: Send first reminder
- * - Every 5 minutes after that: Send additional reminders until ride starts
+ * - 10 minutes before ride start: Send second reminder
+ * - 5 minutes before ride start: Send third reminder
  */
 @Service
 public class ScheduledRideReminderService {
@@ -31,8 +34,9 @@ public class ScheduledRideReminderService {
     private final NotificationService notificationService;
     private final JavaMailSender mailSender;
 
-    // Track which rides have already been notified to avoid duplicates
-    private final Set<Long> notifiedRides = new HashSet<>();
+    // Track which reminders have been sent: Map<RideId, Set<MinutesBefore>>
+    // Example: {101: [15, 10], 102: [15]}
+    private final Map<Long, Set<Integer>> sentReminders = new HashMap<>();
 
     public ScheduledRideReminderService(
             RideRepository rideRepository,
@@ -49,12 +53,12 @@ public class ScheduledRideReminderService {
      * Sends reminders at 15, 10, 5 minutes before scheduled time
      */
     @Scheduled(fixedRate = 60000) // Every 60 seconds (1 minute)
-    @Transactional(readOnly = true)
+    // REMOVED @Transactional(readOnly = true) - it prevents INSERT
     public void sendUpcomingRideReminders() {
         LocalDateTime now = LocalDateTime.now();
-
         // Find all scheduled rides that haven't started yet
-        List<Ride> upcomingRides = rideRepository.findByStatusAndScheduledAtIsNotNull(RideStatus.PENDING);
+        List<Ride> upcomingRides = rideRepository.findPendingRidesWithPassengersAndDriver(RideStatus.PENDING);
+        System.out.println("Found " + upcomingRides.size() + " pending scheduled rides");
 
         for (Ride ride : upcomingRides) {
             if (ride.getScheduledAt() == null) {
@@ -62,31 +66,54 @@ public class ScheduledRideReminderService {
             }
 
             long minutesUntilRide = ChronoUnit.MINUTES.between(now, ride.getScheduledAt());
+            System.out.println("Ride #" + ride.getId() + " scheduled at " + ride.getScheduledAt()
+                    + " (" + minutesUntilRide + " minutes from now)");
 
-            // Send reminder at 15, 10, and 5 minutes before
+            // Check if we should send reminder at this time
             if (shouldSendReminder(ride.getId(), minutesUntilRide)) {
                 sendReminderNotifications(ride, minutesUntilRide);
                 sendReminderEmails(ride, minutesUntilRide);
-                notifiedRides.add(ride.getId());
+
+                // Mark this specific reminder as sent
+                markReminderSent(ride.getId(), (int) minutesUntilRide);
+            } else {
+                System.out.println("→ Skipping (already sent or not at milestone)");
             }
         }
 
-        // Clean up old entries from notifiedRides to prevent memory leak
-        cleanupNotifiedRides();
+        // Clean up old entries to prevent memory leak
+        cleanupOldReminders();
     }
 
     /**
      * Determines if a reminder should be sent based on time remaining
      * Send at: 15 minutes, 10 minutes, 5 minutes
+     *
+     * FIX: Check if THIS SPECIFIC reminder has been sent, not just "any" reminder
      */
     private boolean shouldSendReminder(Long rideId, long minutesUntilRide) {
         // Check if we're at a reminder milestone
-        boolean isReminderTime = (minutesUntilRide == 15 || minutesUntilRide == 10 || minutesUntilRide == 5);
+        if (minutesUntilRide != 15 && minutesUntilRide != 10 && minutesUntilRide != 5) {
+            return false; // Not a reminder time
+        }
 
-        // Only send if we haven't already sent for this specific time
-        boolean alreadyNotified = notifiedRides.contains(rideId);
+        // Check if we've already sent THIS specific reminder
+        Set<Integer> sent = sentReminders.getOrDefault(rideId, new HashSet<>());
+        boolean alreadySent = sent.contains((int) minutesUntilRide);
 
-        return isReminderTime && !alreadyNotified;
+        if (alreadySent) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Mark a specific reminder as sent
+     */
+    private void markReminderSent(Long rideId, int minutesBefore) {
+        sentReminders.putIfAbsent(rideId, new HashSet<>());
+        sentReminders.get(rideId).add(minutesBefore);
     }
 
     /**
@@ -101,28 +128,38 @@ public class ScheduledRideReminderService {
 
         // Notify all passengers
         for (Passenger passenger : ride.getPassengers()) {
-            notificationService.createNotification(
-                    passenger.getId(),
-                    passengerMessage,
-                    NotificationType.RIDE_REMINDER,
-                    ride.getId()
-            );
+            try {
+                notificationService.createNotification(
+                        passenger.getId(),
+                        passengerMessage,
+                        NotificationType.RIDE_REMINDER,
+                        ride.getId()
+                );
+                System.out.println("  ✓ Sent notification to passenger #" + passenger.getId());
+            } catch (Exception e) {
+                System.err.println("  ✗ Failed to send notification to passenger #" + passenger.getId() + ": " + e.getMessage());
+            }
         }
 
         // Notify driver if assigned
         if (ride.getDriver() != null) {
-            String driverMessage = String.format(
-                    "⏰ Reminder: You have a pickup in %d minutes at %s",
-                    minutesUntilRide,
-                    ride.getStartLocation().getAddress()
-            );
+            try {
+                String driverMessage = String.format(
+                        "⏰ Reminder: You have a pickup in %d minutes at %s",
+                        minutesUntilRide,
+                        ride.getStartLocation().getAddress()
+                );
 
-            notificationService.createNotification(
-                    ride.getDriver().getId(),
-                    driverMessage,
-                    NotificationType.RIDE_REMINDER,
-                    ride.getId()
-            );
+                notificationService.createNotification(
+                        ride.getDriver().getId(),
+                        driverMessage,
+                        NotificationType.RIDE_REMINDER,
+                        ride.getId()
+                );
+                System.out.println("  ✓ Sent notification to driver #" + ride.getDriver().getId());
+            } catch (Exception e) {
+                System.err.println("  ✗ Failed to send notification to driver: " + e.getMessage());
+            }
         }
     }
 
@@ -138,9 +175,9 @@ public class ScheduledRideReminderService {
                 message.setSubject("Ride Reminder - Starting in " + minutesUntilRide + " minutes");
                 message.setText(buildPassengerEmailBody(ride, passenger, minutesUntilRide));
                 mailSender.send(message);
+                System.out.println("  ✓ Sent email to passenger: " + passenger.getEmail());
             } catch (Exception e) {
-                // Log error but don't fail the whole process
-                System.err.println("Failed to send email to passenger: " + passenger.getEmail());
+                System.err.println("  ✗ Failed to send email to passenger " + passenger.getEmail() + ": " + e.getMessage());
             }
         }
 
@@ -152,8 +189,9 @@ public class ScheduledRideReminderService {
                 message.setSubject("Pickup Reminder - " + minutesUntilRide + " minutes");
                 message.setText(buildDriverEmailBody(ride, minutesUntilRide));
                 mailSender.send(message);
+                System.out.println("  ✓ Sent email to driver: " + ride.getDriver().getEmail());
             } catch (Exception e) {
-                System.err.println("Failed to send email to driver: " + ride.getDriver().getEmail());
+                System.err.println("  ✗ Failed to send email to driver: " + e.getMessage());
             }
         }
     }
@@ -245,17 +283,23 @@ public class ScheduledRideReminderService {
     }
 
     /**
-     * Clean up notified rides that are in the past or have started
-     * Run this periodically to prevent memory leak
+     * Clean up old reminder tracking to prevent memory leak
      */
-    private void cleanupNotifiedRides() {
-        LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);
+    private void cleanupOldReminders() {
+        LocalDateTime twoHoursAgo = LocalDateTime.now().minusHours(2);
 
         // Find rides that have started or are old
-        List<Ride> oldRides = rideRepository.findByScheduledAtBefore(oneHourAgo);
+        List<Ride> oldRides = rideRepository.findByScheduledAtBefore(twoHoursAgo);
 
+        int cleaned = 0;
         for (Ride ride : oldRides) {
-            notifiedRides.remove(ride.getId());
+            if (sentReminders.remove(ride.getId()) != null) {
+                cleaned++;
+            }
+        }
+
+        if (cleaned > 0) {
+            System.out.println("Cleaned up tracking for " + cleaned + " old rides");
         }
     }
 }

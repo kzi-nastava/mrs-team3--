@@ -1,49 +1,55 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
+import { NotificationService } from '../../services/notification.service';
+import { Subject, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-admin-sidebar',
   standalone: true,
   imports: [CommonModule],
   templateUrl: './admin-sidebar.html',
-  styleUrl: './admin-sidebar.css'
+  styleUrls: ['./admin-sidebar.css']
 })
-export class AdminSidebarComponent {
+export class AdminSidebarComponent implements OnInit, OnDestroy {
+  unreadCount = 0;
+  private destroy$ = new Subject<void>();
 
   constructor(
     private router: Router,
-    private authService: AuthService
+    private authService: AuthService,
+    private notificationService: NotificationService,
+    private cdr: ChangeDetectorRef  
   ) {}
+
+  ngOnInit(): void {
+    // Use setTimeout to defer the subscription to avoid ExpressionChangedAfterItHasBeenCheckedError
+    setTimeout(() => {
+      this.notificationService.unreadCount$
+        .pipe(takeUntil(this.destroy$))
+        .subscribe(count => {
+          this.unreadCount = count;
+          this.cdr.detectChanges(); // Manually trigger change detection
+        });
+    }, 0);
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
 
   goHome() {
     this.router.navigate(['/']);
   }
 
-  goAdminDashboard() {
-    // Navigate to admin dashboard when you create it
-    // this.router.navigate(['/admin']);
+  goNotifications() {
+    this.router.navigate(['/admin-notifications']);
   }
 
-  goManageUsers() {
-    // Navigate to user management when implemented
-    // this.router.navigate(['/admin/users']);
-  }
-
-  goManageRides() {
-    // Navigate to ride management when implemented
-    // this.router.navigate(['/admin/rides']);
-  }
-
-  goReports() {
-    // Navigate to reports when implemented
-    // alert('Reports - to be implemented');
-  }
-
-  goSettings() {
-    // Navigate to admin settings when implemented
-    // alert('Settings - to be implemented');
+  registerDriver() {
+    this.router.navigate(['/driver-register']);
   }
 
   goProfile() {
@@ -54,9 +60,5 @@ export class AdminSidebarComponent {
     if (confirm('Are you sure you want to logout?')) {
       this.authService.logout();
     }
-  }
-
-  registerDriver() {
-    this.router.navigate(['/driver-register']);
   }
 }
