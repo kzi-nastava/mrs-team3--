@@ -10,6 +10,10 @@ import {authGuard, guestGuard} from './guard/auth.guard';
 import { ErrorComponent } from './error/error';
 import { DriverHistoryComponent } from './ride-history/driver/driver-history';
 import { PassengerHistoryComponent } from './ride-history/passenger/passenger-history';
+import { AdminNotificationsComponent } from './notifications/admin-notifications/admin-notifications';
+import { DriverNotificationsComponent } from './notifications/driver-notifications/driver-notifications';
+import { PassengerNotificationsComponent } from './notifications/passenger-notifications/passenger-notifications';
+
 export const routes: Routes = [
   { path: '', component: LandingPageComponent },
   { path: 'profile', component: ProfileComponent, canActivate: [authGuard] },
@@ -29,5 +33,8 @@ export const routes: Routes = [
   { path: 'reset-password', component: ResetPasswordComponent },
   { path: 'forgot-password', component: ForgotPassword },
   {path: 'verification-result', component: VerificationResultComponent},
+  { path: 'admin-notifications', component: AdminNotificationsComponent, canActivate: [authGuard], data: { role: 'ADMIN' }},
+  { path: 'driver-notifications', component: DriverNotificationsComponent, canActivate: [authGuard], data: { role: 'DRIVER' }},
+  { path: 'passenger-notifications', component: PassengerNotificationsComponent, canActivate: [authGuard], data: { role: 'PASSENGER' }},
   { path: '**', component: ErrorComponent }
 ];

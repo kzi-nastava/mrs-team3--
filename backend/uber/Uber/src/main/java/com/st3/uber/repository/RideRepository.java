@@ -5,6 +5,8 @@ import com.st3.uber.domain.Passenger;
 import com.st3.uber.domain.Ride;
 import com.st3.uber.enums.RideStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -23,4 +25,46 @@ public interface RideRepository extends JpaRepository<Ride, Long> {
 
     // Get rides for a driver before a specific date
     List<Ride> findByDriverAndStartedAtBefore(Driver driver, LocalDateTime end);
+
+    /**
+     * Find all rides with a specific status that have a scheduled time
+     * Used for finding upcoming scheduled rides
+     */
+    List<Ride> findByStatusAndScheduledAtIsNotNull(RideStatus status);
+
+    /**
+     * Find rides scheduled before a certain time
+     * Used for cleanup of old notified rides
+     */
+    List<Ride> findByScheduledAtBefore(LocalDateTime dateTime);
+
+    /**
+     * Find rides scheduled between two times
+     * Alternative method if you want more precise control
+     */
+    List<Ride> findByStatusAndScheduledAtBetween(
+            RideStatus status,
+            LocalDateTime startTime,
+            LocalDateTime endTime
+    );
+
+    /**
+     * Find all pending rides that are scheduled within the next X minutes
+     * More efficient query with specific time window
+     */
+    @Query("SELECT r FROM Ride r WHERE r.status = :status " +
+            "AND r.scheduledAt IS NOT NULL " +
+            "AND r.scheduledAt BETWEEN :now AND :futureTime")
+    List<Ride> findUpcomingScheduledRides(
+            @Param("status") RideStatus status,
+            @Param("now") LocalDateTime now,
+            @Param("futureTime") LocalDateTime futureTime
+    );
+
+    @Query("SELECT r FROM Ride r " +
+            "LEFT JOIN FETCH r.passengers " +
+            "LEFT JOIN FETCH r.driver " +
+            "WHERE r.status = :status AND r.scheduledAt IS NOT NULL")
+    List<Ride> findPendingRidesWithPassengersAndDriver(@Param("status") RideStatus status);
+
 }

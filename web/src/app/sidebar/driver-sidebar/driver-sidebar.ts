@@ -1,9 +1,11 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import { DriverService } from '../../services/driver.service';
 import { MessageService } from 'primeng/api';
+import { NotificationService } from '../../services/notification.service';
+import { Subject, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-driver-sidebar',
@@ -12,14 +14,35 @@ import { MessageService } from 'primeng/api';
   templateUrl: './driver-sidebar.html',
   styleUrls: ['./driver-sidebar.css']
 })
-export class DriverSidebarComponent {
+export class DriverSidebarComponent implements OnInit, OnDestroy {
+  unreadCount = 0;
+  private destroy$ = new Subject<void>();
 
   constructor(
     private router: Router,
     private authService: AuthService,
     private driverService: DriverService,
-    private messageService: MessageService
+    private notificationService: NotificationService,
+    private messageService: MessageService,
+    private cdr: ChangeDetectorRef  
   ) {}
+
+  ngOnInit(): void {
+    // Use setTimeout to defer the subscription to avoid ExpressionChangedAfterItHasBeenCheckedError
+    setTimeout(() => {
+      this.notificationService.unreadCount$
+        .pipe(takeUntil(this.destroy$))
+        .subscribe(count => {
+          this.unreadCount = count;
+          this.cdr.detectChanges(); // Manually trigger change detection
+        });
+    }, 0);
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
 
   goHome() {
     this.router.navigate(['/']);
@@ -28,6 +51,10 @@ export class DriverSidebarComponent {
   goDriverDashboard() {
     // Navigate to driver dashboard when you create it
     // this.router.navigate(['/driver-dashboard']);
+  }
+
+  goNotifications() {
+    this.router.navigate(['/driver-notifications']);
   }
 
   goHistory() {

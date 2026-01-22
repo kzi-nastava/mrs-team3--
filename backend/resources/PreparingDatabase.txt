@@ -1,11 +1,7 @@
-#####################################################################
-BRISANJE SVIH TABELA DA SE GENERISU NORMALNO
-######################################################################
-
 
 SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS
-    ride_invites
+    ride_invites,
     actual_ride_stops,
     admins,
     chat_rooms,
@@ -29,12 +25,6 @@ DROP TABLE IF EXISTS
     inconsistency_reports,
     verification_tokens;
 Set foreign_key_checks =1;
-
-
-
-##############################################################################
-E sada podaci u tabeli 
-###############################################################
 
 
 -- MySQL Test Data Script for Uber Application
@@ -149,6 +139,7 @@ INSERT INTO users (id, email, password, name, surname, phone_number, address, pr
 (9, 'driver4@uber.com', '$2a$12$uig2Rjdm7fsRBjDfJMouU.f6SLyakg2n4D2KynQHsQtUnMXBTmXDm', 'Petar', 'Ilic', '+381648888888', 'Maksima Gorkog 8, Novi Sad', NULL, 0, NULL, NULL, 'DRIVER',1),
 (10, 'driver5@uber.com', '$2a$12$uig2Rjdm7fsRBjDfJMouU.f6SLyakg2n4D2KynQHsQtUnMXBTmXDm', 'Jovana', 'Markovic', '+381649999999', 'Zmaj Jovina 5, Belgrade', NULL, 1, 'Multiple complaints', NULL, 'DRIVER',1);
 
+
 -- ========================================
 -- INSERT ADMINS (subclass table)
 -- ========================================
@@ -166,12 +157,12 @@ INSERT INTO passengers (id) VALUES
 -- ========================================
 -- INSERT DRIVERS (subclass table)
 -- ========================================
-INSERT INTO drivers (id, active, available, free, vehicle_id, working_minutes_per_day, current_lat, current_lng, current_address, location_updated_at) VALUES
-                                                                                                                                                           (6, 1, 1, 1, 1, 120, 45.255000, 19.845000, 'Freedom Square, Novi Sad', NOW() - INTERVAL 5 MINUTE),
-                                                                                                                                                           (7, 1, 1, 0, 2, 240, 45.267136, 19.833549, 'Petrovaradin Fortress, Novi Sad', NOW() - INTERVAL 10 MINUTE),
-                                                                                                                                                           (8, 1, 0, 0, 3, 180, 45.254844, 19.845350, 'Freedom Square, Novi Sad', NOW() - INTERVAL 15 MINUTE),
-                                                                                                                                                           (9, 0, 0, 0, 4, 0, 45.260000, 19.820000, 'Detelinara, Novi Sad', NOW() - INTERVAL 2 HOUR),
-                                                                                                                                                           (10, 0, 0, 0, 5, 360, 45.240000, 19.800000, 'Liman, Novi Sad', NOW() - INTERVAL 1 HOUR);
+INSERT INTO drivers (id, active, available, free, vehicle_id, working_minutes_per_day, current_lat, current_lng, current_address, location_updated_at, activity_request) VALUES
+                                                                                                                                                                             (6, 1, 1, 1, 1, 120, 45.255000, 19.845000, 'Freedom Square, Novi Sad', NOW() - INTERVAL 5 MINUTE,0),
+                                                                                                                                                                             (7, 1, 1, 0, 2, 240, 45.267136, 19.833549, 'Petrovaradin Fortress, Novi Sad', NOW() - INTERVAL 10 MINUTE,0),
+                                                                                                                                                                             (8, 1, 0, 0, 3, 180, 45.254844, 19.845350, 'Freedom Square, Novi Sad', NOW() - INTERVAL 15 MINUTE,0),
+                                                                                                                                                                             (9, 0, 0, 0, 4, 0, 45.260000, 19.820000, 'Detelinara, Novi Sad', NOW() - INTERVAL 2 HOUR,0),
+                                                                                                                                                                             (10, 0, 0, 0, 5, 360, 45.240000, 19.800000, 'Liman, Novi Sad', NOW() - INTERVAL 1 HOUR,0);
 
 -- ========================================
 -- INSERT RIDE PRICING
@@ -189,47 +180,47 @@ INSERT INTO vehicle_type_prices (pricing_id, base_price, base_prices_key) VALUES
 INSERT INTO rides (id, driver_id, creator_id, status, start_lat, start_lng, start_address, end_lat, end_lng, end_address,
                    actual_end_lat, actual_end_lng, actual_end_address, created_at, scheduled_at, started_at, finished_at,
                    stopped_early, stopped_at, vehicle_type, distance, base_price, calculated_price, cancelled_by, cancelled_at,
-                   termination_reason, panic) VALUES
+                   termination_reason, panic,pet_transport,baby_transport,estimated_time_minutes) VALUES
 -- Completed rides
 (1, 6, 2, 'COMPLETED', 45.254844, 19.845350, 'Freedom Square, Novi Sad',
  45.267136, 19.833549, 'Strand, Novi Sad',
  45.267136, 19.833549, 'Strand, Novi Sad', NOW() - INTERVAL 5 HOUR, NULL,
  NOW() - INTERVAL 4 HOUR - INTERVAL 50 MINUTE, NOW() - INTERVAL 4 HOUR - INTERVAL 30 MINUTE,
- 0, NULL, 'STANDARD', 8.5, 200, 1220, NULL, NULL, NULL, 0),
+ 0, NULL, 'STANDARD', 8.5, 200, 1220, NULL, NULL, NULL, 0,0,0,20),
 
 (2, 7, 3, 'COMPLETED', 45.254844, 19.845350, 'Freedom Square, Novi Sad', 45.267136, 19.833549, 'Petrovaradin Fortress, Novi Sad',
  45.267136, 19.833549, 'Petrovaradin Fortress, Novi Sad', NOW() - INTERVAL 3 HOUR, NULL,
  NOW() - INTERVAL 2 HOUR - INTERVAL 50 MINUTE, NOW() - INTERVAL 2 HOUR - INTERVAL 35 MINUTE,
- 0, NULL, 'LUXURY', 3.2, 400, 784, NULL, NULL, NULL, 0),
+ 0, NULL, 'LUXURY', 3.2, 400, 784, NULL, NULL, NULL, 0,0,0,30),
 
 (3, 8, 2, 'COMPLETED', 45.254844, 19.845350, 'Zmaj Jovina, Novi Sad',
  45.255500, 19.844000, 'Dunavska Street, Novi Sad',
  45.255500, 19.844000, 'Dunavska Street, Novi Sad', NOW() - INTERVAL 2 DAY, NULL,
  NOW() - INTERVAL 2 DAY + INTERVAL 10 MINUTE, NOW() - INTERVAL 2 DAY + INTERVAL 25 MINUTE,
- 0, NULL, 'VAN', 2.8, 500, 836, NULL, NULL, NULL, 0),
+ 0, NULL, 'VAN', 2.8, 500, 836, NULL, NULL, NULL, 0,0,0,30),
 
 -- Active ride
 (4, 7, 3, 'IN_PROGRESS', 45.240000, 19.850000, 'Bulevar Oslobodjenja, Novi Sad', 45.267136, 19.833549, 'Strand, Novi Sad',
  NULL, NULL, NULL, NOW() - INTERVAL 15 MINUTE, NULL, NOW() - INTERVAL 10 MINUTE, NULL,
- 0, NULL, 'LUXURY', 4.5, 400, 940, NULL, NULL, NULL, 0),
+ 0, NULL, 'LUXURY', 4.5, 400, 940, NULL, NULL, NULL, 0,1,0,60),
 
 -- Pending ride
 (5, 6, 4, 'ACCEPTED', 45.267136, 19.833549, 'Strand, Novi Sad',
  45.254844, 19.845350, 'Freedom Square, Novi Sad',
  NULL, NULL, NULL, NOW() - INTERVAL 5 MINUTE, NULL, NULL, NULL,
- 0, NULL, 'STANDARD', 6.0, 200, 920, NULL, NULL, NULL, 0),
+ 0, NULL, 'STANDARD', 6.0, 200, 920, NULL, NULL, NULL, 0,0,0,32),
 
 -- Scheduled future ride
 (6, NULL, 2, 'PENDING', 45.254844, 19.845350, 'Freedom Square, Novi Sad',
  45.256000, 19.810000, 'Novi Sad Bus Station',
  NULL, NULL, NULL, NOW(), NOW() + INTERVAL 3 HOUR, NULL, NULL,
- 0, NULL, 'LUXURY', 18.0, 400, 2560, NULL, NULL, NULL, 0),
+ 0, NULL, 'LUXURY', 18.0, 400, 2560, NULL, NULL, NULL, 0,0,0,9),
 
 -- Cancelled ride
 (7, NULL, 3, 'CANCELLED', 45.254844, 19.845350, 'Freedom Square, Novi Sad', 45.240000, 19.850000, 'Exit Festival, Novi Sad',
  NULL, NULL, NULL, NOW() - INTERVAL 1 DAY, NULL, NULL, NULL,
  0, NULL, 'VAN', 5.5, 500, 1160, 'PASSENGER', NOW() - INTERVAL 1 DAY + INTERVAL 5 MINUTE,
- 'Changed plans', 0),
+ 'Changed plans', 0,0,0,2),
 
 -- Ride with panic event (finished early)
 (8, 6, 2, 'FINISHED_EARLY', 45.240000, 19.800000, 'Liman, Novi Sad',
@@ -237,7 +228,7 @@ INSERT INTO rides (id, driver_id, creator_id, status, start_lat, start_lng, star
  45.258000, 19.818000, 'Near Detelinara, Novi Sad', NOW() - INTERVAL 10 DAY, NULL,
  NOW() - INTERVAL 10 DAY + INTERVAL 15 MINUTE, NOW() - INTERVAL 10 DAY + INTERVAL 35 MINUTE,
  1, NOW() - INTERVAL 10 DAY + INTERVAL 32 MINUTE, 'STANDARD', 7.2, 200, 1064, NULL, NULL,
- 'Stopped early due to panic button', 1);
+ 'Stopped early due to panic button', 1,0,1,20);
 
 -- Update driver #7 to have current ride #4 (now that ride exists)
 UPDATE drivers SET current_ride_id = 4 WHERE id = 6;
@@ -302,17 +293,65 @@ INSERT INTO passenger_favorite_rides (passenger_id, ride_id) VALUES
 -- ========================================
 -- INSERT NOTIFICATIONS
 -- ========================================
-INSERT INTO notifications (id, user_id, message, created_at) VALUES
-                                                                 (1, 2, 'Your ride has been accepted by driver Nikola', NOW() - INTERVAL 4 HOUR - INTERVAL 50 MINUTE),
-                                                                 (2, 6, 'New ride request nearby!', NOW() - INTERVAL 4 HOUR - INTERVAL 52 MINUTE),
-                                                                 (3, 3, 'Your ride is starting now', NOW() - INTERVAL 10 MINUTE),
-                                                                 (4, 7, 'Passenger Ana has rated your ride 5 stars', NOW() - INTERVAL 4 HOUR - INTERVAL 25 MINUTE),
-                                                                 (5, 2, 'Your scheduled ride is in 3 hours', NOW()),
-                                                                 (6, 4, 'Your ride has been accepted', NOW() - INTERVAL 5 MINUTE),
-                                                                 (7, 6, 'A panic event was reported on your ride. Support will contact you.', NOW() - INTERVAL 10 DAY + INTERVAL 35 MINUTE),
-                                                                 (8, 1, 'New inconsistency report received from passenger Ana', NOW() - INTERVAL 10 DAY + INTERVAL 1 HOUR),
-                                                                 (9, 10, 'Your account has been blocked due to: Multiple complaints', NOW() - INTERVAL 1 HOUR),
-                                                                 (10, 2, 'Thank you for your review!', NOW() - INTERVAL 4 HOUR - INTERVAL 20 MINUTE);
+INSERT INTO notifications (id, user_id, message, type, is_read, related_entity_id, created_at) VALUES
+    (1, 2, 'Your ride request has been created. Driver Nikola Milosevic will pick you up soon!', 'ACCEPTED_RIDE', TRUE, 1, NOW() - INTERVAL 4 HOUR - INTERVAL 50 MINUTE);
+
+-- Notification #2: Driver notified about new ride
+INSERT INTO notifications (id, user_id, message, type, is_read, related_entity_id, created_at) VALUES
+    (2, 6, 'New ride assigned! Pickup at Freedom Square, Novi Sad', 'RIDE_REMINDER', TRUE, 1, NOW() - INTERVAL 4 HOUR - INTERVAL 52 MINUTE);
+
+-- Notification #3: Passenger notified ride is starting
+INSERT INTO notifications (id, user_id, message, type, is_read, related_entity_id, created_at) VALUES
+    (3, 3, 'Your ride is now in progress!', 'RIDE_REMINDER', FALSE, 4, NOW() - INTERVAL 10 MINUTE);
+
+-- Notification #4: Ride finished notification
+INSERT INTO notifications (id, user_id, message, type, is_read, related_entity_id, created_at) VALUES
+    (4, 2, 'Your ride is complete! Total cost: 1220.00 RSD. Please rate your experience.', 'FINISHED_RIDE', TRUE, 1, NOW() - INTERVAL 4 HOUR - INTERVAL 30 MINUTE);
+
+-- Notification #5: Scheduled ride reminder
+INSERT INTO notifications (id, user_id, message, type, is_read, related_entity_id, created_at) VALUES
+    (5, 2, 'Your scheduled ride is in 3 hours. Pickup at Freedom Square, Novi Sad', 'RIDE_REMINDER', FALSE, 6, NOW());
+
+-- Notification #6: Ride accepted notification
+INSERT INTO notifications (id, user_id, message, type, is_read, related_entity_id, created_at) VALUES
+    (6, 4, 'Your ride request has been created. Driver Nikola Milosevic will pick you up soon!', 'ACCEPTED_RIDE', FALSE, 5, NOW() - INTERVAL 5 MINUTE);
+
+-- Notification #7: Panic event for driver
+INSERT INTO notifications (id, user_id, message, type, is_read, related_entity_id, created_at) VALUES
+    (7, 6, '⚠️ PANIC ALERT! Ride #8 - Location: Liman, Novi Sad. Passenger/Driver needs immediate assistance!', 'PANIC', TRUE, 8, NOW() - INTERVAL 10 DAY + INTERVAL 32 MINUTE);
+
+-- Notification #8: Panic event for admin
+INSERT INTO notifications (id, user_id, message, type, is_read, related_entity_id, created_at) VALUES
+    (8, 1, '⚠️ PANIC ALERT! Ride #8 - Location: Liman, Novi Sad. Passenger/Driver needs immediate assistance!', 'PANIC', TRUE, 8, NOW() - INTERVAL 10 DAY + INTERVAL 32 MINUTE);
+
+-- Notification #9: Driver account blocked
+INSERT INTO notifications (id, user_id, message, type, is_read, related_entity_id, created_at) VALUES
+    (9, 10, 'Your account status has been changed: Multiple complaints', 'PROFILE_CHANGE', FALSE, NULL, NOW() - INTERVAL 1 HOUR);
+
+-- Notification #10: Ride cancelled notification to passenger
+INSERT INTO notifications (id, user_id, message, type, is_read, related_entity_id, created_at) VALUES
+    (10, 3, 'Your ride has been canceled by PASSENGER. Reason: Changed plans', 'RIDE_CANCELED', TRUE, 7, NOW() - INTERVAL 1 DAY + INTERVAL 5 MINUTE);
+
+-- Notification #11: Ride finished for another passenger
+INSERT INTO notifications (id, user_id, message, type, is_read, related_entity_id, created_at) VALUES
+    (11, 3, 'Your ride is complete! Total cost: 784.00 RSD. Please rate your experience.', 'FINISHED_RIDE', TRUE, 2, NOW() - INTERVAL 2 HOUR - INTERVAL 35 MINUTE);
+
+-- Notification #12: Ride finished for passenger with multiple people
+INSERT INTO notifications (id, user_id, message, type, is_read, related_entity_id, created_at) VALUES
+    (12, 4, 'Your ride is complete! Total cost: 836.00 RSD. Please rate your experience.', 'FINISHED_RIDE', TRUE, 3, NOW() - INTERVAL 2 DAY + INTERVAL 25 MINUTE);
+
+-- Notification #13: Driver status change
+INSERT INTO notifications (id, user_id, message, type, is_read, related_entity_id, created_at) VALUES
+    (13, 7, 'You are now active and available for rides.', 'PROFILE_CHANGE', FALSE, NULL, NOW() - INTERVAL 30 MINUTE);
+
+-- Notification #14: Declined ride (no matching driver scenario)
+INSERT INTO notifications (id, user_id, message, type, is_read, related_entity_id, created_at) VALUES
+    (14, 4, 'No available drivers match your ride requirements. Please try again later.', 'DECLINED_RIDE', FALSE, NULL, NOW() - INTERVAL 2 HOUR);
+
+-- Notification #15: Another ride reminder for driver
+INSERT INTO notifications (id, user_id, message, type, is_read, related_entity_id, created_at) VALUES
+    (15, 7, 'Reminder: You have a ride scheduled. Pickup at Bulevar Oslobodjenja, Novi Sad', 'RIDE_REMINDER', FALSE, 4, NOW() - INTERVAL 15 MINUTE);
+
 
 -- ========================================
 -- INSERT CHAT ROOMS
@@ -339,7 +378,7 @@ INSERT INTO request_changes (id, driver_id, vehicle_id, name, surname, phone_num
 
 
 Insert INto ride_invites(id, created_at, email, tracking_token, ride_id) VALUE
-    (1, NOW(), 'lol@gmail.com', 'lol', 1)
+    (1, NOW(), 'lol@gmail.com', 'lol', 1);
 
 -- ========================================
 -- VERIFICATION QUERY
