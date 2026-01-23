@@ -8,13 +8,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "favorite_routes")
+@Table(
+    name = "favorite_routes",
+    uniqueConstraints = @UniqueConstraint(columnNames = {"passenger_id", "ride_id"})
+)
 @Data
 public class FavoriteRoute {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "ride_id", nullable = false)
+    private Long rideId;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "passenger_id", nullable = false)
@@ -57,6 +63,4 @@ public class FavoriteRoute {
 
     @Column(nullable = false)
     private boolean petTransport;
-
-
 }

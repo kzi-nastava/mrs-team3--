@@ -17,4 +17,6 @@ public interface FavoriteRouteRepository
             String startAddress,
             String endAddress
     );
+    Optional<FavoriteRoute> findByRideIdAndPassenger(Long id, Passenger passenger);
+
 }
