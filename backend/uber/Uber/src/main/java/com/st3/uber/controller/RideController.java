@@ -19,9 +19,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.oauth2.jwt.Jwt;
-import java.util.concurrent.ThreadLocalRandom;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @CrossOrigin(origins = "http://localhost:4200")
 @RestController
@@ -54,8 +55,8 @@ public class RideController {
         RideResponse response = new RideResponse(
                 ride.getId(),
                 ride.getStatus(),
-                ride.getDistance(),              // ✅ distanceKm
-                ride.getEstimatedTimeMinutes(),  // ✅ estimatedTimeMinutes
+                ride.getDistance(),
+                ride.getEstimatedTimeMinutes(),
                 ride.getCalculatedPrice(),
                 ride.getVehicleType()
         );
@@ -101,6 +102,26 @@ public class RideController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping("/history/passenger")
+    @RolesAllowed("PASSENGER")
+    public ResponseEntity<List<PassengerRideSummaryResponse>>getPastPassengerRides(
+        @AuthenticationPrincipal Jwt jwt
+    ){
+        Long id = jwt.getClaim("uid");
+        List<PassengerRideSummaryResponse> rides = rideService.getPastPassengerRides(id);
+        return ResponseEntity.ok(rides);
+    }
+
+    @GetMapping("/history/passenger/{rideId}")
+    @RolesAllowed("PASSENGER")
+    public ResponseEntity<PassengerRideSummaryExtendedResponse> getPastRideDetails
+        (@AuthenticationPrincipal Jwt jwt,
+         @PathVariable Long rideId){
+        Long id = jwt.getClaim("uid");
+        PassengerRideSummaryExtendedResponse ride = rideService.getPastRideDetails(id, rideId);
+        return ResponseEntity.ok(ride);
+
+    }
 
     @PostMapping(
             value = "/{rideId}/start",

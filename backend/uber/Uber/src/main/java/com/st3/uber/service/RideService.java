@@ -2,6 +2,8 @@ package com.st3.uber.service;
 
 import com.st3.uber.domain.*;
 import com.st3.uber.dto.ride.CreateRideRequest;
+import com.st3.uber.dto.ride.PassengerRideSummaryExtendedResponse;
+import com.st3.uber.dto.ride.PassengerRideSummaryResponse;
 import com.st3.uber.dto.route.RouteInfo;
 import com.st3.uber.enums.NotificationType;
 import com.st3.uber.enums.RideStatus;
@@ -16,7 +18,9 @@ import java.util.ArrayList;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class RideService {
@@ -28,7 +32,7 @@ public class RideService {
     private final PriceCalculationService priceCalculationService;
     private final DriverService driverService;
     private final RideInviteMailService rideInviteMailService;
-    private final NotificationService notificationService; // ADD THIS
+    private final NotificationService notificationService;
 
     public RideService(
             RideRepository rideRepository,
@@ -38,8 +42,7 @@ public class RideService {
             PriceCalculationService priceCalculationService,
             DriverService driverService,
             RideInviteMailService rideInviteMailService,
-            NotificationService notificationService // ADD THIS
-    ) {
+            NotificationService notificationService) {
         this.rideRepository = rideRepository;
         this.passengerRepository = passengerRepository;
         this.rideInviteRepository = rideInviteRepository;
@@ -303,5 +306,63 @@ public class RideService {
                 routeInfo.durationMinutes(),
                 calculatedPrice
         );
+    }
+
+  public List<PassengerRideSummaryResponse> getPastPassengerRides(Long id) {
+    Passenger passenger = passengerRepository.findById(id).orElseThrow(
+        () -> new IllegalArgumentException("Passenger not found."));
+
+    List<Ride> rides = rideRepository.findPastByCreator(passenger);
+
+      List<Ride> favoriteRides = rideRepository.getFavoriteRidesByCreator(passenger);
+      Set<Long> favoriteRideIds = favoriteRides.stream()
+          .map(Ride::getId)
+          .collect(Collectors.toSet());
+
+      return rides.stream()
+          .map(r -> new PassengerRideSummaryResponse(
+              r.getId(),
+              r.getStatus(),
+              r.getStartLocation(),
+              r.getEndLocation(),
+              r.getStartedAt(),
+              r.getFinishedAt(),
+              favoriteRideIds.contains(r.getId())
+          ))
+          .toList();
+  }
+
+    public PassengerRideSummaryExtendedResponse getPastRideDetails(Long id, Long rideId) {
+        Passenger passenger = passengerRepository.findById(id).orElseThrow(
+            () -> new IllegalArgumentException("Passenger not found."));
+        Ride ride = rideRepository.findById(rideId).orElseThrow(
+            () -> new IllegalArgumentException("Ride not found.")
+        );
+
+        if (!ride.getPassengers().contains(passenger)) {
+            throw new IllegalArgumentException("Passenger did not participate in this ride.");
+        }
+        boolean favorite = passenger.getFavoriteRides() != null &&
+            passenger.getFavoriteRides().stream().anyMatch(r -> r.getId().equals(ride.getId()));
+
+      return detailsResponse(ride, favorite);
+    }
+
+    private static PassengerRideSummaryExtendedResponse detailsResponse(Ride ride, boolean favorite) {
+        PassengerRideSummaryExtendedResponse res = new PassengerRideSummaryExtendedResponse();
+
+        res.setId(ride.getId());
+        res.setStatus(ride.getStatus());
+        res.setStartLocation(ride.getStartLocation());
+        res.setEndLocation(ride.getEndLocation());
+        res.setStartTime(ride.getStartedAt());
+        res.setEndTime(ride.getFinishedAt());
+        res.setFavorite(favorite);
+
+        res.setStops(ride.getRideStops());
+        res.setDriver(ride.getDriver());
+        res.setReviews(ride.getReviews());
+        res.setInconsistencyReports(ride.getInconsistencyReports());
+        return res;
     }
 }
