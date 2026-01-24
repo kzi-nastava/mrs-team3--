@@ -64,4 +64,12 @@ export class UserProfileService {
   ): Observable<void> {
     return this.http.put<void>(`${this.API_URL}/me`, payload);
   }
+
+  submitDriverChangeRequest(payload: any) {
+  return this.http.post(
+    `${env.API_URL}/api/profile/change-request`,
+    payload
+  );
+}
+
 }

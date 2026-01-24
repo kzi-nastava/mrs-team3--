@@ -79,19 +79,15 @@ public class AuthService {
       }
     }
 
-    if(u instanceof Driver driver){
-      driver.setAvailable(true);
-      driver.setFree(true);
-      driver.setActive(true);
-      Ride r = rideRepository.getReferenceById(2L);
-      List<Ride> rides = new ArrayList<>();
-      rides.add(r);
-      driver.setPastRides(rides);
-      driver.setNextRides(new ArrayList<>());
+      if (u instanceof Driver driver) {
+          driver.setActive(true);
+          driver.setAvailable(true);
+          driver.setFree(true);
+          userRepository.save(driver);
+      }
 
-      userRepository.save(driver);
-    }
-   // String role2 = u.getClass().getSimpleName().toUpperCase();
+
+      // String role2 = u.getClass().getSimpleName().toUpperCase();
     String role = u.getRole().name();
 
     String token = generateToken(u, role);
