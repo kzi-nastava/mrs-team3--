@@ -6,13 +6,14 @@ import { RegisterComponent } from './register/register';
 import { ResetPasswordComponent } from './reset-password/reset-password';
 import { ForgotPassword } from './forgot-password/forgot-password';
 import {VerificationResultComponent} from './verification-result/verification-result';
-import {authGuard, guestGuard} from './guard/auth.guard';
+import {adminGuard, authGuard, driverGuard, guestGuard, passengerGuard} from './guard/auth.guard';
 import { ErrorComponent } from './error/error';
 import { DriverHistoryComponent } from './ride-history/driver/driver-history';
 import { PassengerHistoryComponent } from './ride-history/passenger/passenger-history';
 import { AdminNotificationsComponent } from './notifications/admin-notifications/admin-notifications';
 import { DriverNotificationsComponent } from './notifications/driver-notifications/driver-notifications';
 import { PassengerNotificationsComponent } from './notifications/passenger-notifications/passenger-notifications';
+import { RideReviewComponent } from './ride-review/ride-review';
 
 export const routes: Routes = [
   { path: '', component: LandingPageComponent },
@@ -33,8 +34,9 @@ export const routes: Routes = [
   { path: 'reset-password', component: ResetPasswordComponent },
   { path: 'forgot-password', component: ForgotPassword },
   {path: 'verification-result', component: VerificationResultComponent},
-  { path: 'admin-notifications', component: AdminNotificationsComponent, canActivate: [authGuard], data: { role: 'ADMIN' }},
-  { path: 'driver-notifications', component: DriverNotificationsComponent, canActivate: [authGuard], data: { role: 'DRIVER' }},
-  { path: 'passenger-notifications', component: PassengerNotificationsComponent, canActivate: [authGuard], data: { role: 'PASSENGER' }},
+  { path: 'admin-notifications', component: AdminNotificationsComponent, canActivate: [adminGuard]},
+  { path: 'driver-notifications', component: DriverNotificationsComponent, canActivate: [driverGuard]},
+  { path: 'passenger-notifications', component: PassengerNotificationsComponent, canActivate: [passengerGuard]},
+  {path: 'ride-review/:id', component: RideReviewComponent, canActivate: [passengerGuard]},
   { path: '**', component: ErrorComponent }
 ];
