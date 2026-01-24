@@ -61,7 +61,6 @@ export class ProfileComponent implements OnInit {
   selectedFile: File | null = null;
   imagePreview = '';
 
-  // 👇 VRACENO ZBOG HTML-A (UI-only)
   pendingChanges: ChangeRequest[] = [];
   hasPendingChanges = false;
 
@@ -203,10 +202,37 @@ export class ProfileComponent implements OnInit {
   if (this.profileForm.invalid) return;
 
   if (this.user.role === 'DRIVER') {
-    alert('📤 Changes submitted for admin approval');
-    this.editMode = false;
-    return;
-  }
+
+  const payload = this.profileForm.getRawValue();
+
+  this.profileService.submitDriverChangeRequest({
+    firstName: payload.firstName,
+    lastName: payload.lastName,
+    phoneNumber: payload.phoneNumber,
+    address: payload.address,
+    profileImage: this.imagePreview || null,
+
+    vehicleModel: payload.vehicleModel,
+    vehicleRegistrationNumber: payload.vehicleLicensePlate,
+    vehicleSeatingCapacity: payload.vehicleSeats,
+    vehicleType: payload.vehicleType,
+    babyTransport: payload.babyTransport,
+    petTransport: payload.petTransport
+  }).subscribe({
+    next: () => {
+      alert('📤 Changes submitted for admin approval');
+      this.editMode = false;
+      this.loadProfile();
+    },
+    error: (err) => {
+      console.error(err);
+      alert('❌ Failed to submit change request');
+    }
+  });
+
+  return;
+}
+
 
   const payload = this.profileForm.getRawValue();
 

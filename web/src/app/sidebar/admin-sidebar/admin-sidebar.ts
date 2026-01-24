@@ -61,4 +61,8 @@ export class AdminSidebarComponent implements OnInit, OnDestroy {
       this.authService.logout();
     }
   }
+
+  goProfileChangeRequests() {
+    this.router.navigate(['/admin/profile-change-requests']);
+  }
 }
