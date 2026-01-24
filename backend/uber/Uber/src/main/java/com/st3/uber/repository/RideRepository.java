@@ -67,4 +67,5 @@ public interface RideRepository extends JpaRepository<Ride, Long> {
             "WHERE r.status = :status AND r.scheduledAt IS NOT NULL")
     List<Ride> findPendingRidesWithPassengersAndDriver(@Param("status") RideStatus status);
 
+    List<Ride> findPastByCreator(Passenger passenger);
 }

@@ -5,6 +5,8 @@ import com.st3.uber.enums.VehicleType;
 import java.util.List;
 
 public record FavoriteRouteRequest(
+        Long id,
+        Long rideId,
         LocationRequest from,
         LocationRequest to,
         List<LocationRequest> stops,

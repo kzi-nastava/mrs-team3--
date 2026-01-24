@@ -50,7 +50,7 @@
       destinationSuggestions: any[] = [];
       showPickupSuggestions = false;
       showDestinationSuggestions = false;
-      
+
 
       showConfirmModal = false;
 
