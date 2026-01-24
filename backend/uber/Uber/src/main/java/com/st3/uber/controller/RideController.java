@@ -10,6 +10,7 @@ import com.st3.uber.dto.route.RouteEstimateRequest;
 import com.st3.uber.dto.route.RouteEstimateResponse;
 import com.st3.uber.repository.RideInviteRepository;
 import com.st3.uber.service.RideService;
+import com.st3.uber.service.ReviewService;
 import com.st3.uber.util.ComparatorUtils;
 import jakarta.annotation.security.RolesAllowed;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -19,7 +20,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.oauth2.jwt.Jwt;
-import java.util.concurrent.ThreadLocalRandom;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -30,11 +30,13 @@ public class RideController {
 
     private final RideService rideService;
     private final RideInviteRepository rideInviteRepository;
+    private final ReviewService reviewService;
 
 
-    public RideController(RideService rideService, RideInviteRepository rideInviteRepository) {
+    public RideController(RideService rideService, RideInviteRepository rideInviteRepository, ReviewService reviewService) {
         this.rideService = rideService;
         this.rideInviteRepository = rideInviteRepository;
+        this.reviewService = reviewService;
     }
 
 
@@ -54,8 +56,8 @@ public class RideController {
         RideResponse response = new RideResponse(
                 ride.getId(),
                 ride.getStatus(),
-                ride.getDistance(),              // ✅ distanceKm
-                ride.getEstimatedTimeMinutes(),  // ✅ estimatedTimeMinutes
+                ride.getDistance(),
+                ride.getEstimatedTimeMinutes(),
                 ride.getCalculatedPrice(),
                 ride.getVehicleType()
         );
@@ -101,6 +103,26 @@ public class RideController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping("/history/passenger")
+    @RolesAllowed("PASSENGER")
+    public ResponseEntity<List<PassengerRideSummaryResponse>>getPastPassengerRides(
+        @AuthenticationPrincipal Jwt jwt
+    ){
+        Long id = jwt.getClaim("uid");
+        List<PassengerRideSummaryResponse> rides = rideService.getPastPassengerRides(id);
+        return ResponseEntity.ok(rides);
+    }
+
+    @GetMapping("/history/passenger/{rideId}")
+    @RolesAllowed("PASSENGER")
+    public ResponseEntity<PassengerRideSummaryExtendedResponse> getPastRideDetails
+        (@AuthenticationPrincipal Jwt jwt,
+         @PathVariable Long rideId){
+        Long id = jwt.getClaim("uid");
+        PassengerRideSummaryExtendedResponse ride = rideService.getPastRideDetails(id, rideId);
+        return ResponseEntity.ok(ride);
+
+    }
 
     @PostMapping(
             value = "/{rideId}/start",
@@ -205,7 +227,49 @@ public class RideController {
         return ResponseEntity.ok(response);
     }
 
-    // POST /api/rides/{id}/rating - Submit rating for completed ride
+    // ============ REVIEW ENDPOINTS ============
+
+    /**
+     * Get ride details for review (includes map data, driver info, and existing review if any)
+     * Only accessible by passengers who were part of the ride
+     */
+    @GetMapping(
+            value = "/{rideId}/review-details",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @RolesAllowed("PASSENGER")
+    public ResponseEntity<RideReviewDetailResponse> getRideForReview(
+            @PathVariable Long rideId,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        Long passengerId = jwt.getClaim("uid");
+        RideReviewDetailResponse response = reviewService.getRideForReview(rideId, passengerId);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Submit or update a review for a ride
+     * Can be updated within 3 days of ride completion
+     */
+    @PostMapping(
+            value = "/{rideId}/review",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @RolesAllowed("PASSENGER")
+    public ResponseEntity<SubmitRatingResponse> submitReview(
+            @PathVariable Long rideId,
+            @RequestBody SubmitRatingRequest request,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        Long passengerId = jwt.getClaim("uid");
+        SubmitRatingResponse response = reviewService.submitOrUpdateReview(rideId, passengerId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    // ============ END REVIEW ENDPOINTS ============
+
+    // POST /api/rides/{id}/rating - Submit rating for completed ride (OLD ENDPOINT - keeping for backwards compatibility)
     @PostMapping(
             value = "/{id}/rating",
             consumes = MediaType.APPLICATION_JSON_VALUE,

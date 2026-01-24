@@ -5,14 +5,15 @@ import { Login } from './login/login';
 import { RegisterComponent } from './register/register';
 import { ResetPasswordComponent } from './reset-password/reset-password';
 import { ForgotPassword } from './forgot-password/forgot-password';
-import { VerificationResultComponent } from './verification-result/verification-result';
-import { authGuard, guestGuard } from './guard/auth.guard';
+import {VerificationResultComponent} from './verification-result/verification-result';
+import {adminGuard, authGuard, driverGuard, guestGuard, passengerGuard} from './guard/auth.guard';
 import { ErrorComponent } from './error/error';
 import { DriverHistoryComponent } from './ride-history/driver/driver-history';
 import { PassengerHistoryComponent } from './ride-history/passenger/passenger-history';
 import { AdminNotificationsComponent } from './notifications/admin-notifications/admin-notifications';
 import { DriverNotificationsComponent } from './notifications/driver-notifications/driver-notifications';
 import { PassengerNotificationsComponent } from './notifications/passenger-notifications/passenger-notifications';
+import { RideReviewComponent } from './ride-review/ride-review';
 
 export const routes: Routes = [
 
@@ -33,14 +34,9 @@ export const routes: Routes = [
     canActivate: [authGuard]
   },
 
-  { path: 'driver-history', component: DriverHistoryComponent, canActivate: [authGuard] },
-  { path: 'driver-notifications', component: DriverNotificationsComponent, canActivate: [authGuard], data: { role: 'DRIVER' } },
-
-  { path: 'passenger-history', component: PassengerHistoryComponent, canActivate: [authGuard] },
-  { path: 'passenger-notifications', component: PassengerNotificationsComponent, canActivate: [authGuard], data: { role: 'PASSENGER' } },
-
-  { path: 'admin-notifications', component: AdminNotificationsComponent, canActivate: [authGuard], data: { role: 'ADMIN' } },
-
+  { path: 'driver-history', component: DriverHistoryComponent, canActivate: [driverGuard] },
+  { path: 'passenger-history', component: PassengerHistoryComponent, canActivate: [passengerGuard] },
+ 
   {
     path: 'admin/profile-change-requests',
     loadComponent: () =>
@@ -50,5 +46,12 @@ export const routes: Routes = [
     data: { role: 'ADMIN' }
   },
 
+  { path: 'reset-password', component: ResetPasswordComponent },
+  { path: 'forgot-password', component: ForgotPassword },
+  {path: 'verification-result', component: VerificationResultComponent},
+  { path: 'admin-notifications', component: AdminNotificationsComponent, canActivate: [adminGuard]},
+  { path: 'driver-notifications', component: DriverNotificationsComponent, canActivate: [driverGuard]},
+  { path: 'passenger-notifications', component: PassengerNotificationsComponent, canActivate: [passengerGuard]},
+  {path: 'ride-review/:id', component: RideReviewComponent, canActivate: [passengerGuard]},
   { path: '**', component: ErrorComponent }
 ];

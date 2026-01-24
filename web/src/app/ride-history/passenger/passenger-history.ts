@@ -1,37 +1,110 @@
 import { Component, signal, computed, OnInit, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RideHistoryService, Ride } from '../../services/passenger-history.service';
+import * as L from 'leaflet';
+import { RatingModule } from 'primeng/rating';
+
+import { RideHistoryService } from '../../services/passenger-history.service';
 import { FavoriteRoutesService } from '../../services/favorite-routes.service';
 import { env } from '../../../env/env';
-import * as L from 'leaflet';
+
+import {Router} from '@angular/router';
+import {RideBookingService} from '../../services/ride-booking.service';
+
+export type VehicleType = 'STANDARD' | 'VAN' | 'LUXURY';
+
+type RideStatus = string;
+
+type Location = {
+  lat: number;
+  lng: number;
+  address: string;
+};
+
+type InconsistencyReportItem = {
+  id: number;
+  reportText: string;
+  createdAt: string;
+};
+
+export type PassengerRideSummary = {
+  id: number;
+  status: RideStatus;
+  startLocation: Location;
+  endLocation: Location;
+  startTime: string;
+  endTime: string | null;
+  favorite: boolean;
+};
+
+export type PassengerRideDetails = PassengerRideSummary & {
+  stops: Location[];
+  driverName: string;
+  driverReview: number | null;
+  rideReview: number | null;
+  inconsistencyReports: InconsistencyReportItem[];
+};
+
+export type Ride = {
+  id: number;
+
+  startLocation: Location;
+  endLocation: Location;
+  startTime: string;
+  endTime: string | null;
+  status: RideStatus;
+  favorite: boolean;
+
+  stops: Location[];
+  driverName: string;
+  driverReview?: number | null;
+  rideReview?: number | null;
+  inconsistencyReport?: string[];
+};
+
+type SortOption =
+  | 'startTime-desc'
+  | 'startTime-asc'
+  | 'endTime-desc'
+  | 'endTime-asc'
+  | 'route-asc'
+  | 'route-desc';
+
+type RideForRouteText = {
+  startLocation: { address: string };
+  endLocation: { address: string };
+};
+
+type RideForEndMillis = {
+  endTime?: string | null;
+};
 
 @Component({
   selector: 'app-ride-history',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RatingModule],
   templateUrl: './passenger-history.html',
   styleUrls: ['./passenger-history.css'],
 })
 export class PassengerHistoryComponent implements OnInit, AfterViewInit {
-
   protected rides = signal<Ride[]>([]);
   protected selectedRide = signal<Ride | null>(null);
 
-  // Filter states
   startDate: string = '';
   endDate: string = '';
 
-  sortOption: string = 'startTime-desc';
+  sortOption: SortOption = 'startTime-desc';
 
-  // Map
-  private detailMap: any = null;
-  private mapMarkers: any[] = [];
-  private mapRouteLines: any[] = [];
+  private detailMap: L.Map | null = null;
+  private mapMarkers: L.Marker[] = [];
+  private mapRouteLines: L.Polyline[] = [];
+  private routeRequestId = 0;
 
   constructor(
     private driverHistoryService: RideHistoryService,
     private favoriteService: FavoriteRoutesService,
+    private rideBookingService: RideBookingService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -39,21 +112,18 @@ export class PassengerHistoryComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    // Map will be initialized when modal opens
   }
 
   protected filteredRides = computed(() => {
     let rides = this.rides();
 
     if (this.startDate) {
-      const from = new Date(this.startDate);
-      from.setHours(0, 0, 0, 0);
+      const from = new Date(`${this.startDate}T00:00:00`);
       rides = rides.filter(r => new Date(r.startTime) >= from);
     }
 
     if (this.endDate) {
-      const to = new Date(this.endDate);
-      to.setHours(23, 59, 59, 999);
+      const to = new Date(`${this.endDate}T23:59:59.999`);
       rides = rides.filter(r => new Date(r.startTime) <= to);
     }
 
@@ -61,10 +131,16 @@ export class PassengerHistoryComponent implements OnInit, AfterViewInit {
 
     switch (this.sortOption) {
       case 'startTime-asc':
-        sorted.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+        sorted.sort(
+          (a, b) =>
+            new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+        );
         break;
       case 'startTime-desc':
-        sorted.sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
+        sorted.sort(
+          (a, b) =>
+            new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
+        );
         break;
 
       case 'endTime-asc':
@@ -89,235 +165,246 @@ export class PassengerHistoryComponent implements OnInit, AfterViewInit {
     this.rides.set([...this.rides()]);
   }
 
-  private loadRides(): void {
-    this.driverHistoryService.rides$.subscribe(rides => {
-      // Sync favorite status with favorite routes service
-      const favorites = this.favoriteService.getFavorites();
-      const updatedRides = rides.map(r => ({
-        ...r,
-        favorite: favorites().some(f =>
-  f.from.address === r.startLocation.address &&
-  f.to.address === r.endLocation.address
-)
-
-      }));
-      this.rides.set(updatedRides);
-    });
-  }
-
   protected onFilterChange(): void {
     this.rides.set([...this.rides()]);
   }
 
-  protected openRideDetails(ride: Ride): void {
-    this.selectedRide.set(ride);
+  private loadRides(): void {
+    this.driverHistoryService.getRides().subscribe({
+      next: (rows: PassengerRideSummary[]) => {
+        const mapped = (rows ?? []).map(r => this.mapSummaryToRide(r));
+        this.rides.set(mapped);
+      },
+      error: err => console.error('getRides failed:', err),
+    });
+  }
 
-    setTimeout(() => {
-      this.initDetailMap(ride);
-    }, 100);
+  protected openRideDetails(ride: Ride): void {
+    this.driverHistoryService.getRideDetails(ride.id).subscribe({
+      next: (details: PassengerRideDetails) => {
+        const merged = this.mergeDetails(ride, details);
+        this.selectedRide.set(merged);
+
+        setTimeout(() => this.initDetailMap(merged), 400);
+      },
+      error: err => {
+        console.error('getRideDetails failed:', err);
+        this.selectedRide.set(ride);
+        setTimeout(() => this.initDetailMap(ride), 400);
+      },
+    });
   }
 
   protected closeModal(event?: Event): void {
-    if (event) {
-      event?.stopPropagation();
-    }
+    event?.stopPropagation?.();
     this.selectedRide.set(null);
 
     if (this.detailMap) {
       this.detailMap.remove();
       this.detailMap = null;
-      this.mapMarkers = [];
-      this.mapRouteLines = [];
     }
-  }
-
-  private routeText(r: Ride): string {
-    return `${r.startLocation.address} -> ${r.endLocation.address}`;
-  }
-
-  private endMillis(r: Ride): number {
-    return r.endTime ? new Date(r.endTime).getTime() : 0;
+    this.mapMarkers = [];
+    this.mapRouteLines = [];
+    this.resetLeafletContainer('detailMap');
   }
 
   protected toggleFavoriteFromCard(event: Event, ride: Ride): void {
-    event.stopPropagation(); // Prevent opening modal
-    this.toggleFavorite(ride);
+    event.stopPropagation();
+
+    this.driverHistoryService.getRideDetails(ride.id).subscribe({
+      next: (details: PassengerRideDetails) => {
+        const forUi = this.mergeDetails(ride, details);
+        this.toggleFavorite(forUi);
+      },
+      error: err => console.error('toggleFavoriteFromCard -> details failed:', err),
+    });
   }
 
   protected toggleFavorite(ride: Ride): void {
+    const req = {
+      rideId: ride.id,
+      from: {
+        address: ride.startLocation.address,
+        latitude: Number(ride.startLocation.lat),
+        longitude: Number(ride.startLocation.lng),
+      },
+      to: {
+        address: ride.endLocation.address,
+        latitude: Number(ride.endLocation.lat),
+        longitude: Number(ride.endLocation.lng),
+      },
+      stops: (ride.stops ?? []).map(s => ({
+        address: s.address,
+        latitude: Number(s.lat),
+        longitude: Number(s.lng),
+      })),
+      vehicleType: 'STANDARD' as VehicleType,
+      babyTransport: false,
+      petTransport: false,
+    };
 
-  const route = {
-    from: {
-      address: ride.startLocation.address,
-      latitude: ride.startLocation.latitude,
-      longitude: ride.startLocation.longitude
-    },
-    to: {
-      address: ride.endLocation.address,
-      latitude: ride.endLocation.latitude,
-      longitude: ride.endLocation.longitude
-    },
-    stops: ride.stops.map(s => ({
-      address: s.address,
-      latitude: s.latitude,
-      longitude: s.longitude
-    })),
+    this.favoriteService.toggle(req);
 
-    vehicleType: ride.vehicleType,
-    babyTransport: ride.babyTransport,
-    petTransport: ride.petTransport
-  };
+    this.rides.set(
+      this.rides().map(r => (r.id === ride.id ? { ...r, favorite: !r.favorite } : r))
+    );
 
-  if (ride.favorite) {
-    this.favoriteService.remove(route);
-  } else {
-    this.favoriteService.add(route);
+    if (this.selectedRide()?.id === ride.id) {
+      this.selectedRide.set({ ...ride, favorite: !ride.favorite });
+    }
   }
-
-  this.rides.set(
-    this.rides().map(r =>
-      r.id === ride.id ? { ...r, favorite: !r.favorite } : r
-    )
-  );
-
-  if (this.selectedRide()?.id === ride.id) {
-    this.selectedRide.set({ ...ride, favorite: !ride.favorite });
-  }
-}
 
   private initDetailMap(ride: Ride): void {
     if (this.detailMap) {
       this.detailMap.remove();
+      this.detailMap = null;
     }
+    this.mapMarkers = [];
+    this.mapRouteLines = [];
 
     const mapElement = document.getElementById('detailMap');
     if (!mapElement) return;
 
-    this.detailMap = L.map('detailMap').setView(
-      [ride.startLocation.latitude, ride.startLocation.longitude],
-      13
-    );
+    this.resetLeafletContainer('detailMap');
+
+    void mapElement.offsetHeight;
+
+    const startLat = Number(ride.startLocation.lat);
+    const startLng = Number(ride.startLocation.lng);
+
+    this.detailMap = L.map('detailMap').setView([startLat, startLng], 13);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
-      attribution: '© OpenStreetMap'
+      attribution: '© OpenStreetMap',
     }).addTo(this.detailMap);
 
-    const startMarker = L.marker(
-      [ride.startLocation.latitude, ride.startLocation.longitude],
-      {
-        icon: L.icon({
-          iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
-          shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-          iconSize: [25, 41],
-          iconAnchor: [12, 41],
-          popupAnchor: [1, -34],
-          shadowSize: [41, 41]
-        })
-      }
-    ).addTo(this.detailMap).bindPopup('Pickup: ' + ride.startLocation.address);
+    const startMarker = L.marker([startLat, startLng], {
+      icon: this.coloredMarker('green'),
+    })
+      .addTo(this.detailMap)
+      .bindPopup('Pickup: ' + (ride.startLocation.address ?? ''));
     this.mapMarkers.push(startMarker);
 
-    ride.stops.forEach((stop, index) => {
-      const stopMarker = L.marker(
-        [stop.latitude, stop.longitude],
-        {
-          icon: L.icon({
-            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
-            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-            iconSize: [25, 41],
-            iconAnchor: [12, 41],
-            popupAnchor: [1, -34],
-            shadowSize: [41, 41]
-          })
-        }
-      ).addTo(this.detailMap).bindPopup(`Stop ${index + 1}: ${stop.address}`);
+    (ride.stops ?? []).forEach((stop, index) => {
+      const lat = Number(stop.lat);
+      const lng = Number(stop.lng);
+
+      const stopMarker = L.marker([lat, lng], {
+        icon: this.coloredMarker('blue'),
+      })
+        .addTo(this.detailMap!)
+        .bindPopup(`Stop ${index + 1}: ${stop.address ?? ''}`);
       this.mapMarkers.push(stopMarker);
     });
 
-    const endMarker = L.marker(
-      [ride.endLocation.latitude, ride.endLocation.longitude],
-      {
-        icon: L.icon({
-          iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-          shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-          iconSize: [25, 41],
-          iconAnchor: [12, 41],
-          popupAnchor: [1, -34],
-          shadowSize: [41, 41]
-        })
-      }
-    ).addTo(this.detailMap).bindPopup('Destination: ' + ride.endLocation.address);
+    const endLat = Number(ride.endLocation.lat);
+    const endLng = Number(ride.endLocation.lng);
+
+    const endMarker = L.marker([endLat, endLng], {
+      icon: this.coloredMarker('red'),
+    })
+      .addTo(this.detailMap)
+      .bindPopup('Destination: ' + (ride.endLocation.address ?? ''));
     this.mapMarkers.push(endMarker);
 
-    // Draw route
     this.drawRideRoute(ride);
-  }
 
-  private drawRideRoute(ride: Ride): void {
-    const waypoints = [
-      ride.startLocation,
-      ...ride.stops,
-      ride.endLocation
-    ];
-
-    for (let i = 0; i < waypoints.length - 1; i++) {
-      this.drawRouteBetween(waypoints[i], waypoints[i + 1]);
-    }
-
-    // Fit map to show all markers
     if (this.mapMarkers.length > 0) {
       const group = L.featureGroup(this.mapMarkers);
       this.detailMap.fitBounds(group.getBounds().pad(0.1));
     }
   }
 
-  private drawRouteBetween(start: any, end: any): void {
-    const apiKey = env.MAPS_KEY;
-    const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${apiKey}&start=${start.longitude},${start.latitude}&end=${end.longitude},${end.latitude}`;
+  private drawRideRoute(ride: Ride): void {
+    if (!this.detailMap) return;
 
-    fetch(url)
-      .then(r => r.json())
-      .then(data => {
-        const coords = data.features[0].geometry.coordinates;
-        const routeCoords = coords.map((c: any) => [c[1], c[0]]);
+    this.routeRequestId++;
+    const requestId = this.routeRequestId;
 
-        const routeLine = L.polyline(routeCoords, {
-          color: '#6366f1',
-          weight: 4,
-          opacity: 0.7
-        }).addTo(this.detailMap);
+    const waypoints = [
+      ride.startLocation,
+      ...(ride.stops ?? []),
+      ride.endLocation,
+    ];
 
-        this.mapRouteLines.push(routeLine);
-      })
-      .catch(err => {
-        console.error('Error drawing route:', err);
+    this.drawFullRoute(waypoints, requestId);
+  }
+
+  private async drawFullRoute(waypoints: Location[], requestId: number): Promise<void> {
+    if (!this.detailMap) return;
+
+    this.mapRouteLines.forEach(l => l.remove());
+    this.mapRouteLines = [];
+
+    const body = {
+      coordinates: waypoints.map(wp => [Number(wp.lng), Number(wp.lat)]),
+      instructions: false,
+    };
+
+    try {
+      const res = await fetch(`${env.API_URL}/simple-routes/route?profile=driving-car`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/geo+json',
+        },
+        body: JSON.stringify(body),
       });
-  }
 
-  protected viewOnMap(ride: Ride): void {
-    // This method is no longer needed since map is embedded
-    console.log('Map is already showing in modal');
-  }
+      if (requestId !== this.routeRequestId) return;
 
-  protected viewReport(): void {
-    // TODO: Navigate to reports page or generate PDF
-    console.log('View report clicked');
-  }
+      const raw = await res.text();
+      if (!res.ok) {
+        console.error('Proxy route failed:', res.status, raw);
+        return;
+      }
 
-  protected getStatusText(status: string): string {
-    switch (status) {
-      case 'COMPLETED':
-        return 'Completed';
-      case 'CANCELLED_BY_DRIVER':
-        return 'Cancelled by Driver';
-      case 'CANCELLED_BY_PASSENGER':
-        return 'Cancelled by Passenger';
-      case 'PANIC':
-        return 'Panic';
-      default:
-        return status;
+      const data = JSON.parse(raw);
+      const coords = data?.features?.[0]?.geometry?.coordinates;
+      if (!coords?.length) return;
+
+      const latLngs: [number, number][] = coords.map(([lon, lat]: [number, number]) => [lat, lon]);
+
+      const routeLine = L.polyline(latLngs, { weight: 5, opacity: 0.9 })
+        .addTo(this.detailMap);
+
+      this.mapRouteLines.push(routeLine);
+
+      this.detailMap.fitBounds(routeLine.getBounds().pad(0.1));
+
+      setTimeout(() => this.detailMap?.invalidateSize(true), 0);
+    } catch (err) {
+      console.error('Error drawing full route:', err);
     }
+  }
+
+  private resetLeafletContainer(containerId: string): void {
+    const el = document.getElementById(containerId) as any;
+    if (el && el._leaflet_id) {
+      el._leaflet_id = null;
+    }
+  }
+
+  private coloredMarker(color: 'green' | 'blue' | 'red'): L.Icon {
+    const urlMap: Record<string, string> = {
+      green:
+        'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+      blue:
+        'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+      red:
+        'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+    };
+
+    return L.icon({
+      iconUrl: urlMap[color],
+      shadowUrl:
+        'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41],
+    });
   }
 
   protected formatDate(dateString: string): string {
@@ -325,7 +412,7 @@ export class PassengerHistoryComponent implements OnInit, AfterViewInit {
     return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
-      year: 'numeric'
+      year: 'numeric',
     });
   }
 
@@ -336,25 +423,96 @@ export class PassengerHistoryComponent implements OnInit, AfterViewInit {
       day: 'numeric',
       year: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
+  }
+
+  protected viewReport(): void {
+    console.log('View report clicked');
   }
 
   protected bookAgain(event: Event, ride: Ride): void {
     event.stopPropagation();
 
-    // Example: navigate with route data
-    // this.router.navigate(['/book'], { state: { ride } });
+    this.rideBookingService.clearRoute();
 
-    console.log('Book again:', ride);
+    this.rideBookingService.setPickupLocationDirect({
+      name: ride.startLocation.address,
+      lat: ride.startLocation.lat,
+      lng: ride.startLocation.lng,
+    })
+
+    this.rideBookingService.setDestinationLocation({
+      name: ride.endLocation.address,
+      lat: ride.endLocation.lat,
+      lng: ride.endLocation.lng,
+    })
+
+    this.rideBookingService.clearStops?.();
+    if (ride.stops && ride.stops.length > 0) {
+      ride.stops.forEach(stop => {
+        this.rideBookingService.addStopLocation({
+          name: stop.address,
+          lat: stop.lat,
+          lng: stop.lng,
+        });
+      });
+    }
+
+    this.rideBookingService.calculateRoute?.();
+    this.router.navigate(['/']);
+    this.selectedRide.set(null);
   }
 
   protected scheduleRide(event: Event, ride: Ride): void {
     event.stopPropagation();
+    console.log('Schedule:', ride);
+  }
 
-    // Example: navigate to scheduling screen
-    // this.router.navigate(['/schedule'], { state: { ride } });
+  private routeText(r: RideForRouteText): string {
+    return `${r.startLocation.address} -> ${r.endLocation.address}`;
+  }
 
-    console.log('Schedule ride:', ride);
+  private endMillis(r: RideForEndMillis): number {
+    return r.endTime ? new Date(r.endTime).getTime() : 0;
+  }
+
+  private mapSummaryToRide(r: PassengerRideSummary): Ride {
+    return {
+      id: r.id,
+      status: r.status,
+      startLocation: r.startLocation,
+      endLocation: r.endLocation,
+      startTime: r.startTime,
+      endTime: r.endTime ?? null,
+      favorite: r.favorite,
+
+      stops: [],
+      driverName: '-',
+      driverReview: null,
+      rideReview: null,
+      inconsistencyReport: [],
+    };
+  }
+
+  private mergeDetails(base: Ride, details: PassengerRideDetails): Ride {
+    const inconsistencyReport =
+      (details.inconsistencyReports ?? []).map(rep => rep.reportText ?? 'Inconsistency report');
+
+    return {
+      ...base,
+      status: details.status,
+      startLocation: details.startLocation,
+      endLocation: details.endLocation,
+      startTime: details.startTime,
+      endTime: details.endTime ?? null,
+      favorite: details.favorite,
+
+      stops: details.stops ?? [],
+      driverName: details.driverName ?? '-',
+      driverReview: details.driverReview ?? null,
+      rideReview: details.rideReview ?? null,
+      inconsistencyReport,
+    };
   }
 }

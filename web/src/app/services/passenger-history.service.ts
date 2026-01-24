@@ -2,6 +2,7 @@ import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { env } from '../../env/env';
+import {PassengerRideDetails, PassengerRideSummary} from '../ride-history/passenger/passenger-history';
 
 export interface Ride {
   id: number;
@@ -278,13 +279,14 @@ export class RideHistoryService {
   constructor(private http: HttpClient) {}
 
   // Get all rides (mock for now)
-  getRides(): Observable<Ride[]> {
-    // TODO: Replace with actual API call
-    // return this.http.get<Ride[]>(this.apiUrl);
-    return this.rides$;
+  getRides(): Observable<PassengerRideSummary[]> {
+    return this.http.get<PassengerRideSummary[]>(`${this.apiUrl}/passenger`);
   }
 
-  // Get rides with filters
+  getRideDetails(rideId: number): Observable<PassengerRideDetails> {
+    return this.http.get<PassengerRideDetails>(`${this.apiUrl}/passenger/${rideId}`);
+  }
+
   getRidesFiltered(startDate?: string, endDate?: string): Ride[] {
     let rides = this.ridesSubject.value;
 
@@ -299,7 +301,6 @@ export class RideHistoryService {
     return rides;
   }
 
-  // Toggle favorite status
   toggleFavorite(rideId: number): void {
     const rides = this.ridesSubject.value.map(r =>
       r.id === rideId ? { ...r, favorite: !r.favorite } : r

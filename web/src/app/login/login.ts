@@ -60,9 +60,11 @@ export class Login {
         // Navigate based on role
         const role = this.authService.getUserRole();
 
-        // Redirect to appropriate page based on role
-
-        this.router.navigate(['/']);
+        if (role === 'PASSENGER'|| role === 'ADMIN') {
+          this.router.navigate(['/']);
+        } else if (role === 'DRIVER') {
+          this.router.navigate(['/profile']);
+        }
 
 
         this.loading = false;
@@ -72,7 +74,6 @@ export class Login {
 
         let errorMessage = 'Invalid email or password.';
 
-        // Handle specific error messages from backend
         if (err.error) {
           if (typeof err.error === 'string') {
             errorMessage = err.error;
@@ -81,7 +82,6 @@ export class Login {
           }
         }
 
-        // Check for specific error types
         if (errorMessage.includes('blocked')) {
           this.messageService.add({
             severity: 'error',
