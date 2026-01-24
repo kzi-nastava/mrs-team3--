@@ -16,21 +16,36 @@ import { PassengerNotificationsComponent } from './notifications/passenger-notif
 import { RideReviewComponent } from './ride-review/ride-review';
 
 export const routes: Routes = [
+
   { path: '', component: LandingPageComponent },
-  { path: 'profile', component: ProfileComponent, canActivate: [authGuard] },
   { path: 'login', component: Login, canActivate: [guestGuard] },
   { path: 'register', component: RegisterComponent, canActivate: [guestGuard] },
+  { path: 'reset-password', component: ResetPasswordComponent },
+  { path: 'forgot-password', component: ForgotPassword },
+  { path: 'verification-result', component: VerificationResultComponent },
+
+  { path: 'profile', component: ProfileComponent, canActivate: [authGuard] },
 
   {
     path: 'driver-register',
     loadComponent: () =>
       import('./driver-register/driver-register')
         .then(m => m.DriverRegisterComponent),
-        canActivate: [authGuard]
+    canActivate: [authGuard]
   },
-  // {path: 'driver-history', component: DriverHistoryComponent, canActivate: [authGuard], data: { role: 'DRIVER' }},
-  {path: 'driver-history', component: DriverHistoryComponent},
-  { path: 'passenger-history', component: PassengerHistoryComponent, canActivate: [authGuard] },
+
+  { path: 'driver-history', component: DriverHistoryComponent, canActivate: [driverGuard] },
+  { path: 'passenger-history', component: PassengerHistoryComponent, canActivate: [passengerGuard] },
+ 
+  {
+    path: 'admin/profile-change-requests',
+    loadComponent: () =>
+      import('./admin-profile-change-list/admin-profile-change-list')
+        .then(m => m.AdminProfileChangeList),
+    canActivate: [authGuard],
+    data: { role: 'ADMIN' }
+  },
+
   { path: 'reset-password', component: ResetPasswordComponent },
   { path: 'forgot-password', component: ForgotPassword },
   {path: 'verification-result', component: VerificationResultComponent},

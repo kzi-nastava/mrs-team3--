@@ -77,15 +77,6 @@ public class UserProfileService {
     public void updateProfile(Long userId, UpdateUserProfileRequest req) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-
-        // Za DRIVER - dummy (kasnije dodajemo approval sistem)
-        if (user instanceof Driver) {
-            // TODO: Implementirati pending changes sistem za vozače
-            // Za sada ne radimo ništa - vozač ne može menjati profil
-            throw new RuntimeException("Driver profile changes require admin approval - not yet implemented");
-        }
-
-        // Za PASSENGER i ADMIN - direktno čuvamo izmene
         if (user instanceof Passenger || !(user instanceof Driver)) {
             user.setName(req.firstName());
             user.setSurname(req.lastName());

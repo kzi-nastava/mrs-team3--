@@ -1,0 +1,241 @@
+<div class="requests-page">
+  <div class="requests-header">
+    <h1>Driver Profile Change Requests</h1>
+  </div>
+
+   <div class="filter-buttons">
+      <button 
+        class="filter-btn" 
+        [class.active]="selectedFilter === 'ALL'"
+        (click)="setFilter('ALL')">
+        All
+      </button>
+      <button 
+        class="filter-btn" 
+        [class.active]="selectedFilter === 'PENDING'"
+        (click)="setFilter('PENDING')">
+        Pending
+      </button>
+      <button 
+        class="filter-btn" 
+        [class.active]="selectedFilter === 'APPROVED'"
+        (click)="setFilter('APPROVED')">
+        Approved
+      </button>
+      <button 
+        class="filter-btn" 
+        [class.active]="selectedFilter === 'REJECTED'"
+        (click)="setFilter('REJECTED')">
+        Rejected
+      </button>
+    </div>
+
+  @if (filteredRequests.length === 0) {
+    <div class="requests-empty">
+      <div class="requests-empty-icon">📄</div>
+      <h3>No pending requests</h3>
+      <p>All driver profile change requests have been processed.</p>
+    </div>
+  } @else {
+
+    <div class="requests-grid">
+
+      @for (req of filteredRequests; track req.requestId) {
+        <div class="request-card" (click)="openDetails(req)">
+
+          <div class="request-card-header">
+            <span class="request-id">
+              Request #{{ req.requestId }}
+            </span>
+
+            <span class="request-status" [ngClass]="getStatusClass(getRequestStatus(req.requestId))">
+              {{ getRequestStatus(req.requestId) }}
+            </span>
+          </div>
+
+          <div class="request-info">
+            <div class="request-info-item">
+              <span class="label">Driver</span>
+              <span class="value">
+                {{ req.driverName }} {{ req.driverSurname }}
+              </span>
+            </div>
+
+            <div class="request-info-item">
+              <span class="label">Email</span>
+              <span class="value">
+                {{ req.driverEmail }}
+              </span>
+            </div>
+
+            <div class="request-info-item">
+              <span class="label">Requested at</span>
+              <span class="value">
+                {{ req.requestedAt | date:'short' }}
+              </span>
+            </div>
+          </div>
+
+          <div class="request-actions">
+            <button
+              class="btn-primary"
+              (click)="openDetails(req); $event.stopPropagation()">
+              Review request
+            </button>
+          </div>
+
+        </div>
+      }
+
+    </div>
+  }
+</div>
+
+@if (showDetailsModal) {
+  <div class="modal-overlay" (click)="closeModal()">
+    <div class="modal-box" (click)="$event.stopPropagation()">
+
+      <div class="modal-header">
+        <h2>Profile change request</h2>
+        <button class="modal-close" (click)="closeModal()">×</button>
+      </div>
+
+      <div class="modal-body">
+
+        @if (!selectedDetails) {
+          <p>Loading request details...</p>
+        } @else {
+
+          <div class="modal-section">
+            <h3>📋 Status</h3>
+            <p>
+              <span class="request-status" [ngClass]="getStatusClass(selectedDetails.status)">
+                {{ selectedDetails.status }}
+              </span>
+            </p>
+          </div>
+          <div class="modal-section">
+
+            
+            <h3>👤 Driver</h3>
+            <p><strong>Email:</strong> {{ selectedDetails.driverEmail }}</p>
+            <p><strong>Name:</strong>
+              {{ selectedDetails.driverFirstName }}
+              {{ selectedDetails.driverLastName }}
+            </p>
+            <p><strong>Requested at:</strong>
+              {{ selectedDetails.requestedAt | date:'short' }}
+            </p>
+          </div>
+
+          <div class="modal-section">
+            <h3>🧾 User data changes</h3>
+
+            <div class="change-row">
+              <span>First name</span>
+              <span>{{ selectedDetails.oldFirstName || '—' }}</span>
+              <span>→</span>
+              <span>{{ selectedDetails.newFirstName || '—' }}</span>
+            </div>
+
+            <div class="change-row">
+              <span>Last name</span>
+              <span>{{ selectedDetails.oldLastName || '—' }}</span>
+              <span>→</span>
+              <span>{{ selectedDetails.newLastName || '—' }}</span>
+            </div>
+
+            <div class="change-row">
+              <span>Phone</span>
+              <span>{{ selectedDetails.oldPhoneNumber || '—' }}</span>
+              <span>→</span>
+              <span>{{ selectedDetails.newPhoneNumber || '—' }}</span>
+            </div>
+
+            <div class="change-row">
+              <span>Address</span>
+              <span>{{ selectedDetails.oldAddress || '—' }}</span>
+              <span>→</span>
+              <span>{{ selectedDetails.newAddress || '—' }}</span>
+            </div>
+          </div>
+
+          <div class="modal-section">
+            <h3>🚗 Vehicle changes</h3>
+
+            <div class="change-row">
+              <span>Model</span>
+              <span>{{ selectedDetails.oldVehicleModel || '—' }}</span>
+              <span>→</span>
+              <span>{{ selectedDetails.newVehicleModel || '—' }}</span>
+            </div>
+
+            <div class="change-row">
+              <span>Registration</span>
+              <span>{{ selectedDetails.oldVehicleRegistrationNumber || '—' }}</span>
+              <span>→</span>
+              <span>{{ selectedDetails.newVehicleRegistrationNumber || '—' }}</span>
+            </div>
+
+            <div class="change-row">
+              <span>Seats</span>
+              <span>{{ selectedDetails.oldVehicleSeatingCapacity}}</span>
+              <span>→</span>
+              <span>{{ selectedDetails.newVehicleSeatingCapacity ?? '—' }}</span>
+            </div>
+
+            <div class="change-row">
+              <span>Type</span>
+              <span>{{ selectedDetails.oldVehicleType || '—' }}</span>
+              <span>→</span>
+              <span>{{ selectedDetails.newVehicleType || '—' }}</span>
+            </div>
+
+            <div class="change-row">
+              <span>Baby transport</span>
+              <span>
+                {{ selectedDetails.oldBabyTransport === true ? 'Yes'
+                  : selectedDetails.oldBabyTransport === false ? 'No' : '—' }}
+              </span>
+              <span>→</span>
+              <span>
+                {{ selectedDetails.newBabyTransport === true ? 'Yes'
+                  : selectedDetails.newBabyTransport === false ? 'No' : '—' }}
+              </span>
+            </div>
+
+            <div class="change-row">
+              <span>Pet transport</span>
+              <span>
+                {{ selectedDetails.oldPetTransport === true ? 'Yes'
+                  : selectedDetails.oldPetTransport === false ? 'No' : '—' }}
+              </span>
+              <span>→</span>
+              <span>
+                {{ selectedDetails.newPetTransport === true ? 'Yes'
+                  : selectedDetails.newPetTransport === false ? 'No' : '—' }}
+              </span>
+            </div>
+          </div>
+
+        }
+      </div>
+
+    
+<div class="modal-footer">
+  <button 
+    class="btn-secondary" 
+    (click)="reject()"
+    [disabled]="decisionLoading || !selectedDetails || !isPending()">
+    Reject
+  </button>
+  <button
+    class="btn-primary"
+    (click)="approve()"
+    [disabled]="decisionLoading || !selectedDetails || !isPending()">
+    Approve
+  </button>
+</div>
+    </div>
+  </div>
+}
