@@ -10,7 +10,8 @@ import java.util.List;
 @Data
 public class PassengerRideSummaryExtendedResponse extends PassengerRideSummaryResponse {
   private List<Location> stops;
-  private Driver driver;
-  private List<Review> reviews;
-  private List<InconsistencyReport> inconsistencyReports;
+  private String driverName;
+  private Double driverReview;
+  private Double rideReview;
+  private List<InconsistencyReportItemResponse> inconsistencyReports;
 }

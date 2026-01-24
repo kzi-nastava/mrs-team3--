@@ -21,8 +21,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.security.oauth2.jwt.Jwt;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @CrossOrigin(origins = "http://localhost:4200")
 @RestController

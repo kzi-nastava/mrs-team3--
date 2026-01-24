@@ -68,5 +68,4 @@ public interface RideRepository extends JpaRepository<Ride, Long> {
     List<Ride> findPendingRidesWithPassengersAndDriver(@Param("status") RideStatus status);
 
     List<Ride> findPastByCreator(Passenger passenger);
-    List<Ride> getFavoriteRidesByCreator(Passenger passenger);
 }

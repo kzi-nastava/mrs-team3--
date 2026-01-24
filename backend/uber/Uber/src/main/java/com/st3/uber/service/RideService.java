@@ -2,6 +2,7 @@ package com.st3.uber.service;
 
 import com.st3.uber.domain.*;
 import com.st3.uber.dto.ride.CreateRideRequest;
+import com.st3.uber.dto.ride.InconsistencyReportItemResponse;
 import com.st3.uber.dto.ride.PassengerRideSummaryExtendedResponse;
 import com.st3.uber.dto.ride.PassengerRideSummaryResponse;
 import com.st3.uber.dto.route.RouteInfo;
@@ -14,12 +15,10 @@ import org.springframework.stereotype.Service;
 import com.st3.uber.dto.route.RouteEstimateRequest;
 import com.st3.uber.dto.route.RouteEstimateResponse;
 import com.st3.uber.dto.location.LocationRequest;
-import java.util.ArrayList;
+
+import java.util.*;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -308,13 +307,13 @@ public class RideService {
         );
     }
 
-  public List<PassengerRideSummaryResponse> getPastPassengerRides(Long id) {
+    public List<PassengerRideSummaryResponse> getPastPassengerRides(Long id) {
     Passenger passenger = passengerRepository.findById(id).orElseThrow(
         () -> new IllegalArgumentException("Passenger not found."));
 
     List<Ride> rides = rideRepository.findPastByCreator(passenger);
 
-      List<Ride> favoriteRides = rideRepository.getFavoriteRidesByCreator(passenger);
+      List<Ride> favoriteRides = passenger.getFavoriteRides();
       Set<Long> favoriteRideIds = favoriteRides.stream()
           .map(Ride::getId)
           .collect(Collectors.toSet());
@@ -339,8 +338,8 @@ public class RideService {
             () -> new IllegalArgumentException("Ride not found.")
         );
 
-        if (!ride.getPassengers().contains(passenger)) {
-            throw new IllegalArgumentException("Passenger did not participate in this ride.");
+        if (!ride.getCreator().equals(passenger)) {
+            throw new IllegalArgumentException("Passenger did not create this ride.");
         }
         boolean favorite = passenger.getFavoriteRides() != null &&
             passenger.getFavoriteRides().stream().anyMatch(r -> r.getId().equals(ride.getId()));
@@ -359,10 +358,47 @@ public class RideService {
         res.setEndTime(ride.getFinishedAt());
         res.setFavorite(favorite);
 
-        res.setStops(ride.getRideStops());
-        res.setDriver(ride.getDriver());
-        res.setReviews(ride.getReviews());
-        res.setInconsistencyReports(ride.getInconsistencyReports());
+        res.setStops(ride.getRideStops() == null ? List.of() : ride.getRideStops());
+
+        if (ride.getDriver() == null){
+            res.setDriverName("-");
+        }
+        else{
+            Driver driver = ride.getDriver();
+            String name = driver.getName() == null ? "" : driver.getName();
+            String surname = driver.getSurname() == null ? "" : driver.getSurname();
+            res.setDriverName((name + surname).isBlank() ? "-" : name + surname);
+        }
+
+        List<Review> reviews = ride.getReviews();
+        if (reviews == null || reviews.isEmpty()) {
+            res.setDriverReview(null);
+            res.setRideReview(null);
+        } else {
+            res.setDriverReview(calculateReview(reviews.stream().map(Review::getDriverRating).toList()));
+            res.setRideReview(calculateReview(reviews.stream().map(Review::getVehicleRating).toList()));
+        }
+        List<InconsistencyReport> inconsistencyReports = ride.getInconsistencyReports();
+        res.setInconsistencyReports(
+            inconsistencyReports == null ? List.of() : inconsistencyReports.stream().map(r -> {
+                InconsistencyReportItemResponse dto = new InconsistencyReportItemResponse();
+                dto.setId(r.getId());
+                dto.setReportText(r.getReportText());
+                dto.setCreatedAt(r.getCreatedAt());
+                return dto;
+            }).toList()
+        );
+
         return res;
+    }
+
+    private static Double calculateReview(List<Integer> values){
+        if (values == null || values.isEmpty())
+            return null;
+        long count = values.stream().filter(Objects::nonNull).count();
+        if (count == 0)
+            return null;
+        int sum = values.stream().filter(Objects::nonNull).mapToInt(Integer::intValue).sum();
+        return sum / (double) count;
     }
 }
