@@ -287,7 +287,6 @@ export class RideHistoryService {
     return this.http.get<PassengerRideDetails>(`${this.apiUrl}/passenger/${rideId}`);
   }
 
-  // Get rides with filters
   getRidesFiltered(startDate?: string, endDate?: string): Ride[] {
     let rides = this.ridesSubject.value;
 
@@ -302,7 +301,6 @@ export class RideHistoryService {
     return rides;
   }
 
-  // Toggle favorite status
   toggleFavorite(rideId: number): void {
     const rides = this.ridesSubject.value.map(r =>
       r.id === rideId ? { ...r, favorite: !r.favorite } : r

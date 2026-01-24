@@ -8,6 +8,11 @@ import { RideHistoryService } from '../../services/passenger-history.service';
 import { FavoriteRoutesService } from '../../services/favorite-routes.service';
 import { env } from '../../../env/env';
 
+import {Router} from '@angular/router';
+import {RideBookingService} from '../../services/ride-booking.service';
+
+export type VehicleType = 'STANDARD' | 'VAN' | 'LUXURY';
+
 type RideStatus = string;
 
 type Location = {
@@ -97,7 +102,9 @@ export class PassengerHistoryComponent implements OnInit, AfterViewInit {
 
   constructor(
     private driverHistoryService: RideHistoryService,
-    private favoriteService: FavoriteRoutesService
+    private favoriteService: FavoriteRoutesService,
+    private rideBookingService: RideBookingService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -214,32 +221,29 @@ export class PassengerHistoryComponent implements OnInit, AfterViewInit {
   }
 
   protected toggleFavorite(ride: Ride): void {
-    const route = {
+    const req = {
+      rideId: ride.id,
       from: {
         address: ride.startLocation.address,
-        lat: ride.startLocation.lat,
-        lng: ride.startLocation.lng,
+        latitude: Number(ride.startLocation.lat),
+        longitude: Number(ride.startLocation.lng),
       },
       to: {
         address: ride.endLocation.address,
-        lat: ride.endLocation.lat,
-        lng: ride.endLocation.lng,
+        latitude: Number(ride.endLocation.lat),
+        longitude: Number(ride.endLocation.lng),
       },
       stops: (ride.stops ?? []).map(s => ({
         address: s.address,
-        lat: s.lat,
-        lng: s.lng,
+        latitude: Number(s.lat),
+        longitude: Number(s.lng),
       })),
-      vehicleType: 'STANDARD' as const,
+      vehicleType: 'STANDARD' as VehicleType,
       babyTransport: false,
       petTransport: false,
     };
 
-    if (ride.favorite) {
-      this.favoriteService.remove(route as any);
-    } else {
-      this.favoriteService.add(route as any);
-    }
+    this.favoriteService.toggle(req);
 
     this.rides.set(
       this.rides().map(r => (r.id === ride.id ? { ...r, favorite: !r.favorite } : r))
@@ -429,7 +433,35 @@ export class PassengerHistoryComponent implements OnInit, AfterViewInit {
 
   protected bookAgain(event: Event, ride: Ride): void {
     event.stopPropagation();
-    console.log('Book now:', ride);
+
+    this.rideBookingService.clearRoute();
+
+    this.rideBookingService.setPickupLocationDirect({
+      name: ride.startLocation.address,
+      lat: ride.startLocation.lat,
+      lng: ride.startLocation.lng,
+    })
+
+    this.rideBookingService.setDestinationLocation({
+      name: ride.endLocation.address,
+      lat: ride.endLocation.lat,
+      lng: ride.endLocation.lng,
+    })
+
+    this.rideBookingService.clearStops?.();
+    if (ride.stops && ride.stops.length > 0) {
+      ride.stops.forEach(stop => {
+        this.rideBookingService.addStopLocation({
+          name: stop.address,
+          lat: stop.lat,
+          lng: stop.lng,
+        });
+      });
+    }
+
+    this.rideBookingService.calculateRoute?.();
+    this.router.navigate(['/']);
+    this.selectedRide.set(null);
   }
 
   protected scheduleRide(event: Event, ride: Ride): void {
