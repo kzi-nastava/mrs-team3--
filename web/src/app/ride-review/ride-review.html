@@ -1,0 +1,218 @@
+<div class="review-container">
+  
+  <div class="review-header">
+    <button class="back-btn" (click)="goBack()">← Back</button>
+    <h1>Review Your Ride</h1>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading ride details...</p>
+    </div>
+  }
+
+  @if (errorMessage() && !loading()) {
+    <div class="error-card">
+      <div class="error-icon">⚠️</div>
+      <h2>Unable to Review</h2>
+      <p>{{ errorMessage() }}</p>
+      <button class="btn-primary" (click)="goBack()">Go Back</button>
+    </div>
+  }
+
+  @if (rideDetail() && !loading()) {
+    <div class="review-content">
+
+      <!-- Success Message -->
+      @if (successMessage()) {
+        <div class="success-banner">
+          <span class="success-icon">✓</span>
+          {{ successMessage() }}
+        </div>
+      }
+
+      <!-- Deadline Warning -->
+      @if (!rideDetail()!.canReview) {
+        <div class="deadline-card expired">
+          <div class="deadline-icon">⏰</div>
+          <h3>Review Period Expired</h3>
+          <p>The 3-day review period for this ride has passed.</p>
+          <p class="deadline-date">Deadline was: {{ formatDateTime(rideDetail()!.reviewDeadline) }}</p>
+        </div>
+      } @else {
+        <div class="deadline-card active">
+          <div class="deadline-icon">⏰</div>
+          <p>
+            <strong>{{ getDaysRemaining() }}</strong> 
+            {{ getDaysRemaining() === 1 ? 'day' : 'days' }} remaining to review this ride
+          </p>
+          <p class="deadline-date">Deadline: {{ formatDateTime(rideDetail()!.reviewDeadline) }}</p>
+        </div>
+      }
+
+      <!-- Map Section -->
+      <div class="card">
+        <h2 class="card-title">📍 Your Route</h2>
+        <div class="map-wrapper">
+          <div id="reviewMap"></div>
+        </div>
+      </div>
+
+      <!-- Ride Details -->
+      <div class="card">
+        <h2 class="card-title">ℹ️ Ride Information</h2>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="info-label">Driver</span>
+            <span class="info-value">{{ rideDetail()!.driverName }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Vehicle Type</span>
+            <span class="info-value">{{ rideDetail()!.vehicleType }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Start Time</span>
+            <span class="info-value">{{ formatDateTime(rideDetail()!.startTime) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">End Time</span>
+            <span class="info-value">{{ formatDateTime(rideDetail()!.endTime) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Distance</span>
+            <span class="info-value">{{ rideDetail()!.distance }} km</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Duration</span>
+            <span class="info-value">{{ rideDetail()!.duration }} min</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Price</span>
+            <span class="info-value price">{{ rideDetail()!.price }} din</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Review Form -->
+      @if (rideDetail()!.canReview) {
+        <div class="card review-form-card">
+          <h2 class="card-title">⭐ {{ rideDetail()!.existingReview ? 'Update Your Review' : 'Leave a Review' }}</h2>
+          
+          @if (rideDetail()!.existingReview) {
+            <div class="existing-review-notice">
+              <span class="notice-icon">📝</span>
+              <span>You reviewed this ride on {{ formatDateTime(rideDetail()!.existingReview!.reviewedAt) }}</span>
+            </div>
+          }
+
+          <form (ngSubmit)="submitReview()">
+            
+            <!-- Driver Rating -->
+            <div class="rating-section">
+              <label class="rating-label">Rate the Driver</label>
+              <div class="stars">
+                @for (star of getStarArray(5); track star) {
+                  <button 
+                    type="button"
+                    class="star-btn"
+                    [class.filled]="star <= driverRating"
+                    (click)="setRating('driver', star)">
+                    {{ star <= driverRating ? '★' : '☆' }}
+                  </button>
+                }
+              </div>
+              @if (driverRating > 0) {
+                <span class="rating-text">{{ driverRating }} out of 5 stars</span>
+              }
+            </div>
+
+            <!-- Vehicle Rating -->
+            <div class="rating-section">
+              <label class="rating-label">Rate the Vehicle</label>
+              <div class="stars">
+                @for (star of getStarArray(5); track star) {
+                  <button 
+                    type="button"
+                    class="star-btn"
+                    [class.filled]="star <= vehicleRating"
+                    (click)="setRating('vehicle', star)">
+                    {{ star <= vehicleRating ? '★' : '☆' }}
+                  </button>
+                }
+              </div>
+              @if (vehicleRating > 0) {
+                <span class="rating-text">{{ vehicleRating }} out of 5 stars</span>
+              }
+            </div>
+
+            <!-- Comment -->
+            <div class="comment-section">
+              <label class="comment-label">Additional Comments (Optional)</label>
+              <textarea 
+                [(ngModel)]="comment"
+                name="comment"
+                rows="4"
+                maxlength="1000"
+                placeholder="Share your experience with this ride..."></textarea>
+              <div class="char-counter">{{ comment.length }} / 1000</div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="form-actions">
+              <button 
+                type="submit" 
+                class="btn-submit"
+                [disabled]="loading() || driverRating === 0 || vehicleRating === 0">
+                {{ rideDetail()!.existingReview ? '✓ Update Review' : '✓ Submit Review' }}
+              </button>
+            </div>
+
+          </form>
+        </div>
+      } @else if (rideDetail()!.existingReview) {
+        <!-- Show existing review when deadline passed -->
+        <div class="card">
+          <h2 class="card-title">📝 Your Review</h2>
+          
+          <div class="readonly-review">
+            <div class="rating-display">
+              <span class="rating-label-display">Driver Rating:</span>
+              <div class="stars-display">
+                @for (star of getStarArray(5); track star) {
+                  <span [class.filled]="star <= rideDetail()!.existingReview!.driverRating">
+                    {{ star <= rideDetail()!.existingReview!.driverRating ? '★' : '☆' }}
+                  </span>
+                }
+              </div>
+            </div>
+
+            <div class="rating-display">
+              <span class="rating-label-display">Vehicle Rating:</span>
+              <div class="stars-display">
+                @for (star of getStarArray(5); track star) {
+                  <span [class.filled]="star <= rideDetail()!.existingReview!.vehicleRating">
+                    {{ star <= rideDetail()!.existingReview!.vehicleRating ? '★' : '☆' }}
+                  </span>
+                }
+              </div>
+            </div>
+
+            @if (rideDetail()!.existingReview!.comment) {
+              <div class="comment-display">
+                <span class="comment-label-display">Your Comment:</span>
+                <p>{{ rideDetail()!.existingReview!.comment }}</p>
+              </div>
+            }
+
+            <div class="review-date">
+              Reviewed on {{ formatDateTime(rideDetail()!.existingReview!.reviewedAt) }}
+            </div>
+          </div>
+        </div>
+      }
+
+    </div>
+  }
+
+</div>
