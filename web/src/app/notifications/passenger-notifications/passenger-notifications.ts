@@ -82,8 +82,11 @@ export class PassengerNotificationsComponent implements OnInit, OnDestroy {
 
     // Navigate based on notification type
     if (notification.relatedEntityId) {
+      if (notification.type === NotificationType.FINISHED_RIDE) {
+        this.router.navigate(['/ride-review', notification.relatedEntityId]);
+        return;
+      }
       if (notification.type === NotificationType.ACCEPTED_RIDE ||
-          notification.type === NotificationType.FINISHED_RIDE ||
           notification.type === NotificationType.RIDE_CANCELED ||
           notification.type === NotificationType.RIDE_REMINDER) {
         this.router.navigate(['/passenger-history']);
