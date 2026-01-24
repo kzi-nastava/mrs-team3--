@@ -74,7 +74,6 @@ export class Login {
 
         let errorMessage = 'Invalid email or password.';
 
-        // Handle specific error messages from backend
         if (err.error) {
           if (typeof err.error === 'string') {
             errorMessage = err.error;
@@ -83,7 +82,6 @@ export class Login {
           }
         }
 
-        // Check for specific error types
         if (errorMessage.includes('blocked')) {
           this.messageService.add({
             severity: 'error',

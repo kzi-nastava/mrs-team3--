@@ -27,7 +27,7 @@ public class FavoriteRouteController {
     public ResponseEntity<List<FavoriteRouteResponse>> getAll(
             @AuthenticationPrincipal Jwt jwt
     ) {
-        String email = jwt.getSubject(); // ✅ EMAIL
+        String email = jwt.getSubject();
         return ResponseEntity.ok(
                 favoriteRouteService.getAllByEmail(email)
         );
@@ -39,7 +39,7 @@ public class FavoriteRouteController {
             @AuthenticationPrincipal Jwt jwt,
             @RequestBody FavoriteRouteRequest request
     ) {
-        String email = jwt.getSubject(); // ✅ EMAIL
+        String email = jwt.getSubject();
         favoriteRouteService.addByEmail(email, request);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
@@ -50,7 +50,7 @@ public class FavoriteRouteController {
             @AuthenticationPrincipal Jwt jwt,
             @RequestBody FavoriteRouteRequest request
     ) {
-        String email = jwt.getSubject(); // ✅ EMAIL
+        String email = jwt.getSubject();
         favoriteRouteService.removeByEmail(email, request);
         return ResponseEntity.noContent().build();
     }
