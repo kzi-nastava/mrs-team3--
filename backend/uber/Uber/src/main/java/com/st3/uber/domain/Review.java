@@ -9,7 +9,10 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @Entity
-@Table(name = "reviews")
+@Table(name = "reviews",
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"ride_id", "passenger_id"})
+        })
 public class Review {
 
     @Id
@@ -21,11 +24,20 @@ public class Review {
     @JoinColumn(name = "ride_id", nullable = false)
     private Ride ride;
 
+    // Link to the passenger who left the review
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "passenger_id", nullable = false)
+    private Passenger passenger;
+
+    @Column(nullable = false)
     private Integer driverRating;
+
+    @Column(nullable = false)
     private Integer vehicleRating;
 
     @Column(length = 1000)
     private String reviewComment;
 
+    @Column(nullable = false)
     private LocalDateTime reviewedAt;
 }
