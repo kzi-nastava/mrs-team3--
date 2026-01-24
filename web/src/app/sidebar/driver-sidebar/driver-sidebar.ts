@@ -44,10 +44,6 @@ export class DriverSidebarComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  goHome() {
-    this.router.navigate(['/']);
-  }
-
   goDriverDashboard() {
     // Navigate to driver dashboard when you create it
     // this.router.navigate(['/driver-dashboard']);
