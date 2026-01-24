@@ -40,6 +40,9 @@ export class AdminSidebarComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
+  goHome() {
+    this.router.navigate(['/']);
+  }
 
   goNotifications() {
     this.router.navigate(['/admin-notifications']);
