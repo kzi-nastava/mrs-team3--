@@ -8,23 +8,17 @@
     <div class="input-wrapper">
       <div class="input-group">
         <div class="input-icon">⚫</div>
-        <input
-          type="text"
-          placeholder="Enter pickup location"
-          class="location-input"
-          formControlName="pickupLocation">
+        <input type="text" placeholder="Enter pickup location" class="location-input" formControlName="pickupLocation">
       </div>
 
       @if (showPickupSuggestions && pickupSuggestions.length > 0) {
-        <div class="suggestions">
-          @for (suggestion of pickupSuggestions; track suggestion.place_id) {
-            <div
-              class="suggestion-item"
-              (click)="selectPickupSuggestion(suggestion)">
-              {{ suggestion.display_name }}
-            </div>
-          }
+      <div class="suggestions">
+        @for (suggestion of pickupSuggestions; track suggestion.place_id) {
+        <div class="suggestion-item" (click)="selectPickupSuggestion(suggestion)">
+          {{ suggestion.display_name }}
         </div>
+        }
+      </div>
       }
     </div>
 
@@ -34,55 +28,40 @@
     </button>
 
     @for (stop of stops; track trackByStopId($index, stop)) {
-      <div class="input-wrapper">
-        <div class="input-group stop-group">
-          <div class="input-icon">⚫</div>
-          <input
-            type="text"
-            placeholder="Enter stop location"
-            class="location-input"
-            [value]="stop.location"
-            (input)="onStopInputChange(stop.id, $event)">
-          <button
-            type="button"
-            class="remove-stop-btn"
-            (click)="removeStop(stop.id)">✕</button>
-        </div>
+    <div class="input-wrapper">
+      <div class="input-group stop-group">
+        <div class="input-icon">⚫</div>
+        <input type="text" placeholder="Enter stop location" class="location-input" [value]="stop.location"
+          (input)="onStopInputChange(stop.id, $event)">
+        <button type="button" class="remove-stop-btn" (click)="removeStop(stop.id)">✕</button>
+      </div>
 
-        @if (stop.showSuggestions && stop.suggestions.length > 0) {
-          <div class="suggestions">
-            @for (suggestion of stop.suggestions; track suggestion.place_id) {
-              <div
-                class="suggestion-item"
-                (click)="selectStopSuggestion(stop.id, suggestion)">
-                {{ suggestion.display_name }}
-              </div>
-            }
-          </div>
+      @if (stop.showSuggestions && stop.suggestions.length > 0) {
+      <div class="suggestions">
+        @for (suggestion of stop.suggestions; track suggestion.place_id) {
+        <div class="suggestion-item" (click)="selectStopSuggestion(stop.id, suggestion)">
+          {{ suggestion.display_name }}
+        </div>
         }
       </div>
+      }
+    </div>
     }
 
     <div class="input-wrapper">
       <div class="input-group">
         <div class="input-icon">⬛</div>
-        <input
-          type="text"
-          placeholder="Enter destination"
-          class="location-input"
-          formControlName="destination">
+        <input type="text" placeholder="Enter destination" class="location-input" formControlName="destination">
       </div>
 
       @if (showDestinationSuggestions && destinationSuggestions.length > 0) {
-        <div class="suggestions">
-          @for (suggestion of destinationSuggestions; track suggestion.place_id) {
-            <div
-              class="suggestion-item"
-              (click)="selectDestinationSuggestion(suggestion)">
-              {{ suggestion.display_name }}
-            </div>
-          }
+      <div class="suggestions">
+        @for (suggestion of destinationSuggestions; track suggestion.place_id) {
+        <div class="suggestion-item" (click)="selectDestinationSuggestion(suggestion)">
+          {{ suggestion.display_name }}
         </div>
+        }
+      </div>
       }
     </div>
 
@@ -129,42 +108,28 @@
       <h3>Invite passengers</h3>
 
       <div class="input-group">
-        <input
-          #emailInput
-          type="email"
-          placeholder="Passenger email"
-          class="location-input">
+        <input #emailInput type="email" placeholder="Passenger email" class="location-input">
 
-        <button
-          type="button"
-          class="remove-stop-btn"
-          (click)="addPassengerEmail(emailInput)">
+        <button type="button" class="remove-stop-btn" (click)="addPassengerEmail(emailInput)">
           +
         </button>
       </div>
 
       <div style="margin-top: 0.5rem">
         @for (ctrl of passengerEmails.controls; track $index; let i = $index) {
-          <div class="input-group stop-group">
-            <span>{{ ctrl.value }}</span>
-            <button
-              type="button"
-              class="remove-stop-btn"
-              (click)="removePassengerEmail(i)">
-              ✕
-            </button>
-          </div>
+        <div class="input-group stop-group">
+          <span>{{ ctrl.value }}</span>
+          <button type="button" class="remove-stop-btn" (click)="removePassengerEmail(i)">
+            ✕
+          </button>
+        </div>
         }
       </div>
     </div>
 
     <div class="button-group">
-      <button
-        type="button"
-        class="book-ride-btn"
-        (click)="onBookRide()"
-        [disabled]="rideForm.invalid">
-        Book a Ride
+      <button type="button" class="book-ride-btn" (click)="onBookRide()" [disabled]="rideForm.invalid || isCalculating">
+        {{ isCalculating ? 'Calculating...' : 'Book a Ride' }}
       </button>
 
       <button type="button" class="refresh-btn" (click)="clearRoute()">
@@ -183,67 +148,61 @@
     </div>
 
 
-   @if (showFavorites) {
-  <div class="favorites-list">
-    <h3>Your Favorite Routes</h3>
+    @if (showFavorites) {
+    <div class="favorites-list">
+      <h3>Your Favorite Routes</h3>
 
-    @if (favorites().length === 0) {
+      @if (favorites().length === 0) {
       <p class="no-favorites">No favorite routes yet.</p>
-    } @else {
+      } @else {
       @for (route of favorites(); track route.id) {
-        <div class="favorite-item">
+      <div class="favorite-item">
 
-          <div class="favorite-route">
-            {{ route.from.address }} → {{ route.to.address }}
-          </div>
-
-          @if (route.stops.length > 0) {
-            <div class="favorite-stops">
-              <span class="stops-label">Stops:</span>
-              <span class="stop">
-                @for (stop of route.stops; track $index) {
-                  {{ stop.address }}{{ $index < route.stops.length - 1 ? ', ' : '' }}
-                }
-              </span>
-            </div>
-          }
-
-          <button
-            type="button"
-            class="use-btn"
-            (click)="useFavoriteRoute(route)">
-            Use
-          </button>
+        <div class="favorite-route">
+          {{ route.from.address }} → {{ route.to.address }}
         </div>
+
+        @if (route.stops.length > 0) {
+        <div class="favorite-stops">
+          <span class="stops-label">Stops:</span>
+          <span class="stop">
+            @for (stop of route.stops; track $index) {
+            {{ stop.address }}{{ $index < route.stops.length - 1 ? ', ' : '' }} } </span>
+        </div>
+        }
+
+        <button type="button" class="use-btn" (click)="useFavoriteRoute(route)">
+          Use
+        </button>
+      </div>
       }
+      }
+    </div>
     }
-  </div>
-}
 
   </form>
 </div>
 
 
 @if (showConfirmModal) {
-  <div class="modal-backdrop" (click)="closeConfirmModal()"></div>
+<div class="modal-backdrop" (click)="closeConfirmModal()"></div>
 
-  <div class="confirm-modal">
-    <h3>Confirm ride</h3>
+<div class="confirm-modal">
+  <h3>Confirm ride</h3>
 
-    <div class="ride-info">
-      <span class="time">{{ modalEstimatedTime }}</span>
-      <span class="price">{{ modalEstimatedPrice }}</span>
-    </div>
-
-    <div class="confirm-actions">
-      <button class="refresh-btn" (click)="closeConfirmModal()">
-        Cancel
-      </button>
-
-      <button class="book-ride-btn" (click)="confirmCreateRide()">
-        Confirm
-      </button>
-    </div>
+  <div class="ride-info">
+    <span class="time">{{ modalEstimatedTime }}</span>
+    <span class="price">{{ modalEstimatedPrice }}</span>
   </div>
-}
 
+  <div class="confirm-actions">
+    <button class="refresh-btn" (click)="closeConfirmModal()">
+      Cancel
+    </button>
+
+    <button class="book-ride-btn" (click)="confirmCreateRide()">
+      Confirm
+    </button>
+  </div>
+</div>
+}

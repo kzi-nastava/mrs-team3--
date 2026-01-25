@@ -173,4 +173,15 @@ export class RideBookingService {
     });
   }
 
+  updateStopLocationDirect(index: number, location: Location): void {
+    const current = this.rideBookingDataSubject.value;
+    const newStops = [...current.stops];
+    newStops[index] = location;
+
+    this.rideBookingDataSubject.next({
+      ...current,
+      stops: newStops
+    });
+  }
+
 }
