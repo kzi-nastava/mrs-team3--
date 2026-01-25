@@ -12,7 +12,8 @@ import com.st3.uber.repository.PassengerRepository;
 import com.st3.uber.repository.RideRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
-
+import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.List;
 
 @Service
@@ -39,15 +40,16 @@ public class FavoriteRouteService {
         Ride ride = rideRepository.findById(req.rideId())
             .orElseThrow(() -> new IllegalArgumentException("Ride not found"));
 
-        repository.findByRideIdAndPassenger(
-            req.rideId(), passenger
-        ).ifPresent(r -> {
-            throw new IllegalStateException("Route already in favorites");
-        });
+        var existing = repository.findByRideIdAndPassenger(req.rideId(), passenger);
+        if (existing.isPresent()) {
+            return;
+        }
 
         List<Ride> favoriteRides = passenger.getFavoriteRides();
-        favoriteRides.add(ride);
-        passengerRepository.save(passenger);
+        if (!favoriteRides.contains(ride)) {
+            favoriteRides.add(ride);
+            passengerRepository.save(passenger);
+        }
 
         FavoriteRoute route = new FavoriteRoute();
         route.setPassenger(passenger);
@@ -91,56 +93,110 @@ public class FavoriteRouteService {
 
         Ride ride = rideRepository.findById(req.rideId()).orElseThrow(() -> new IllegalArgumentException("Ride not found"));
 
-        FavoriteRoute route = repository
-                .findByRideIdAndPassenger(
-                        req.rideId(), passenger
-                )
-                .orElseThrow(() -> new IllegalArgumentException("Favorite route not found"));
+        var optRoute = repository.findByRideIdAndPassenger(req.rideId(), passenger);
+        optRoute.ifPresent(repository::delete);
+
 
         List<Ride> favoriteRides = passenger.getFavoriteRides();
         favoriteRides.remove(ride);
         passengerRepository.save(passenger);
 
-        repository.delete(route);
     }
 
     public List<FavoriteRouteResponse> getAll(Long passengerId) {
 
         Passenger passenger = passengerRepository.findById(passengerId)
-            .orElseThrow(() -> new IllegalArgumentException("Passenger not found"));
+                .orElseThrow(() -> new IllegalArgumentException("Passenger not found"));
 
-        return repository.findByPassenger(passenger)
-            .stream()
-            .map(r -> {
-                var stops = r.getStops() == null ? List.<Location>of() : r.getStops();
+        List<FavoriteRoute> routes = repository.findByPassenger(passenger);
 
-                return new FavoriteRouteResponse(
-                    r.getId(),
-                    r.getRideId(),
-                    new LocationResponse(
-                        r.getStartLocation().getLat(),
-                        r.getStartLocation().getLng(),
-                        r.getStartLocation().getAddress()
-                    ),
-                    new LocationResponse(
-                        r.getEndLocation().getLat(),
-                        r.getEndLocation().getLng(),
-                        r.getEndLocation().getAddress()
-                    ),
-                    stops.stream()
-                        .map(s -> new LocationResponse(
-                            s.getLat(),
-                            s.getLng(),
-                            s.getAddress()
+        Map<Long, FavoriteRoute> routesByRideId = routes.stream()
+                .collect(Collectors.toMap(
+                        FavoriteRoute::getRideId,
+                        r -> r,
+                        (a, b) -> a
+                ));
+
+        for (Ride ride : passenger.getFavoriteRides()) {
+
+            if (!routesByRideId.containsKey(ride.getId())) {
+
+                FavoriteRoute fr = new FavoriteRoute();
+                fr.setPassenger(passenger);
+                fr.setRideId(ride.getId());
+
+                fr.setStartLocation(new Location(
+                        ride.getStartLocation().getLat(),
+                        ride.getStartLocation().getLng(),
+                        ride.getStartLocation().getAddress()
+                ));
+
+
+                fr.setEndLocation(new Location(
+                        ride.getEndLocation().getLat(),
+                        ride.getEndLocation().getLng(),
+                        ride.getEndLocation().getAddress()
+                ));
+
+                List<Location> stops = ride.getRideStops() == null
+                        ? List.of()
+                        : ride.getRideStops().stream()
+                        .map(s -> new Location(
+                                s.getLat(),
+                                s.getLng(),
+                                s.getAddress()
                         ))
-                        .toList(),
-                    r.getVehicleType(),
-                    r.isBabyTransport(),
-                    r.isPetTransport()
-                );
-            })
-            .toList();
+                        .toList();
+
+                fr.setStops(stops);
+
+                fr.setVehicleType(ride.getVehicleType());
+                fr.setBabyTransport(ride.isBabyTransport());
+                fr.setPetTransport(ride.isPetTransport());
+
+
+                repository.save(fr);
+
+                routes.add(fr);
+                routesByRideId.put(ride.getId(), fr);
+            }
+        }
+
+        return routes.stream()
+                .map(r -> {
+
+                    List<Location> stops = r.getStops() == null
+                            ? List.of()
+                            : r.getStops();
+
+                    return new FavoriteRouteResponse(
+                            r.getId(),
+                            r.getRideId(),
+                            new LocationResponse(
+                                    r.getStartLocation().getLat(),
+                                    r.getStartLocation().getLng(),
+                                    r.getStartLocation().getAddress()
+                            ),
+                            new LocationResponse(
+                                    r.getEndLocation().getLat(),
+                                    r.getEndLocation().getLng(),
+                                    r.getEndLocation().getAddress()
+                            ),
+                            stops.stream()
+                                    .map(s -> new LocationResponse(
+                                            s.getLat(),
+                                            s.getLng(),
+                                            s.getAddress()
+                                    ))
+                                    .toList(),
+                            r.getVehicleType(),
+                            r.isBabyTransport(),
+                            r.isPetTransport()
+                    );
+                })
+                .toList();
     }
+
 
     @Transactional
     public void addByEmail(String email, FavoriteRouteRequest req) {
