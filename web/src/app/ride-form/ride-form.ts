@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { RideService, Location } from '../services/ride.service';
 import { Subject, takeUntil } from 'rxjs';
 import {NgIf} from '@angular/common';
+import { DriverLocationService } from '../services/driver-location.service';
 
 @Component({
   selector: 'app-ride-form',
@@ -29,7 +30,8 @@ export class RideFormComponent implements OnInit, OnDestroy {
 
   constructor(
     private fb: FormBuilder,
-    private rideService: RideService
+    private rideService: RideService,
+    private driverLocationService: DriverLocationService
   ) {
     this.initForm();
   }
@@ -75,6 +77,10 @@ export class RideFormComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  refreshDriverLocations(): void {
+    this.driverLocationService.refreshVehicles();
   }
 
   onStartInputChange(): void {

@@ -270,3 +270,10 @@ h1 {
     font-size: 0.9rem;
   }
 }
+
+.button-group { 
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-xs);
+}
