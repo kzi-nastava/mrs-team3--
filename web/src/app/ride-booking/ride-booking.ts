@@ -22,6 +22,7 @@
       FavoriteRoutesService,
       FavoriteRoute
     } from '../services/favorite-routes.service';
+    import { DriverLocationService } from '../services/driver-location.service';
 
     interface Stop {
       id: number;
@@ -39,7 +40,6 @@
       styleUrl: './ride-booking.css'
     })
     export class RideBookingComponent implements OnInit, OnDestroy {
-
       private destroy$ = new Subject<void>();
 
       rideForm!: FormGroup;
@@ -71,7 +71,8 @@
         private rideBookingService: RideBookingService,
         private favoriteService: FavoriteRoutesService,
         private rideApiService: RideApiService,
-        private messageService: MessageService
+        private messageService: MessageService,
+        private driverLocationService: DriverLocationService
       ) {
         this.initForm();
       }
@@ -132,7 +133,9 @@
         this.destroy$.next();
         this.destroy$.complete();
       }
-
+      refreshDriverLocations(): void {
+        this.driverLocationService.refreshVehicles();
+      }
       private initForm(): void {
         this.rideForm = this.fb.group({
           pickupLocation: ['', Validators.required],

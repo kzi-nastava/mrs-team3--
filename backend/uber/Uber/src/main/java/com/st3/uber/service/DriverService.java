@@ -4,6 +4,7 @@ import com.st3.uber.domain.Driver;
 import com.st3.uber.domain.Location;
 import com.st3.uber.domain.Passenger;
 import com.st3.uber.domain.Ride;
+import com.st3.uber.dto.vehicle.ActiveVehicleResponse;
 import com.st3.uber.enums.NotificationType;
 import com.st3.uber.enums.RideRejectReason;
 import com.st3.uber.exception.RideRejectedException;
@@ -14,6 +15,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.springframework.http.HttpStatus.*;
 
@@ -21,14 +23,14 @@ import static org.springframework.http.HttpStatus.*;
 public class DriverService {
 
     private final DriverRepository driverRepository;
-    private final NotificationService notificationService; // ADD THIS
+    private final NotificationService notificationService;
 
     public DriverService(
             DriverRepository driverRepository,
-            NotificationService notificationService // ADD THIS
+            NotificationService notificationService
     ) {
         this.driverRepository = driverRepository;
-        this.notificationService = notificationService; // ADD THIS
+        this.notificationService = notificationService;
     }
 
     public List<Driver> findAvailableDrivers() {
@@ -115,7 +117,7 @@ public class DriverService {
                     passenger.getId(),
                     reason,
                     NotificationType.DECLINED_RIDE,
-                    null  // No ride ID since it wasn't created
+                    null
             );
         }
     }
@@ -173,6 +175,26 @@ public class DriverService {
                 statusMessage,
                 NotificationType.PROFILE_CHANGE,
                 null
+        );
+    }
+
+
+    public List<ActiveVehicleResponse> getActiveDriverLocations() {
+        List<Driver> activeDrivers = driverRepository.findActiveAndFreeDrivers();
+
+        return activeDrivers.stream()
+                .filter(driver -> driver.getCurrentLocation() != null)
+                .filter(driver -> driver.getVehicle() != null)
+                .map(this::mapToActiveVehicleResponse)
+                .collect(Collectors.toList());
+    }
+
+    private ActiveVehicleResponse mapToActiveVehicleResponse(Driver driver) {
+        return new ActiveVehicleResponse(
+                driver.getCurrentLocation().getLat(),
+                driver.getCurrentLocation().getLng(),
+                driver.isAvailable(), // true = green (available), false = red (unavailable)
+                driver.getVehicle().getRegistrationNumber()
         );
     }
 }
