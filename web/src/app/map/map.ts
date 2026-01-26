@@ -4,6 +4,7 @@ import { RideService, Location as RideLocation } from '../services/ride.service'
 import { RideBookingService, Location as BookingLocation } from '../services/ride-booking.service';
 import { Subject, takeUntil } from 'rxjs';
 import { env } from '../../env/env';
+import { DriverLocationService, ActiveVehicle } from '../services/driver-location.service';
 
 type Location = RideLocation | BookingLocation;
 
@@ -34,9 +35,13 @@ export class MapComponent implements OnInit, OnDestroy {
   private destinationMarker: any = null;
   private routeLines: any[] = [];
 
+  // Vehicle markers
+  private vehicleMarkers: L.Marker[] = [];
+
   constructor(
     private rideService: RideService,
-    private rideBookingService: RideBookingService
+    private rideBookingService: RideBookingService,
+    private driverLocationService: DriverLocationService
   ) {}
 
   ngOnInit(): void {
@@ -47,6 +52,13 @@ export class MapComponent implements OnInit, OnDestroy {
     } else {
       this.subscribeToBookingMode();
     }
+
+    this.driverLocationService.vehicles$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(vehicles => {
+        this.updateVehicleMarkers(vehicles);
+      });
+    this.driverLocationService.getActiveVehicles().subscribe();
   }
 
   ngOnDestroy(): void {
@@ -367,6 +379,49 @@ export class MapComponent implements OnInit, OnDestroy {
     this.destinationMarker = null;
     this.stopMarkers = [];
     this.routeLines = [];
+  }
+  
+  // ================= VEHICLE MARKERS =================
+
+  private updateVehicleMarkers(vehicles: ActiveVehicle[]): void {
+    // Clear existing vehicle markers
+    this.vehicleMarkers.forEach(marker => this.map.removeLayer(marker));
+    this.vehicleMarkers = [];
+
+    // Add new markers for each vehicle
+    vehicles.forEach(vehicle => {
+      const iconHtml = vehicle.available
+        ? '<div class="vehicle-icon available">🚗</div>'
+        : '<div class="vehicle-icon unavailable">🚗</div>';
+
+      const icon = L.divIcon({
+        className: 'vehicle-marker',
+        html: iconHtml,
+        iconSize: [30, 30],
+        iconAnchor: [15, 15]
+      });
+
+      const marker = L.marker([vehicle.latitude, vehicle.longitude], { icon })
+        .addTo(this.map);
+
+      const statusText = vehicle.available ? 'Available' : 'Unavailable';
+      const statusColor = vehicle.available ? '#22c55e' : '#ef4444';
+      
+      marker.bindPopup(`
+        <div style="text-align: center;">
+          <strong>${vehicle.registrationNumber}</strong><br>
+          <span style="color: ${statusColor}; font-weight: 600;">
+            ${statusText}
+          </span>
+        </div>
+      `);
+
+      this.vehicleMarkers.push(marker);
+    });
+  }
+
+  public refreshVehicles(): void {
+    this.driverLocationService.refreshVehicles();
   }
 
   // ================= MAP INTERACTION =================
