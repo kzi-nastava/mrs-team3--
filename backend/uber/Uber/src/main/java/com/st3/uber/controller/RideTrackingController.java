@@ -1,18 +1,16 @@
 package com.st3.uber.controller;
 
 import com.st3.uber.domain.Passenger;
-import com.st3.uber.domain.User;
 import com.st3.uber.dto.ride.*;
 import com.st3.uber.repository.UserRepository;
 import com.st3.uber.service.RideTrackingService;
 import jakarta.annotation.security.RolesAllowed;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-
-import java.util.Optional;
+import org.springframework.security.oauth2.jwt.Jwt;
 
 @RestController
 @RequestMapping("/api/ride-tracking")
@@ -36,28 +34,25 @@ public class RideTrackingController {
      */
     @GetMapping("/current")
     @RolesAllowed("PASSENGER")
-    public ResponseEntity<RideTrackingResponse> getCurrentRide(Authentication authentication) {
-        String email = authentication.getName();
-        User user = userRepository.findByEmail(email)
+    public ResponseEntity<RideTrackingResponse> getCurrentRide(
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        Long passengerId = jwt.getClaim("uid");
+
+        Passenger passenger = userRepository.findById(passengerId)
+                .filter(Passenger.class::isInstance)
+                .map(Passenger.class::cast)
                 .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.UNAUTHORIZED,
-                        "User not found"
+                        HttpStatus.FORBIDDEN,
+                        "Only passengers can track rides"
                 ));
 
-        if (!(user instanceof Passenger passenger)) {
-            throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
-                    "Only passengers can track rides"
-            );
-        }
-
-        Optional<RideTrackingResponse> rideOpt =
-                rideTrackingService.getCurrentRideForPassenger(passenger);
-
-        return rideOpt
+        return rideTrackingService
+                .getCurrentRideForPassenger(passenger)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.noContent().build());
     }
+
 
     /**
      * Validate tracking token (PUBLIC - for guests)
@@ -92,28 +87,25 @@ public class RideTrackingController {
     @PostMapping("/current/report")
     @RolesAllowed("PASSENGER")
     public ResponseEntity<ReportInconsistencyResponse> reportInconsistencyForCurrent(
-            Authentication authentication,
+            @AuthenticationPrincipal Jwt jwt,
             @RequestBody ReportInconsistencyRequest request
     ) {
-        String email = authentication.getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.UNAUTHORIZED,
-                        "User not found"
-                ));
+        Long passengerId = jwt.getClaim("uid");
 
-        if (!(user instanceof Passenger passenger)) {
-            throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
-                    "Only passengers can report inconsistencies"
-            );
-        }
+        Passenger passenger = userRepository.findById(passengerId)
+                .filter(Passenger.class::isInstance)
+                .map(Passenger.class::cast)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.FORBIDDEN,
+                        "Only passengers can report inconsistencies"
+                ));
 
         ReportInconsistencyResponse response =
                 rideTrackingService.reportInconsistencyForCurrentRide(passenger, request);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+
 
     /**
      * Report inconsistency by token (PUBLIC - for guests)

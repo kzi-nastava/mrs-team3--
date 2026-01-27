@@ -190,42 +190,9 @@ public class RideController {
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-    // GET /api/rides/{id}/location - Get current ride location and estimated arrival time
-    @GetMapping(
-            value = "/{id}/location",
-            produces = MediaType.APPLICATION_JSON_VALUE
-    )
-    public ResponseEntity<RideLocationResponse> getRideLocation(@PathVariable Long id) {
-        RideLocationResponse response = new RideLocationResponse(
-                id,
-                45.2671,
-                19.8335,
-                "Bulevar oslobođenja 46",
-                5,
-                LocalDateTime.now()
-        );
-        return ResponseEntity.ok(response);
-    }
 
-    // POST /api/rides/{id}/report-inconsistency - Report driver inconsistency
-    @PostMapping(
-            value = "/{id}/report-inconsistency",
-            consumes = MediaType.APPLICATION_JSON_VALUE,
-            produces = MediaType.APPLICATION_JSON_VALUE
-    )
-    @RolesAllowed("PASSENGER")
-    public ResponseEntity<ReportInconsistencyResponse> reportInconsistency(
-            @PathVariable Long id,
-            @RequestBody ReportInconsistencyRequest request
-    ) {
-        ReportInconsistencyResponse response = new ReportInconsistencyResponse(
-                1L,
-                id,
-                "Inconsistency report submitted successfully",
-                LocalDateTime.now()
-        );
-        return ResponseEntity.ok(response);
-    }
+
+
 
     // ============ REVIEW ENDPOINTS ============
 

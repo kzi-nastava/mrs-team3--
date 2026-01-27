@@ -61,7 +61,9 @@ export class DriverNotificationsComponent implements OnInit, OnDestroy {
       filtered = filtered.filter(n => 
         n.type === NotificationType.RIDE_REMINDER ||
         n.type === NotificationType.RIDE_CANCELED ||
-        n.type === NotificationType.FINISHED_RIDE
+        n.type === NotificationType.FINISHED_RIDE ||
+        n.type === NotificationType.ACCEPTED_RIDE ||
+        n.type === NotificationType.DECLINED_RIDE
       );
     }
 
@@ -77,7 +79,9 @@ export class DriverNotificationsComponent implements OnInit, OnDestroy {
     if (notification.relatedEntityId) {
       if (notification.type === NotificationType.RIDE_REMINDER ||
           notification.type === NotificationType.FINISHED_RIDE ||
-          notification.type === NotificationType.RIDE_CANCELED) {
+          notification.type === NotificationType.RIDE_CANCELED ||
+          notification.type === NotificationType.ACCEPTED_RIDE ||
+          notification.type === NotificationType.DECLINED_RIDE) {
         // Navigate to ride details
         this.router.navigate(['/driver-history']);
       }
