@@ -15,6 +15,7 @@ import { DriverNotificationsComponent } from './notifications/driver-notificatio
 import { PassengerNotificationsComponent } from './notifications/passenger-notifications/passenger-notifications';
 import { RideReviewComponent } from './ride-review/ride-review';
 import { RideTrackingComponent } from './ride-tracking/ride-tracking';
+import { DriverDashboardComponent } from './driver-dashboard/driver-dashboard';
 
 export const routes: Routes = [
 
@@ -55,5 +56,6 @@ export const routes: Routes = [
   { path: 'driver-notifications', component: DriverNotificationsComponent, canActivate: [driverGuard]},
   { path: 'passenger-notifications', component: PassengerNotificationsComponent, canActivate: [passengerGuard]},
   {path: 'ride-review/:id', component: RideReviewComponent, canActivate: [passengerGuard]},
+  { path: 'driver-dashboard', component: DriverDashboardComponent, canActivate: [driverGuard] },
   { path: '**', component: ErrorComponent }
 ];

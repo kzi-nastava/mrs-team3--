@@ -1,13 +1,18 @@
 <div class="icon-sidebar">
 
   <button class="icon-btn" (click)="goHistory()" title="Ride History">
-    🚗
+    📊
   </button>
 
 
   <button class="icon-btn" (click)="goMessages()" title="Messages">
     💬
   </button>
+
+  <button class="icon-btn" (click)="goDriverDashboard()" title="Dashboard"> 
+    🚗
+  </button>
+
   <button class="icon-btn notification-btn" (click)="goNotifications()" title="Notifications">
     <span class="bell-icon">🔔</span>
     <span class="notification-badge" *ngIf="unreadCount > 0">{{unreadCount}}</span>
