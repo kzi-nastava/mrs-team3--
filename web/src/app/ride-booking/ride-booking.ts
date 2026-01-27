@@ -22,6 +22,7 @@ import {
   FavoriteRoutesService,
   FavoriteRoute
 } from '../services/favorite-routes.service';
+import { DriverLocationService } from '../services/driver-location.service';
 
 interface Stop {
   id: number;
@@ -76,7 +77,8 @@ export class RideBookingComponent implements OnInit, OnDestroy {
     private favoriteService: FavoriteRoutesService,
     private rideApiService: RideApiService,
     private messageService: MessageService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private driverLocationService: DriverLocationService
   ) {
     this.initForm();
   }
@@ -138,6 +140,10 @@ export class RideBookingComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
+  refreshDriverLocations(): void {
+    this.driverLocationService.refreshVehicles();
+  }
+      
   private initForm(): void {
     this.rideForm = this.fb.group({
       pickupLocation: ['', Validators.required],

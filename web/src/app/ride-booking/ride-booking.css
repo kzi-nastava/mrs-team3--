@@ -604,3 +604,11 @@ h1 {
     opacity: 1;
   }
 }
+
+
+.button-group {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-xs);
+}

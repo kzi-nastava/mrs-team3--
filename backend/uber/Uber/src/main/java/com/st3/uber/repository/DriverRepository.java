@@ -17,5 +17,16 @@ public interface DriverRepository extends JpaRepository<Driver, Long> {
           AND d.currentRide IS NULL
     """)
     List<Driver> findAvailableDrivers();
+
+    @Query("""
+        SELECT d
+        FROM Driver d
+        WHERE d.active = true
+          AND d.free = true
+    """)
+    List<Driver> findActiveAndFreeDrivers();
+
     Driver findByEmail(String email);
+
+
 }
