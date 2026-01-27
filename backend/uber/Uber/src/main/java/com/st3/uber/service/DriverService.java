@@ -45,7 +45,6 @@ public class DriverService {
         List<Driver> drivers = driverRepository.findAvailableDrivers();
 
         if (drivers.isEmpty()) {
-            // NOTIFICATION: Notify all passengers that no drivers are available
             notifyPassengersRideDeclined(ride, "No active drivers are currently available. Please try again later.");
             throw new RideRejectedException(RideRejectReason.NO_ACTIVE_DRIVERS);
         }
@@ -58,7 +57,6 @@ public class DriverService {
                 .toList();
 
         if (eligibleDrivers.isEmpty()) {
-            // NOTIFICATION: Notify all passengers that no matching drivers found
             notifyPassengersRideDeclined(ride, "No drivers match your ride requirements (vehicle type, baby/pet transport). Please adjust your request.");
             throw new RideRejectedException(RideRejectReason.NO_MATCHING_DRIVERS);
         }
@@ -80,7 +78,6 @@ public class DriverService {
         } else if (!almostFreeDrivers.isEmpty()) {
             candidates = almostFreeDrivers;
         } else {
-            // NOTIFICATION: Notify all passengers that all drivers are busy
             notifyPassengersRideDeclined(ride, "All drivers are currently busy. Please try again in a few minutes.");
             throw new RideRejectedException(RideRejectReason.NO_ACTIVE_DRIVERS);
         }
@@ -104,7 +101,6 @@ public class DriverService {
                 .orElse(null);
 
         if (selectedDriver == null) {
-            // NOTIFICATION: Notify all passengers that no driver has location
             notifyPassengersRideDeclined(ride, "Unable to find drivers with active location tracking. Please try again.");
             throw new RideRejectedException(RideRejectReason.NO_DRIVER_WITH_LOCATION);
         }
@@ -112,9 +108,7 @@ public class DriverService {
         return selectedDriver;
     }
 
-    /**
-     * Helper method to notify all passengers in a ride that it was declined
-     */
+
     private void notifyPassengersRideDeclined(Ride ride, String reason) {
         for (Passenger passenger : ride.getPassengers()) {
             notificationService.createNotification(
@@ -152,7 +146,6 @@ public class DriverService {
             driver.setActivityRequest(true);
             driverRepository.save(driver);
 
-            // NOTIFICATION: Notify driver that status change is pending
             notificationService.createNotification(
                     driverId,
                     "Your status change request will be processed after completing the current ride.",
@@ -169,7 +162,6 @@ public class DriverService {
 
         driverRepository.save(driver);
 
-        // NOTIFICATION: Notify driver about status change
         String statusMessage = newActive
                 ? "You are now active and available for rides."
                 : "You are now inactive and will not receive ride requests.";
@@ -197,7 +189,7 @@ public class DriverService {
         return new ActiveVehicleResponse(
                 driver.getCurrentLocation().getLat(),
                 driver.getCurrentLocation().getLng(),
-                driver.isAvailable(), // true = green (available), false = red (unavailable)
+                driver.isAvailable(),
                 driver.getVehicle().getRegistrationNumber()
         );
     }
@@ -223,16 +215,13 @@ public class DriverService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Get pending rides that this driver can accept
-     * Already filtered by vehicle capabilities in the query
-     */
+
     public List<Ride> getPendingRidesForDriver(Long driverId) {
         Driver driver = driverRepository.findById(driverId)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Driver not found"));
 
         if (!driver.isActive() || !driver.isFree()) {
-            return List.of(); // Driver not available, return empty list
+            return List.of();
         }
 
         Vehicle vehicle = driver.getVehicle();
@@ -241,15 +230,12 @@ public class DriverService {
                 vehicle.getType(),
                 vehicle.isBabyTransport(),
                 vehicle.isPetTransport(),
-                true, // requiresBabyTransport flag
-                true  // requiresPetTransport flag
+                true,
+                true
         );
     }
 
-    /**
-     * Accept a pending ride
-     * Updates driver status and calls RideService to accept the ride
-     */
+
     public Ride acceptRide(Long driverId, Long rideId, RideService rideService) {
         Driver driver = driverRepository.findById(driverId)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Driver not found"));
@@ -262,10 +248,8 @@ public class DriverService {
             throw new ResponseStatusException(FORBIDDEN, "Driver already has an active ride");
         }
 
-        // Accept the ride (handled in RideService)
         Ride ride = rideService.acceptRide(rideId, driver);
 
-        // Update driver status
         driver.setCurrentRide(ride);
         driver.setFree(true);
         driver.setAvailable(false);
@@ -275,10 +259,7 @@ public class DriverService {
         return ride;
     }
 
-    /**
-     * Finish current ride
-     * Updates driver status and calls RideService to finish the ride
-     */
+
 
     @Transactional
     public Ride finishRide(Long driverId, Location actualEndLocation, RideService rideService) {
@@ -314,7 +295,7 @@ public class DriverService {
             Ride nextRide = nextRides.get(0);
             driver.setCurrentRide(nextRide);
             nextRides.remove(0);
-            driver.setAvailable(false); // NOT available (has scheduled ride)
+            driver.setAvailable(false);
 
             notificationService.createNotification(
                     driver.getId(),
@@ -324,7 +305,7 @@ public class DriverService {
             );
         } else {
             driver.setCurrentRide(null);
-            driver.setAvailable(true); // Available (no scheduled rides)
+            driver.setAvailable(true);
 
             notificationService.createNotification(
                     driver.getId(),
@@ -339,10 +320,7 @@ public class DriverService {
         return savedFinishedRide;
     }
 
-    /**
-     * Update driver's current location
-     * Simple location update during ride
-     */
+
     public void updateDriverLocation(Long driverId, double latitude, double longitude) {
         Driver driver = driverRepository.findById(driverId)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Driver not found"));
@@ -354,9 +332,7 @@ public class DriverService {
         driverRepository.save(driver);
     }
 
-    /**
-     * Teleport driver to start position (for testing without GPS)
-     */
+
     public void moveToStartPosition(Long driverId) {
         Driver driver = driverRepository.findById(driverId)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Driver not found"));
@@ -370,17 +346,13 @@ public class DriverService {
             throw new ResponseStatusException(BAD_REQUEST, "Can only move to start for accepted rides");
         }
 
-        // Teleport to start
         driver.setCurrentLocation(currentRide.getStartLocation());
         driver.setLocationUpdatedAt(LocalDateTime.now());
 
         driverRepository.save(driver);
     }
 
-    /**
-     * Mark a stop as reached
-     * Delegates to RideService for ride logic
-     */
+
     public Ride reachStop(Long driverId, int stopIndex, RideService rideService) {
         Driver driver = driverRepository.findById(driverId)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Driver not found"));
@@ -392,4 +364,35 @@ public class DriverService {
 
         return rideService.reachStop(currentRide.getId(), stopIndex);
     }
+
+
+    @Transactional
+    public Ride startRide(Long driverId, Long rideId, RideService rideService) {
+        Driver driver = driverRepository.findById(driverId)
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Driver not found"));
+
+        Ride currentRide = driver.getCurrentRide();
+
+        if (currentRide == null) {
+            throw new ResponseStatusException(BAD_REQUEST, "Driver has no active ride");
+        }
+
+        if (!currentRide.getId().equals(rideId)) {
+            throw new ResponseStatusException(FORBIDDEN, "This ride does not belong to the driver");
+        }
+
+        if (currentRide.getStatus() != RideStatus.ACCEPTED) {
+            throw new ResponseStatusException(BAD_REQUEST, "Ride must be ACCEPTED to start");
+        }
+
+        Ride startedRide = rideService.startRide(rideId);
+
+        driver.setAvailable(false);
+        driver.setFree(false);
+
+        driverRepository.save(driver);
+
+        return startedRide;
+    }
+
 }

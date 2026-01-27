@@ -53,13 +53,13 @@ public class RideService {
         this.notificationService = notificationService;
     }
 
+    @Transactional
     public Ride startRide(Long rideId) {
         Ride ride = rideRepository.findById(rideId)
                 .orElseThrow(() -> new IllegalArgumentException("Ride not found"));
 
-        if (ride.getStatus() != RideStatus.PENDING &&
-                ride.getStatus() != RideStatus.ACCEPTED) {
-            throw new IllegalStateException("Ride cannot be started in current status");
+        if (ride.getStatus() != RideStatus.ACCEPTED) {
+            throw new IllegalStateException("Ride must be ACCEPTED to start");
         }
 
         ride.setStatus(RideStatus.IN_PROGRESS);
@@ -67,7 +67,6 @@ public class RideService {
 
         Ride savedRide = rideRepository.save(ride);
 
-        // Notify all passengers that ride has started
         for (Passenger passenger : savedRide.getPassengers()) {
             notificationService.createNotification(
                     passenger.getId(),
@@ -86,7 +85,7 @@ public class RideService {
 
         if (rideRepository.existsByCreatorAndStatusIn(
                 creator,
-                List.of(RideStatus.PENDING, RideStatus.IN_PROGRESS)
+                List.of(RideStatus.PENDING, RideStatus.IN_PROGRESS, RideStatus.ACCEPTED)
         )) {
             throw new IllegalStateException("You already have an active or pending ride");
         }
@@ -172,17 +171,15 @@ public class RideService {
 
         ride.setBasePrice(basePrice);
         ride.setCalculatedPrice(calculatedPrice);
-        ride.setStatus(RideStatus.PENDING);
+        ride.setStatus(RideStatus.ACCEPTED);
         ride.setCreatedAt(LocalDateTime.now());
 
         Ride savedRide = rideRepository.save(ride);
 
-        // Send email invites
         for (RideInvite invite : savedRide.getInvites()) {
             rideInviteMailService.sendInvite(invite, creator, savedRide);
         }
 
-        // NOTIFICATION: Notify passenger that ride was created
         notificationService.createNotification(
                 creator.getId(),
                 String.format("Your ride request has been created. Driver %s %s will pick you up soon!",
@@ -191,7 +188,6 @@ public class RideService {
                 savedRide.getId()
         );
 
-        // NOTIFICATION: Notify driver about new ride
         notificationService.createNotification(
                 driver.getId(),
                 String.format("New ride assigned! Pickup at %s",
@@ -386,15 +382,12 @@ public class RideService {
             throw new IllegalStateException("Only in-progress rides can be finished");
         }
 
-        // Set actual end location (use planned if not provided)
         if (actualEndLocation != null) {
             ride.setActualEndLocation(actualEndLocation);
         } else {
             ride.setActualEndLocation(ride.getEndLocation());
         }
 
-        // Actual stops should already be populated by reachStop() calls
-        // If none were recorded, copy planned stops
         if (ride.getActualRideStops().isEmpty() && !ride.getRideStops().isEmpty()) {
             ride.getActualRideStops().addAll(ride.getRideStops());
         }
@@ -404,9 +397,7 @@ public class RideService {
 
         Ride savedRide = rideRepository.save(ride);
 
-        // Update driver status - this is handled in DriverService now
 
-        // Notify passengers
         for (Passenger passenger : savedRide.getPassengers()) {
             notificationService.createNotification(
                     passenger.getId(),
@@ -420,10 +411,7 @@ public class RideService {
         return savedRide;
     }
 
-    /**
-     * Mark a stop as reached during the ride
-     * This tracks the actual route taken
-     */
+
     public Ride reachStop(Long rideId, int stopIndex) {
         Ride ride = rideRepository.findById(rideId)
                 .orElseThrow(() -> new IllegalArgumentException("Ride not found"));
@@ -436,10 +424,8 @@ public class RideService {
             throw new IllegalArgumentException("Invalid stop index");
         }
 
-        // Get the planned stop
         Location plannedStop = ride.getRideStops().get(stopIndex);
 
-        // Add to actual stops if not already there
         boolean alreadyReached = ride.getActualRideStops().stream()
                 .anyMatch(s -> s.getLat().equals(plannedStop.getLat())
                         && s.getLng().equals(plannedStop.getLng()));
@@ -451,10 +437,7 @@ public class RideService {
         return rideRepository.save(ride);
     }
 
-    /**
-     * Accept a pending ride (assign driver to it)
-     * Called when driver picks up a ride from pending list
-     */
+
     public Ride acceptRide(Long rideId, Driver driver) {
         Ride ride = rideRepository.findById(rideId)
                 .orElseThrow(() -> new IllegalArgumentException("Ride not found"));
@@ -467,13 +450,11 @@ public class RideService {
             throw new IllegalStateException("Can only accept pending rides");
         }
 
-        // Assign driver
         ride.setDriver(driver);
         ride.setStatus(RideStatus.ACCEPTED);
 
         Ride savedRide = rideRepository.save(ride);
 
-        // Notify passengers
         for (Passenger passenger : savedRide.getPassengers()) {
             notificationService.createNotification(
                     passenger.getId(),
@@ -484,7 +465,6 @@ public class RideService {
             );
         }
 
-        // Notify driver
         notificationService.createNotification(
                 driver.getId(),
                 String.format("You've accepted a ride. Pickup at %s",

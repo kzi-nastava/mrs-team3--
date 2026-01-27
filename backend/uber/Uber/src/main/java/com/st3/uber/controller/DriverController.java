@@ -84,7 +84,6 @@ public class DriverController {
         return ResponseEntity.ok(drivers);
     }
 
-    // ============ RIDE HISTORY ENDPOINTS ============
 
     // GET api/drivers/{id}/rides
     @PreAuthorize("hasRole('DRIVER')")
@@ -118,7 +117,6 @@ public class DriverController {
         return ResponseEntity.ok(response);
     }
 
-    // ============ OTHER ENDPOINTS ============
 
     @PutMapping(
             value = "/{id}",
@@ -173,9 +171,6 @@ public class DriverController {
     }
 
 
-    /**
-     * Get all rides assigned to this driver (current + scheduled)
-     */
     @PreAuthorize("hasRole('DRIVER')")
     @GetMapping(
             value = "/all-rides",
@@ -194,10 +189,7 @@ public class DriverController {
         return ResponseEntity.ok(responses);
     }
 
-    /**
-     * Get pending rides that driver can accept
-     * Already filtered by vehicle capabilities
-     */
+
     @PreAuthorize("hasRole('DRIVER')")
     @GetMapping(
             value = "/pending-rides",
@@ -216,9 +208,6 @@ public class DriverController {
         return ResponseEntity.ok(responses);
     }
 
-    /**
-     * Accept a pending ride
-     */
     @PreAuthorize("hasRole('DRIVER')")
     @PostMapping(
             value = "/rides/{rideId}/accept",
@@ -235,9 +224,6 @@ public class DriverController {
                 .body(mapToDriverRideResponse(ride));
     }
 
-    /**
-     * Start the current ride
-     */
     @PreAuthorize("hasRole('DRIVER')")
     @PostMapping(
             value = "/rides/{rideId}/start",
@@ -247,13 +233,14 @@ public class DriverController {
             @PathVariable Long rideId,
             @AuthenticationPrincipal Jwt jwt
     ) {
-        Ride ride = rideService.startRide(rideId);
+        Long driverId = jwt.getClaim("uid");
+
+        Ride ride = driverService.startRide(driverId, rideId, rideService);
+
         return ResponseEntity.ok(mapToDriverRideResponse(ride));
     }
 
-    /**
-     * Finish the current ride
-     */
+
     @PreAuthorize("hasRole('DRIVER')")
     @PostMapping(
             value = "/rides/{rideId}/finish",
@@ -267,7 +254,6 @@ public class DriverController {
         Long driverId = jwt.getClaim("uid");
         Ride ride = driverService.finishRide(driverId, request.actualEndLocation(), rideService);
 
-        // Check if there's a next ride
         List<Ride> driverRides = driverService.getDriverRides(driverId);
         boolean hasNextRide = !driverRides.isEmpty();
         Long nextRideId = hasNextRide ? driverRides.get(0).getId() : null;
@@ -284,9 +270,7 @@ public class DriverController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Update driver's current location
-     */
+
     @PreAuthorize("hasRole('DRIVER')")
     @PutMapping(
             value = "/location",
@@ -302,9 +286,7 @@ public class DriverController {
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * Move to start position (teleport for testing)
-     */
+
     @PreAuthorize("hasRole('DRIVER')")
     @PostMapping(value = "/move-to-start")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -316,9 +298,7 @@ public class DriverController {
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * Mark a stop as reached
-     */
+
     @PreAuthorize("hasRole('DRIVER')")
     @PostMapping(
             value = "/reach-stop",
@@ -334,14 +314,12 @@ public class DriverController {
         return ResponseEntity.ok(mapToDriverRideResponse(ride));
     }
 
-    // Mapping helpers
 
     private DriverRideResponse mapToDriverRideResponse(Ride ride) {
         String creatorName = ride.getCreator() != null
                 ? ride.getCreator().getName() + " " + ride.getCreator().getSurname()
                 : "Unknown";
 
-        // Map stops with their reached status
         List<StopStatus> stopStatuses = IntStream
                 .range(0, ride.getRideStops().size())
                 .mapToObj(index -> {

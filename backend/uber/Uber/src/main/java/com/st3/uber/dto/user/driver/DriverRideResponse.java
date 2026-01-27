@@ -14,7 +14,7 @@ public record DriverRideResponse(
         Location startLocation,
         Location endLocation,
         List<Location> stops,
-        List<StopStatus> stopStatuses, // NEW: Track which stops are reached
+        List<StopStatus> stopStatuses,
         int estimatedTimeMinutes,
         int remainingMinutes,
         LocalDateTime scheduledAt,
