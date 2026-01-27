@@ -1,5 +1,6 @@
 package com.st3.uber.service;
-
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import com.st3.uber.domain.Passenger;
 import com.st3.uber.domain.Ride;
 import com.st3.uber.domain.RideInvite;
@@ -14,11 +15,8 @@ public class RideInviteMailService {
         this.mailService = mailService;
     }
 
-    public void sendInvite(
-            RideInvite invite,
-            Passenger creator,
-            Ride ride
-    ) {
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void sendInvite(RideInvite invite, Passenger creator, Ride ride) {
         String subject = "You are invited to a ride";
 
         String body =

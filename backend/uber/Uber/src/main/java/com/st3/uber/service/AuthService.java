@@ -83,6 +83,11 @@ public class AuthService {
           driver.setActive(true);
           driver.setAvailable(true);
           driver.setFree(true);
+
+          driver.setCurrentLocation(generateRandomNoviSadLocation());
+          driver.setLocationUpdatedAt(LocalDateTime.now());
+
+
           userRepository.save(driver);
       }
 
@@ -236,4 +241,20 @@ public class AuthService {
       userRepository.save(u);
       tokenRepository.save(vt);
   }
+
+    private Location generateRandomNoviSadLocation() {
+        double minLat = 45.23;
+        double maxLat = 45.28;
+        double minLng = 19.80;
+        double maxLng = 19.87;
+
+        double randomLat = minLat + (Math.random() * (maxLat - minLat));
+        double randomLng = minLng + (Math.random() * (maxLng - minLng));
+
+        return new Location(
+                randomLat,
+                randomLng,
+                "Novi Sad, Serbia"
+        );
+    }
 }

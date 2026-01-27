@@ -1,11 +1,8 @@
 import { Injectable, signal, WritableSignal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
-export type VehicleType = 'STANDARD' | 'VAN' | 'LUXURY';
-
 export type FavoriteRoute = {
   id: string;
-  rideId: number;
 
   from: {
     address: string;
@@ -25,34 +22,7 @@ export type FavoriteRoute = {
     longitude: number;
   }[];
 
-  vehicleType: VehicleType;
-  babyTransport: boolean;
-  petTransport: boolean;
-};
-
-type BackendLocation = {
-  lat: number;
-  lng: number;
-  address: string;
-};
-
-type FavoriteRouteRequestDto = {
-  rideId: number;
-  from: { latitude: number; longitude: number; address: string };
-  to: { latitude: number; longitude: number; address: string };
-  stops: { latitude: number; longitude: number; address: string }[];
-  vehicleType: VehicleType;
-  babyTransport: boolean;
-  petTransport: boolean;
-};
-
-type FavoriteRouteResponseDto = {
-  id: number;
-  rideId: number;
-  from: BackendLocation;
-  to: BackendLocation;
-  stops: BackendLocation[];
-  vehicleType: VehicleType;
+  vehicleType: 'STANDARD' | 'VAN' | 'LUXURY';
   babyTransport: boolean;
   petTransport: boolean;
 };
@@ -78,69 +48,65 @@ export class FavoriteRoutesService {
 
 
   loadFromBackend(): void {
-    this.http.get<FavoriteRouteResponseDto[]>(this.API)
+    this.http.get<FavoriteRoute[]>(this.API)
       .subscribe({
-        next: rows => {
-          const mapped: FavoriteRoute[] = (rows ?? []).map(r => ({
-            id: String(r.id),
-            rideId: r.rideId,
-            from: {
-              address: r.from.address,
-              latitude: r.from.lat,
-              longitude: r.from.lng,
-            },
-            to: {
-              address: r.to.address,
-              latitude: r.to.lat,
-              longitude: r.to.lng,
-            },
-            stops: (r.stops ?? []).map(s => ({
-              address: s.address,
-              latitude: s.lat,
-              longitude: s.lng,
-            })),
-            vehicleType: r.vehicleType,
-            babyTransport: r.babyTransport,
-            petTransport: r.petTransport,
-          }));
-
-          this.favorites.set(mapped);
+        next: routes => {
+          this.favorites.set(routes);
         },
-        error: err => console.error('Failed to load favorite routes', err),
+        error: err => {
+          console.error('Failed to load favorite routes', err);
+        }
       });
   }
 
+  add(route: Omit<FavoriteRoute, 'id'>): void {
 
-  add(req: FavoriteRouteRequestDto): void {
-    const exists = this.favorites().some(r => r.rideId === req.rideId);
-    if (exists) return;
+  const exists = this.favorites().some(r =>
+    this.sameRoute(r, route)
+  );
+  if (exists) return;
 
-    this.http.post<void>(this.API, req).subscribe({
-      next: () => this.loadFromBackend(),
-      error: err => console.error('Add favorite failed', err),
+  this.http.post(this.API, route)
+    .subscribe({
+      error: err => console.error('Add favorite failed', err)
     });
+
+  const newRoute: FavoriteRoute = {
+    id: this.makeId(),
+    ...route
+  };
+
+  this.favorites.set([...this.favorites(), newRoute]);
+}
+
+
+  remove(route: Omit<FavoriteRoute, 'id'>): void {
+
+  this.http.request('delete', this.API, { body: route })
+.subscribe({
+    error: err => console.error('Remove favorite failed', err)
+  });
+
+  this.favorites.set(
+    this.favorites().filter(r => !this.sameRoute(r, route))
+  );
+}
+
+
+  toggle(route: Omit<FavoriteRoute, 'id'>): void {
+    const exists = this.favorites().some(r =>
+      this.sameRoute(r, route)
+    );
+
+    if (exists) this.remove(route);
+    else this.add(route);
   }
-
-  remove(req: FavoriteRouteRequestDto): void {
-    this.http.request<void>('delete', this.API, { body: req }).subscribe({
-      next: () => this.loadFromBackend(),
-      error: err => console.error('Remove favorite failed', err),
-    });
-  }
-
-
-  toggle(req: FavoriteRouteRequestDto): void {
-    const exists = this.favorites().some(r => r.rideId === req.rideId);
-    if (exists) this.remove(req);
-    else this.add(req);
-  }
-
 
 
   clear(): void {
     this.favorites.set([]);
   }
-
+  
   private sameRoute(
   a: Pick<FavoriteRoute, 'from' | 'to' | 'stops'>,
   b: Pick<FavoriteRoute, 'from' | 'to' | 'stops'>

@@ -9,7 +9,7 @@ import lombok.Setter;
 @Setter
 @Embeddable
 @NoArgsConstructor
-public class Location {
+public class    Location {
 
     private Double lat;
     private Double lng;
