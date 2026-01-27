@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import com.st3.uber.dto.route.RouteEstimateRequest;
 import com.st3.uber.dto.route.RouteEstimateResponse;
 import com.st3.uber.dto.location.LocationRequest;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
@@ -279,43 +280,43 @@ public class RideService {
     }
 
     public List<PassengerRideSummaryResponse> getPastPassengerRides(Long id) {
-    Passenger passenger = passengerRepository.findById(id).orElseThrow(
-        () -> new IllegalArgumentException("Passenger not found."));
+        Passenger passenger = passengerRepository.findById(id).orElseThrow(
+                () -> new IllegalArgumentException("Passenger not found."));
 
-    List<Ride> rides = rideRepository.findPastByCreator(passenger);
+        List<Ride> rides = rideRepository.findPastByCreator(passenger);
 
-      List<Ride> favoriteRides = passenger.getFavoriteRides();
-      Set<Long> favoriteRideIds = favoriteRides.stream()
-          .map(Ride::getId)
-          .collect(Collectors.toSet());
+        List<Ride> favoriteRides = passenger.getFavoriteRides();
+        Set<Long> favoriteRideIds = favoriteRides.stream()
+                .map(Ride::getId)
+                .collect(Collectors.toSet());
 
-      return rides.stream()
-          .map(r -> new PassengerRideSummaryResponse(
-              r.getId(),
-              r.getStatus(),
-              r.getStartLocation(),
-              r.getEndLocation(),
-              r.getStartedAt(),
-              r.getFinishedAt(),
-              favoriteRideIds.contains(r.getId())
-          ))
-          .toList();
-  }
+        return rides.stream()
+                .map(r -> new PassengerRideSummaryResponse(
+                        r.getId(),
+                        r.getStatus(),
+                        r.getStartLocation(),
+                        r.getEndLocation(),
+                        r.getStartedAt(),
+                        r.getFinishedAt(),
+                        favoriteRideIds.contains(r.getId())
+                ))
+                .toList();
+    }
 
     public PassengerRideSummaryExtendedResponse getPastRideDetails(Long id, Long rideId) {
         Passenger passenger = passengerRepository.findById(id).orElseThrow(
-            () -> new IllegalArgumentException("Passenger not found."));
+                () -> new IllegalArgumentException("Passenger not found."));
         Ride ride = rideRepository.findById(rideId).orElseThrow(
-            () -> new IllegalArgumentException("Ride not found.")
+                () -> new IllegalArgumentException("Ride not found.")
         );
 
         if (!ride.getCreator().equals(passenger)) {
             throw new IllegalArgumentException("Passenger did not create this ride.");
         }
         boolean favorite = passenger.getFavoriteRides() != null &&
-            passenger.getFavoriteRides().stream().anyMatch(r -> r.getId().equals(ride.getId()));
+                passenger.getFavoriteRides().stream().anyMatch(r -> r.getId().equals(ride.getId()));
 
-      return detailsResponse(ride, favorite);
+        return detailsResponse(ride, favorite);
     }
 
     private static PassengerRideSummaryExtendedResponse detailsResponse(Ride ride, boolean favorite) {
@@ -351,13 +352,13 @@ public class RideService {
         }
         List<InconsistencyReport> inconsistencyReports = ride.getInconsistencyReports();
         res.setInconsistencyReports(
-            inconsistencyReports == null ? List.of() : inconsistencyReports.stream().map(r -> {
-                InconsistencyReportItemResponse dto = new InconsistencyReportItemResponse();
-                dto.setId(r.getId());
-                dto.setReportText(r.getReportText());
-                dto.setCreatedAt(r.getCreatedAt());
-                return dto;
-            }).toList()
+                inconsistencyReports == null ? List.of() : inconsistencyReports.stream().map(r -> {
+                    InconsistencyReportItemResponse dto = new InconsistencyReportItemResponse();
+                    dto.setId(r.getId());
+                    dto.setReportText(r.getReportText());
+                    dto.setCreatedAt(r.getCreatedAt());
+                    return dto;
+                }).toList()
         );
 
         return res;
@@ -373,9 +374,9 @@ public class RideService {
         return sum / (double) count;
     }
 
-
+    @Transactional(propagation = Propagation.MANDATORY)
     public Ride finishRideWithDetails(Long rideId, Location actualEndLocation) {
-        Ride ride = rideRepository.findById(rideId)
+        Ride ride = rideRepository.findByIdWithLock(rideId)
                 .orElseThrow(() -> new IllegalArgumentException("Ride not found"));
 
         if (ride.getStatus() != RideStatus.IN_PROGRESS) {
@@ -395,7 +396,7 @@ public class RideService {
         ride.setStatus(RideStatus.COMPLETED);
         ride.setFinishedAt(LocalDateTime.now());
 
-        Ride savedRide = rideRepository.save(ride);
+       Ride savedRide = rideRepository.saveAndFlush(ride);
 
 
         for (Passenger passenger : savedRide.getPassengers()) {

@@ -248,11 +248,14 @@ public class DriverController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public ResponseEntity<FinishRideResponse> finishRide(
+            @PathVariable Long rideId,
             @RequestBody FinishRideRequest request,
             @AuthenticationPrincipal Jwt jwt
     ) {
         Long driverId = jwt.getClaim("uid");
+        System.out.println("1. "+rideId + driverId);
         Ride ride = driverService.finishRide(driverId, request.actualEndLocation(), rideService);
+        System.out.println(". " +rideId +" "+ driverId+ " "+ ride.getDriver());
 
         List<Ride> driverRides = driverService.getDriverRides(driverId);
         boolean hasNextRide = !driverRides.isEmpty();

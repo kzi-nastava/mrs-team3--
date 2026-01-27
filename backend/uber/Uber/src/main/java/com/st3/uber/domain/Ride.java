@@ -161,4 +161,9 @@ public class Ride {
                 .toMinutes();
     }
 
+    public void assignDriver(Driver driver) {
+        this.driver = driver;
+        driver.setCurrentRide(this);
+    }
+
 }

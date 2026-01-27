@@ -29,17 +29,9 @@ public class Driver extends User {
     @JoinColumn(name = "vehicle_id", nullable = false)
     private Vehicle vehicle;
 
-    @OneToMany
-    @JoinColumn(name = "driver_id")
-    private List<Ride> pastRides = new ArrayList<>();
-
     @OneToOne
     @JoinColumn(name = "current_ride_id")
     private Ride currentRide;
-
-    @OneToMany
-    @JoinColumn(name = "driver_id")
-    private List<Ride> nextRides = new ArrayList<>();
 
     @Column(nullable = false)
     private boolean activityRequest = false;
@@ -56,4 +48,12 @@ public class Driver extends User {
     private Location currentLocation;
 
     private LocalDateTime locationUpdatedAt;
+
+    public void clearCurrentRide() {
+        if (this.currentRide != null) {
+            this.currentRide.setDriver(null); // owning side
+            this.currentRide = null;
+        }
+    }
+
 }

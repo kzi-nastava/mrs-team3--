@@ -85,10 +85,15 @@ public interface RideRepository extends JpaRepository<Ride, Long> {
             @Param("requiresPetTransport") boolean requiresPetTransport
     );
 
-    @Query("SELECT DISTINCT r FROM Ride r " +
-            "LEFT JOIN FETCH r.passengers " +
-            "WHERE r.status = :status AND r.scheduledAt IS NOT NULL")
+    @Query("""
+    SELECT DISTINCT r FROM Ride r
+    LEFT JOIN FETCH r.passengers
+    LEFT JOIN FETCH r.driver
+    WHERE r.status = :status
+    AND r.scheduledAt IS NOT NULL
+""")
     List<Ride> findPendingRidesForReminders(@Param("status") RideStatus status);
+
 
     /**
      * For finishing rides - with pessimistic lock to prevent concurrent access

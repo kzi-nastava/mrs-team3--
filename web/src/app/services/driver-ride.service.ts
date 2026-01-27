@@ -51,6 +51,16 @@ export interface PendingRide {
   passengerCount: number;
 }
 
+export interface FinishRideResponse {
+  rideId: number;
+  status: string;
+  startedAt: string;
+  finishedAt: string;
+  calculatedPrice: number;
+  hasNextRide: boolean;
+  nextRideId: number | null;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -85,10 +95,9 @@ export class DriverRideService {
     );
   }
 
-  // Finish a ride
-  finishRide(actualEndLocation: Location | null): Observable<any> {
-    return this.http.post(
-      `${this.apiUrl}/rides/0/finish`, // rideId in path not used, comes from driver's currentRide
+  finishRide(rideId: number, actualEndLocation: Location | null): Observable<FinishRideResponse> {
+    return this.http.post<FinishRideResponse>(
+      `${this.apiUrl}/rides/${rideId}/finish`,
       { actualEndLocation }
     );
   }

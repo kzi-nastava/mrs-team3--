@@ -131,7 +131,10 @@ export class DriverDashboardComponent implements OnInit, OnDestroy {
   }
 
   protected finishRide(): void {
-    this.service.finishRide(null).subscribe({
+    const ride = this.selectedRide() as DriverRide;
+    
+    // FIXED: Pass the actual rideId
+    this.service.finishRide(ride.rideId, null).subscribe({
       next: (response) => {
         this.closeFinishModal();
         
@@ -143,8 +146,9 @@ export class DriverDashboardComponent implements OnInit, OnDestroy {
         
         this.loadData();
       },
-      error: () => {
-        this.showToast('Failed to finish ride', 'error');
+      error: (err) => {
+        console.error('Finish ride error:', err);
+        this.showToast('Failed to finish ride: ' + (err.error?.message || 'Unknown error'), 'error');
       }
     });
   }
