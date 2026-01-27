@@ -132,14 +132,17 @@ public class AuthService {
     p.setVerified(false);
     p.setRole(UserRole.PASSENGER);
 
-    if (req.getBase64Image() != null) {
-      String fileName = UUID.randomUUID() + "." + req.getExtension();
+      if (req.getBase64Image() != null) {
+          String fileName = UUID.randomUUID() + "." + req.getExtension();
 
-      p.setImagePath("uploads/" + fileName);
+          Path uploadDir = Path.of("uploads/profiles");
+          Files.createDirectories(uploadDir);
 
-      byte[] imageBytes = getDecoder().decode(req.getBase64Image());
-      Files.write(Path.of("uploads/" + fileName), imageBytes);
-    }
+          p.setProfileImage("/uploads/profiles/" + fileName);
+
+          byte[] imageBytes = getDecoder().decode(req.getBase64Image());
+          Files.write(uploadDir.resolve(fileName), imageBytes);
+      }
 
     userRepository.save(p);
     String token = UUID.randomUUID().toString();

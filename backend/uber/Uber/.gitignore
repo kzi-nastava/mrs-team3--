@@ -31,5 +31,5 @@ build/
 src/main/resources/keys/
 ### VS Code ###
 .vscode/
-
+/uploads/
 src/main/resorces/keys

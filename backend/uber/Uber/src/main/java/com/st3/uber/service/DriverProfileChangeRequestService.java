@@ -23,13 +23,16 @@ public class DriverProfileChangeRequestService {
 
     private final DriverRepository driverRepository;
     private final DriverProfileChangeRequestRepository changeRequestRepository;
+    private final ImageStorageService imageStorageService;
+
 
     public DriverProfileChangeRequestService(
             DriverRepository driverRepository,
-            DriverProfileChangeRequestRepository changeRequestRepository
+            DriverProfileChangeRequestRepository changeRequestRepository, ImageStorageService imageStorageService
     ) {
         this.driverRepository = driverRepository;
         this.changeRequestRepository = changeRequestRepository;
+        this.imageStorageService = imageStorageService;
     }
 
     @Transactional
@@ -69,6 +72,10 @@ public class DriverProfileChangeRequestService {
 
         request.setStatus(ChangeRequestStatus.PENDING);
         request.setRequestedAt(LocalDateTime.now());
+
+        if (dto.profileImage() != null && !dto.profileImage().startsWith("/uploads/")) {
+            throw new IllegalArgumentException("Invalid profile image path");
+        }
 
         changeRequestRepository.save(request);
     }
@@ -162,57 +169,47 @@ public class DriverProfileChangeRequestService {
             Driver driver = req.getDriver();
             Vehicle vehicle = driver.getVehicle();
 
-            // ===== USER (NULL-SAFE) =====
             if (req.getFirstName() != null) {
                 driver.setName(req.getFirstName());
             }
-
             if (req.getLastName() != null) {
                 driver.setSurname(req.getLastName());
             }
-
             if (req.getPhoneNumber() != null) {
                 driver.setPhoneNumber(req.getPhoneNumber());
             }
-
             if (req.getAddress() != null) {
                 driver.setAddress(req.getAddress());
             }
-
             if (req.getProfileImage() != null) {
                 driver.setProfileImage(req.getProfileImage());
             }
-
-            // ===== VEHICLE (NULL-SAFE) =====
             if (req.getVehicleModel() != null) {
                 vehicle.setModel(req.getVehicleModel());
             }
-
             if (req.getVehicleRegistrationNumber() != null) {
                 vehicle.setRegistrationNumber(req.getVehicleRegistrationNumber());
             }
-
             if (req.getVehicleSeatingCapacity() != null) {
                 vehicle.setSeatingCapacity(req.getVehicleSeatingCapacity());
             }
-
             if (req.getVehicleType() != null) {
                 vehicle.setType(req.getVehicleType());
             }
-
             if (req.getBabyTransport() != null) {
                 vehicle.setBabyTransport(req.getBabyTransport());
             }
-
             if (req.getPetTransport() != null) {
                 vehicle.setPetTransport(req.getPetTransport());
             }
-
             req.setStatus(ChangeRequestStatus.APPROVED);
             req.setReviewedAt(LocalDateTime.now());
 
         } else {
-            // ===== REJECT =====
+
+            if (req.getProfileImage() != null) {
+                imageStorageService.delete(req.getProfileImage());
+            }
             req.setStatus(ChangeRequestStatus.REJECTED);
             req.setReviewedAt(LocalDateTime.now());
             req.setRejectionReason(decision.rejectReason());

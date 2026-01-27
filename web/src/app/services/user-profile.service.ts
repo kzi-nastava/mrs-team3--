@@ -12,6 +12,7 @@ export interface BaseProfile {
   lastName: string;
   phoneNumber: string;
   address: string;
+  profileImage: string | null;
 }
 
 export interface VehicleResponse {
@@ -29,9 +30,9 @@ export interface DriverProfileResponse extends BaseProfile {
   active: boolean;
 }
 
-export interface PassengerProfileResponse extends BaseProfile {}
+export interface PassengerProfileResponse extends BaseProfile { }
 
-export interface AdminProfileResponse extends BaseProfile {}
+export interface AdminProfileResponse extends BaseProfile { }
 
 export interface UpdateUserProfileRequest {
   firstName: string;
@@ -47,7 +48,7 @@ export class UserProfileService {
 
   private readonly API_URL = env.API_URL + "/api/profile";
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
 
   getMyProfile(): Observable<
@@ -66,10 +67,26 @@ export class UserProfileService {
   }
 
   submitDriverChangeRequest(payload: any) {
-  return this.http.post(
-    `${env.API_URL}/api/profile/change-request`,
-    payload
-  );
-}
+    return this.http.post(
+      `${env.API_URL}/api/profile/change-request`,
+      payload
+    );
+  }
+
+  uploadProfileImage(file: File) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    return this.http.post(
+      `${this.API_URL}/me/image`,
+      formData,
+      { responseType: 'text' }
+    );
+
+  }
+
+  deleteProfileImage(): Observable<void> {
+    return this.http.delete<void>(`${this.API_URL}/me/image`);
+  }
 
 }
