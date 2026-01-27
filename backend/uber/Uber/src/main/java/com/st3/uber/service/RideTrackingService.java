@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,7 +21,7 @@ public class RideTrackingService {
     private final RideRepository rideRepository;
     private final RideInviteRepository rideInviteRepository;
     private final InconsistencyReportRepository inconsistencyReportRepository;
-    private final RouteCalculationService  routeCalculationService;
+    private final RouteCalculationService routeCalculationService;
 
     public RideTrackingService(
             RideRepository rideRepository,
@@ -32,7 +33,6 @@ public class RideTrackingService {
         this.rideInviteRepository = rideInviteRepository;
         this.inconsistencyReportRepository = inconsistencyReportRepository;
         this.routeCalculationService = routeCalculationService;
-
     }
 
     /**
@@ -48,8 +48,35 @@ public class RideTrackingService {
             return Optional.empty();
         }
 
-        Ride ride = activeRides.get(0);
+        // Priority order: IN_PROGRESS > ACCEPTED > PENDING
+        Ride ride = activeRides.stream()
+                .sorted((r1, r2) -> {
+                    int priority1 = getStatusPriority(r1.getStatus());
+                    int priority2 = getStatusPriority(r2.getStatus());
+
+                    if (priority1 != priority2) {
+                        return Integer.compare(priority1, priority2);
+                    }
+
+                    // If same status, pick most recent
+                    return r2.getCreatedAt().compareTo(r1.getCreatedAt());
+                })
+                .findFirst()
+                .orElse(activeRides.get(0));
+
         return Optional.of(buildTrackingResponse(ride));
+    }
+
+    /**
+     * Get priority order for ride status (lower = higher priority)
+     */
+    private int getStatusPriority(RideStatus status) {
+        return switch (status) {
+            case IN_PROGRESS -> 1;  // Highest priority
+            case ACCEPTED -> 2;
+            case PENDING -> 3;      // Lowest priority
+            default -> 99;
+        };
     }
 
     /**
@@ -101,13 +128,26 @@ public class RideTrackingService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No active ride found");
         }
 
-        Ride ride = activeRides.get(0);
+        // Priority order: IN_PROGRESS > ACCEPTED > PENDING
+        Ride ride = activeRides.stream()
+                .sorted((r1, r2) -> {
+                    int priority1 = getStatusPriority(r1.getStatus());
+                    int priority2 = getStatusPriority(r2.getStatus());
+
+                    if (priority1 != priority2) {
+                        return Integer.compare(priority1, priority2);
+                    }
+
+                    return r2.getCreatedAt().compareTo(r1.getCreatedAt());
+                })
+                .findFirst()
+                .orElse(activeRides.get(0));
+
         return createInconsistencyReport(ride, passenger, request);
     }
 
     /**
      * Report inconsistency by token (guest user)
-     * Guest reports are saved with the ride CREATOR as reportedBy
      */
     @Transactional
     public ReportInconsistencyResponse reportInconsistencyByToken(
@@ -121,32 +161,28 @@ public class RideTrackingService {
                 ));
 
         Ride ride = invite.getRide();
-
-        // Guest reports use the ride creator as reportedBy
         Passenger rideCreator = ride.getCreator();
 
         return createInconsistencyReport(ride, rideCreator, request);
     }
 
     /**
-     * Helper method to create inconsistency report
+     * FIXED: Create inconsistency report - allows reporting without driver
      */
     private ReportInconsistencyResponse createInconsistencyReport(
             Ride ride,
             Passenger reportedBy,
             ReportInconsistencyRequest request
     ) {
-        if (ride.getDriver() == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Ride has no assigned driver"
-            );
-        }
-
         InconsistencyReport report = new InconsistencyReport();
         report.setReportedBy(reportedBy);
         report.setRide(ride);
-        report.setDriver(ride.getDriver());
+
+        // Only set driver if one is assigned
+        if (ride.getDriver() != null) {
+            report.setDriver(ride.getDriver());
+        }
+
         report.setReportText(request.reportText());
         report.setCreatedAt(LocalDateTime.now());
 
@@ -161,7 +197,7 @@ public class RideTrackingService {
     }
 
     /**
-     * Helper method to build tracking response
+     * FIXED: Build tracking response with dynamic time calculation
      */
     private RideTrackingResponse buildTrackingResponse(Ride ride) {
         Driver driver = ride.getDriver();
@@ -171,15 +207,17 @@ public class RideTrackingService {
                 : "Not assigned";
 
         String driverPhone = driver != null ? driver.getPhoneNumber() : null;
-
         Location driverLocation = driver != null ? driver.getCurrentLocation() : null;
 
         Vehicle vehicle = driver != null ? driver.getVehicle() : null;
         String vehicleModel = vehicle != null ? vehicle.getModel() : null;
         String vehicleRegistration = vehicle != null ? vehicle.getRegistrationNumber() : null;
 
+        // FIXED: Recalculate route dynamically based on current driver location
+        RouteInfo info = calculateDynamicRoute(ride, driverLocation);
 
-        RouteInfo info = routeCalculationService.calculateRoute(ride.getStartLocation(),ride.getEndLocation(),ride.getRideStops());
+        // FIXED: Calculate remaining time based on current position
+        int remainingMinutes = calculateRemainingMinutes(ride, info);
 
         return new RideTrackingResponse(
                 ride.getId(),
@@ -195,11 +233,49 @@ public class RideTrackingService {
                 vehicleRegistration,
                 info.distanceKm(),
                 ride.getEstimatedTimeMinutes(),
-                info.durationMinutes(),
+                remainingMinutes,
                 ride.getStartedAt(),
                 ride.getScheduledAt(),
                 ride.isStoppedEarly(),
                 ride.getCreatedAt()
         );
+    }
+
+    /**
+     * Calculate route dynamically - if driver location exists and ride is in progress,
+     * calculate from driver's current location to destination
+     */
+    private RouteInfo calculateDynamicRoute(Ride ride, Location driverLocation) {
+        // If ride is in progress and driver location is known, calculate from current position
+        if (ride.getStatus() == RideStatus.IN_PROGRESS && driverLocation != null) {
+            return routeCalculationService.calculateRoute(
+                    driverLocation,
+                    ride.getEndLocation(),
+                    ride.getRideStops()
+            );
+        }
+
+        // Otherwise calculate full route from start to end
+        return routeCalculationService.calculateRoute(
+                ride.getStartLocation(),
+                ride.getEndLocation(),
+                ride.getRideStops()
+        );
+    }
+
+    /**
+     * Calculate remaining minutes based on ride status and current position
+     */
+    private int calculateRemainingMinutes(Ride ride, RouteInfo routeInfo) {
+        if (ride.getStatus() == RideStatus.PENDING || ride.getStatus() == RideStatus.ACCEPTED) {
+            return 999999; // Special value for "waiting to start"
+        }
+
+        if (ride.getStatus() == RideStatus.IN_PROGRESS) {
+            // Use the recalculated duration from current position
+            return routeInfo.durationMinutes();
+        }
+
+        return 0; // Completed or cancelled
     }
 }

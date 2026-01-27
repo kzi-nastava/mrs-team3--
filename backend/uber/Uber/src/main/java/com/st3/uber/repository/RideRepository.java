@@ -4,6 +4,7 @@ import com.st3.uber.domain.Driver;
 import com.st3.uber.domain.Passenger;
 import com.st3.uber.domain.Ride;
 import com.st3.uber.enums.RideStatus;
+import com.st3.uber.enums.VehicleType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -59,5 +60,25 @@ public interface RideRepository extends JpaRepository<Ride, Long> {
     List<Ride> findByPassengersContainingAndStatusIn(
             @Param("passenger") Passenger passenger,
             @Param("statuses") List<RideStatus> statuses
+    );
+    /**
+     * Find pending rides that match driver's vehicle capabilities
+     * and have no driver assigned yet
+     */
+    @Query("""
+        SELECT r FROM Ride r 
+        WHERE r.driver IS NULL 
+        AND r.status = 'PENDING'
+        AND r.vehicleType = :vehicleType
+        AND (:requiresBabyTransport = false OR r.babyTransport = false OR :hasBabyTransport = true)
+        AND (:requiresPetTransport = false OR r.petTransport = false OR :hasPetTransport = true)
+        ORDER BY r.createdAt ASC
+    """)
+    List<Ride> findPendingRidesForDriver(
+            @Param("vehicleType") VehicleType vehicleType,
+            @Param("hasBabyTransport") boolean hasBabyTransport,
+            @Param("hasPetTransport") boolean hasPetTransport,
+            @Param("requiresBabyTransport") boolean requiresBabyTransport,
+            @Param("requiresPetTransport") boolean requiresPetTransport
     );
 }

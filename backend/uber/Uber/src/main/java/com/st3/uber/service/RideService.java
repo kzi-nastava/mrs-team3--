@@ -202,33 +202,7 @@ public class RideService {
         return savedRide;
     }
 
-    // Method to finish a ride
-    public Ride finishRide(Long rideId) {
-        Ride ride = rideRepository.findById(rideId)
-                .orElseThrow(() -> new IllegalArgumentException("Ride not found"));
 
-        if (ride.getStatus() != RideStatus.IN_PROGRESS) {
-            throw new IllegalStateException("Only in-progress rides can be finished");
-        }
-
-        ride.setStatus(RideStatus.COMPLETED);
-        ride.setFinishedAt(LocalDateTime.now());
-
-        Ride savedRide = rideRepository.save(ride);
-
-        // Notify all passengers
-        for (Passenger passenger : savedRide.getPassengers()) {
-            notificationService.createNotification(
-                    passenger.getId(),
-                    String.format("Your ride is complete! Total cost: %.2f RSD. Please rate your experience.",
-                            savedRide.getCalculatedPrice()),
-                    NotificationType.FINISHED_RIDE,
-                    savedRide.getId()
-            );
-        }
-
-        return savedRide;
-    }
 
     // Method to cancel a ride
 //    public Ride cancelRide(Long rideId, Rid cancelledBy, String reason) {
@@ -400,5 +374,123 @@ public class RideService {
             return null;
         int sum = values.stream().filter(Objects::nonNull).mapToInt(Integer::intValue).sum();
         return sum / (double) count;
+    }
+
+    public Ride finishRideWithDetails(Long rideId, Location actualEndLocation) {
+        Ride ride = rideRepository.findById(rideId)
+                .orElseThrow(() -> new IllegalArgumentException("Ride not found"));
+
+        if (ride.getStatus() != RideStatus.IN_PROGRESS) {
+            throw new IllegalStateException("Only in-progress rides can be finished");
+        }
+
+        // Set actual end location (use planned if not provided)
+        if (actualEndLocation != null) {
+            ride.setActualEndLocation(actualEndLocation);
+        } else {
+            ride.setActualEndLocation(ride.getEndLocation());
+        }
+
+        // Actual stops should already be populated by reachStop() calls
+        // If none were recorded, copy planned stops
+        if (ride.getActualRideStops().isEmpty() && !ride.getRideStops().isEmpty()) {
+            ride.getActualRideStops().addAll(ride.getRideStops());
+        }
+
+        ride.setStatus(RideStatus.COMPLETED);
+        ride.setFinishedAt(LocalDateTime.now());
+
+        Ride savedRide = rideRepository.save(ride);
+
+        // Update driver status - this is handled in DriverService now
+
+        // Notify passengers
+        for (Passenger passenger : savedRide.getPassengers()) {
+            notificationService.createNotification(
+                    passenger.getId(),
+                    String.format("Your ride is complete! Total cost: %.2f RSD. Please rate your experience.",
+                            savedRide.getCalculatedPrice()),
+                    NotificationType.FINISHED_RIDE,
+                    savedRide.getId()
+            );
+        }
+
+        return savedRide;
+    }
+
+    /**
+     * Mark a stop as reached during the ride
+     * This tracks the actual route taken
+     */
+    public Ride reachStop(Long rideId, int stopIndex) {
+        Ride ride = rideRepository.findById(rideId)
+                .orElseThrow(() -> new IllegalArgumentException("Ride not found"));
+
+        if (ride.getStatus() != RideStatus.IN_PROGRESS) {
+            throw new IllegalStateException("Can only mark stops during active ride");
+        }
+
+        if (stopIndex < 0 || stopIndex >= ride.getRideStops().size()) {
+            throw new IllegalArgumentException("Invalid stop index");
+        }
+
+        // Get the planned stop
+        Location plannedStop = ride.getRideStops().get(stopIndex);
+
+        // Add to actual stops if not already there
+        boolean alreadyReached = ride.getActualRideStops().stream()
+                .anyMatch(s -> s.getLat().equals(plannedStop.getLat())
+                        && s.getLng().equals(plannedStop.getLng()));
+
+        if (!alreadyReached) {
+            ride.getActualRideStops().add(plannedStop);
+        }
+
+        return rideRepository.save(ride);
+    }
+
+    /**
+     * Accept a pending ride (assign driver to it)
+     * Called when driver picks up a ride from pending list
+     */
+    public Ride acceptRide(Long rideId, Driver driver) {
+        Ride ride = rideRepository.findById(rideId)
+                .orElseThrow(() -> new IllegalArgumentException("Ride not found"));
+
+        if (ride.getDriver() != null) {
+            throw new IllegalStateException("Ride already has a driver assigned");
+        }
+
+        if (ride.getStatus() != RideStatus.PENDING) {
+            throw new IllegalStateException("Can only accept pending rides");
+        }
+
+        // Assign driver
+        ride.setDriver(driver);
+        ride.setStatus(RideStatus.ACCEPTED);
+
+        Ride savedRide = rideRepository.save(ride);
+
+        // Notify passengers
+        for (Passenger passenger : savedRide.getPassengers()) {
+            notificationService.createNotification(
+                    passenger.getId(),
+                    String.format("Driver %s %s has accepted your ride! They will arrive soon.",
+                            driver.getName(), driver.getSurname()),
+                    NotificationType.ACCEPTED_RIDE,
+                    savedRide.getId()
+            );
+        }
+
+        // Notify driver
+        notificationService.createNotification(
+                driver.getId(),
+                String.format("You've accepted a ride. Pickup at %s",
+                        savedRide.getStartLocation().getAddress()),
+                NotificationType.RIDE_REMINDER,
+                savedRide.getId()
+        );
+
+        return savedRide;
     }
 }

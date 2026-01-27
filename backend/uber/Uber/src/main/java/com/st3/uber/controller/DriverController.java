@@ -1,25 +1,33 @@
 package com.st3.uber.controller;
 
+import com.st3.uber.domain.Ride;
 import com.st3.uber.dto.register.RegisterDriverRequest;
 import com.st3.uber.dto.register.RegisterDriverResponse;
-import com.st3.uber.dto.user.driver.DriverActivityRequest;
-import com.st3.uber.dto.user.driver.DriverActivityResponse;
-import com.st3.uber.dto.user.driver.DriverRideDetailResponse;
-import com.st3.uber.dto.user.driver.DriverRideHistoryResponse;
+import com.st3.uber.dto.ride.FinishRideRequest;
+import com.st3.uber.dto.ride.FinishRideResponse;
+import com.st3.uber.dto.ride.PendingRideResponse;
+import com.st3.uber.dto.route.ReachStopRequest;
+import com.st3.uber.dto.route.StopStatus;
+import com.st3.uber.dto.user.driver.*;
 import com.st3.uber.service.DriverRegistrationService;
 import com.st3.uber.service.DriverRideHistoryService;
 import com.st3.uber.service.DriverService;
+import com.st3.uber.service.RideService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @CrossOrigin(origins = "http://localhost:4200")
 @RestController
@@ -29,12 +37,14 @@ public class DriverController {
     private final DriverRegistrationService driverRegistrationService;
     private final DriverRideHistoryService driverRideHistoryService;
     private final DriverService driverService;
+    private final RideService rideService;
 
     public DriverController(DriverRegistrationService driverRegistrationService, DriverService driverService, 
-                            DriverRideHistoryService driverRideHistoryService) {
+                            DriverRideHistoryService driverRideHistoryService, RideService rideService) {
         this.driverRegistrationService = driverRegistrationService;
         this.driverService = driverService;
         this.driverRideHistoryService = driverRideHistoryService;
+        this.rideService = rideService;
     }
 
     @PreAuthorize("hasRole('ADMIN')")
@@ -162,4 +172,226 @@ public class DriverController {
         return ResponseEntity.noContent().build();
     }
 
+
+    /**
+     * Get all rides assigned to this driver (current + scheduled)
+     */
+    @PreAuthorize("hasRole('DRIVER')")
+    @GetMapping(
+            value = "/all-rides",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<List<DriverRideResponse>> getMyRides(
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        Long driverId = jwt.getClaim("uid");
+        List<Ride> rides = driverService.getDriverRides(driverId);
+
+        List<DriverRideResponse> responses = rides.stream()
+                .map(this::mapToDriverRideResponse)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(responses);
+    }
+
+    /**
+     * Get pending rides that driver can accept
+     * Already filtered by vehicle capabilities
+     */
+    @PreAuthorize("hasRole('DRIVER')")
+    @GetMapping(
+            value = "/pending-rides",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<List<PendingRideResponse>> getPendingRides(
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        Long driverId = jwt.getClaim("uid");
+        List<Ride> rides = driverService.getPendingRidesForDriver(driverId);
+
+        List<PendingRideResponse> responses = rides.stream()
+                .map(this::mapToPendingRideResponse)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(responses);
+    }
+
+    /**
+     * Accept a pending ride
+     */
+    @PreAuthorize("hasRole('DRIVER')")
+    @PostMapping(
+            value = "/rides/{rideId}/accept",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<DriverRideResponse> acceptRide(
+            @PathVariable Long rideId,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        Long driverId = jwt.getClaim("uid");
+        Ride ride = driverService.acceptRide(driverId, rideId, rideService);
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(mapToDriverRideResponse(ride));
+    }
+
+    /**
+     * Start the current ride
+     */
+    @PreAuthorize("hasRole('DRIVER')")
+    @PostMapping(
+            value = "/rides/{rideId}/start",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<DriverRideResponse> startRide(
+            @PathVariable Long rideId,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        Ride ride = rideService.startRide(rideId);
+        return ResponseEntity.ok(mapToDriverRideResponse(ride));
+    }
+
+    /**
+     * Finish the current ride
+     */
+    @PreAuthorize("hasRole('DRIVER')")
+    @PostMapping(
+            value = "/rides/{rideId}/finish",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<FinishRideResponse> finishRide(
+            @RequestBody FinishRideRequest request,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        Long driverId = jwt.getClaim("uid");
+        Ride ride = driverService.finishRide(driverId, request.actualEndLocation(), rideService);
+
+        // Check if there's a next ride
+        List<Ride> driverRides = driverService.getDriverRides(driverId);
+        boolean hasNextRide = !driverRides.isEmpty();
+        Long nextRideId = hasNextRide ? driverRides.get(0).getId() : null;
+
+        FinishRideResponse response = new FinishRideResponse(
+                ride.getId(),
+                ride.getStatus(),
+                ride.getFinishedAt(),
+                ride.getCalculatedPrice(),
+                hasNextRide,
+                nextRideId
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Update driver's current location
+     */
+    @PreAuthorize("hasRole('DRIVER')")
+    @PutMapping(
+            value = "/location",
+            consumes = MediaType.APPLICATION_JSON_VALUE
+    )
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public ResponseEntity<Void> updateLocation(
+            @RequestBody UpdateLocationRequest request,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        Long driverId = jwt.getClaim("uid");
+        driverService.updateDriverLocation(driverId, request.latitude(), request.longitude());
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Move to start position (teleport for testing)
+     */
+    @PreAuthorize("hasRole('DRIVER')")
+    @PostMapping(value = "/move-to-start")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public ResponseEntity<Void> moveToStart(
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        Long driverId = jwt.getClaim("uid");
+        driverService.moveToStartPosition(driverId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Mark a stop as reached
+     */
+    @PreAuthorize("hasRole('DRIVER')")
+    @PostMapping(
+            value = "/reach-stop",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<DriverRideResponse> reachStop(
+            @RequestBody ReachStopRequest request,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        Long driverId = jwt.getClaim("uid");
+        Ride ride = driverService.reachStop(driverId, request.stopIndex(), rideService);
+        return ResponseEntity.ok(mapToDriverRideResponse(ride));
+    }
+
+    // Mapping helpers
+
+    private DriverRideResponse mapToDriverRideResponse(Ride ride) {
+        String creatorName = ride.getCreator() != null
+                ? ride.getCreator().getName() + " " + ride.getCreator().getSurname()
+                : "Unknown";
+
+        // Map stops with their reached status
+        List<StopStatus> stopStatuses = IntStream
+                .range(0, ride.getRideStops().size())
+                .mapToObj(index -> {
+                    var stop = ride.getRideStops().get(index);
+
+                    boolean reached = ride.getActualRideStops().stream()
+                            .anyMatch(s -> s.getLat().equals(stop.getLat())
+                                    && s.getLng().equals(stop.getLng()));
+
+                    return new StopStatus(index, stop, reached, null);
+                })
+                .toList();
+
+        return new DriverRideResponse(
+                ride.getId(),
+                ride.getStatus(),
+                ride.getStartLocation(),
+                ride.getEndLocation(),
+                ride.getRideStops(),
+                stopStatuses,
+                ride.getEstimatedTimeMinutes(),
+                ride.getRemainingMinutes(),
+                ride.getScheduledAt(),
+                ride.getStartedAt(),
+                ride.getDistance(),
+                ride.getCalculatedPrice(),
+                ride.getVehicleType(),
+                ride.isBabyTransport(),
+                ride.isPetTransport(),
+                ride.getPassengers().size(),
+                creatorName
+        );
+    }
+
+    private PendingRideResponse mapToPendingRideResponse(Ride ride) {
+        return new PendingRideResponse(
+                ride.getId(),
+                ride.getStartLocation(),
+                ride.getEndLocation(),
+                ride.getRideStops(),
+                ride.getEstimatedTimeMinutes(),
+                ride.getCreatedAt(),
+                ride.getDistance(),
+                ride.getCalculatedPrice(),
+                ride.getVehicleType(),
+                ride.isBabyTransport(),
+                ride.isPetTransport(),
+                ride.getPassengers().size()
+        );
+    }
 }
+
+
