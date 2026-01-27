@@ -30,6 +30,7 @@ public interface RideRepository extends JpaRepository<Ride, Long> {
     List<Ride> findByStatusAndScheduledAtIsNotNull(RideStatus status);
 
     List<Ride> findByScheduledAtBefore(LocalDateTime dateTime);
+    List<Ride> findByCreatorAndFinishedAtIsNotNull(Passenger creator);
 
     List<Ride> findByStatusAndScheduledAtBetween(
             RideStatus status,

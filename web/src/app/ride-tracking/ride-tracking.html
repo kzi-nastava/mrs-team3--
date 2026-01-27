@@ -89,7 +89,7 @@
         <!-- Time Remaining -->
         <div class="info-card time-card">
           <h3>Time Remaining</h3>
-          @if (rideData()!.status === 'IN_PROGRESS' && rideData()!.remainingMinutes < 999999) {
+          @if ((rideData()!.status === 'IN_PROGRESS' || rideData()!.status === 'PANIC') && rideData()!.remainingMinutes < 999999) {
             <div class="time-remaining-display">
               <div class="time-icon">⏱️</div>
               <div class="time-value">
@@ -173,12 +173,12 @@
           <h2>Report Inconsistency</h2>
           <button class="close-btn" (click)="closeReportModal()">×</button>
         </div>
-        
+
         <div class="modal-body">
           <p class="modal-description">
             Please describe any issues or inconsistencies you've noticed during your ride.
           </p>
-          
+
           <textarea
             [(ngModel)]="reportText"
             placeholder="Enter your report here..."
@@ -187,22 +187,22 @@
             maxlength="1000"
             [disabled]="reportSubmitting"
           ></textarea>
-          
+
           <div class="char-count">
             {{ reportText.length }} / 1000 characters
           </div>
         </div>
-        
+
         <div class="modal-footer">
-          <button 
-            class="btn-secondary" 
+          <button
+            class="btn-secondary"
             (click)="closeReportModal()"
             [disabled]="reportSubmitting"
           >
             Cancel
           </button>
-          <button 
-            class="btn-primary" 
+          <button
+            class="btn-primary"
             (click)="submitReport()"
             [disabled]="reportSubmitting || !reportText.trim()"
           >
