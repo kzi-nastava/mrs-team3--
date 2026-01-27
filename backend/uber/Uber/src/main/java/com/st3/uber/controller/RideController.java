@@ -267,29 +267,6 @@ public class RideController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // ============ END REVIEW ENDPOINTS ============
-
-    // POST /api/rides/{id}/rating - Submit rating for completed ride (OLD ENDPOINT - keeping for backwards compatibility)
-    @PostMapping(
-            value = "/{id}/rating",
-            consumes = MediaType.APPLICATION_JSON_VALUE,
-            produces = MediaType.APPLICATION_JSON_VALUE
-    )
-    @RolesAllowed("PASSENGER")
-    public ResponseEntity<SubmitRatingResponse> submitRating(
-            @PathVariable Long id,
-            @RequestBody SubmitRatingRequest request
-    ) {
-        SubmitRatingResponse response = new SubmitRatingResponse(
-                id,
-                request.driverRating(),
-                request.vehicleRating(),
-                request.comment(),
-                LocalDateTime.now(),
-                "Rating submitted successfully"
-        );
-        return ResponseEntity.ok(response);
-    }
 
     @PutMapping(
             value = "/{rideId}/cancel-universal",

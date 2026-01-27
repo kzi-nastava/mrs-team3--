@@ -42,6 +42,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**", "/ws/**").permitAll()
                         .requestMatchers("/api/vehicles/**").permitAll()
                     .requestMatchers("/simple-routes/**").permitAll()
+                        .requestMatchers("/api/ride-tracking/validate/**", "/api/ride-tracking/token/**").permitAll()
                     .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest().authenticated()
                 )
