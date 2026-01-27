@@ -1,21 +1,22 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { Router } from '@angular/router';
-import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import { DriverService } from '../../services/driver.service';
 import { MessageService } from 'primeng/api';
 import { NotificationService } from '../../services/notification.service';
+import { LogoutModalComponent } from '../../logout-modal/logout-modal';
 import { Subject, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-driver-sidebar',
   standalone: true,
-  imports: [CommonModule],
+  imports: [LogoutModalComponent],
   templateUrl: './driver-sidebar.html',
   styleUrls: ['./driver-sidebar.css']
 })
 export class DriverSidebarComponent implements OnInit, OnDestroy {
   unreadCount = 0;
+  showLogoutModal = false;
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -24,17 +25,16 @@ export class DriverSidebarComponent implements OnInit, OnDestroy {
     private driverService: DriverService,
     private notificationService: NotificationService,
     private messageService: MessageService,
-    private cdr: ChangeDetectorRef  
-  ) {}
+    private cdr: ChangeDetectorRef
+  ) { }
 
   ngOnInit(): void {
-    // Use setTimeout to defer the subscription to avoid ExpressionChangedAfterItHasBeenCheckedError
     setTimeout(() => {
       this.notificationService.unreadCount$
         .pipe(takeUntil(this.destroy$))
         .subscribe(count => {
           this.unreadCount = count;
-          this.cdr.detectChanges(); // Manually trigger change detection
+          this.cdr.detectChanges();
         });
     }, 0);
   }
@@ -58,12 +58,10 @@ export class DriverSidebarComponent implements OnInit, OnDestroy {
   }
 
   goEarnings() {
-    // Navigate to earnings page when implemented
     alert('Earnings - to be implemented');
   }
 
   goMessages() {
-    // Navigate to messages when implemented
     alert('Messages - to be implemented');
   }
 
@@ -72,9 +70,16 @@ export class DriverSidebarComponent implements OnInit, OnDestroy {
   }
 
   logout() {
-    if (confirm('Are you sure you want to logout?')) {
-      this.authService.logout();
-    }
+    this.showLogoutModal = true;
+  }
+
+  onLogoutConfirm() {
+    this.showLogoutModal = false;
+    this.authService.logout();
+  }
+
+  onLogoutCancel() {
+    this.showLogoutModal = false;
   }
 
   isActive = true;
@@ -95,7 +100,4 @@ export class DriverSidebarComponent implements OnInit, OnDestroy {
       }
     });
   }
-
-
-
 }

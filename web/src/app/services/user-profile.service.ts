@@ -89,4 +89,11 @@ export class UserProfileService {
     return this.http.delete<void>(`${this.API_URL}/me/image`);
   }
 
+  sendResetPasswordEmail(email: string) {
+    return this.http.post<void>(
+      `${env.API_URL}/api/auth/forgot-password`,
+      { email }
+    );
+  }
+
 }

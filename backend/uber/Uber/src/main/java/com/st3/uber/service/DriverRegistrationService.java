@@ -90,7 +90,7 @@ public class DriverRegistrationService {
         driver.setPhoneNumber(request.phoneNumber());
         driver.setAddress(request.address());
 
-        driver.setActive(false);
+        driver.setActive(true);
         driver.setAvailable(false);
         driver.setFree(false);
 
