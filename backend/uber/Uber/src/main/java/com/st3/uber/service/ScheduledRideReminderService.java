@@ -10,6 +10,7 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -52,12 +53,14 @@ public class ScheduledRideReminderService {
      * Runs every 1 minute to check for upcoming rides
      * Sends reminders at 15, 10, 5 minutes before scheduled time
      */
-    @Scheduled(fixedRate = 60000) // Every 60 seconds (1 minute)
-    // REMOVED @Transactional(readOnly = true) - it prevents INSERT
+
+    @Scheduled(fixedRate = 60000) // Every 60 seconds
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
     public void sendUpcomingRideReminders() {
         LocalDateTime now = LocalDateTime.now();
-        // Find all scheduled rides that haven't started yet
-        List<Ride> upcomingRides = rideRepository.findPendingRidesWithPassengersAndDriver(RideStatus.PENDING);
+
+        // Use the new query that doesn't fetch driver (avoids conflicts)
+        List<Ride> upcomingRides = rideRepository.findPendingRidesForReminders(RideStatus.PENDING);
         System.out.println("Found " + upcomingRides.size() + " pending scheduled rides");
 
         for (Ride ride : upcomingRides) {
@@ -69,21 +72,18 @@ public class ScheduledRideReminderService {
             System.out.println("Ride #" + ride.getId() + " scheduled at " + ride.getScheduledAt()
                     + " (" + minutesUntilRide + " minutes from now)");
 
-            // Check if we should send reminder at this time
             if (shouldSendReminder(ride.getId(), minutesUntilRide)) {
                 sendReminderNotifications(ride, minutesUntilRide);
                 sendReminderEmails(ride, minutesUntilRide);
-
-                // Mark this specific reminder as sent
                 markReminderSent(ride.getId(), (int) minutesUntilRide);
             } else {
                 System.out.println("→ Skipping (already sent or not at milestone)");
             }
         }
 
-        // Clean up old entries to prevent memory leak
         cleanupOldReminders();
     }
+
 
     /**
      * Determines if a reminder should be sent based on time remaining

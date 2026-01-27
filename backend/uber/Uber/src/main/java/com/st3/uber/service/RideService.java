@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import com.st3.uber.dto.route.RouteEstimateRequest;
 import com.st3.uber.dto.route.RouteEstimateResponse;
 import com.st3.uber.dto.location.LocationRequest;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
@@ -375,6 +376,7 @@ public class RideService {
         int sum = values.stream().filter(Objects::nonNull).mapToInt(Integer::intValue).sum();
         return sum / (double) count;
     }
+
 
     public Ride finishRideWithDetails(Long rideId, Location actualEndLocation) {
         Ride ride = rideRepository.findById(rideId)

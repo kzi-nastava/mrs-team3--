@@ -10,6 +10,7 @@ import com.st3.uber.repository.DriverRepository;
 import com.st3.uber.repository.RideRepository;
 import com.st3.uber.util.DistanceCalculator;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
@@ -266,7 +267,7 @@ public class DriverService {
 
         // Update driver status
         driver.setCurrentRide(ride);
-        driver.setFree(false);
+        driver.setFree(true);
         driver.setAvailable(false);
 
         driverRepository.save(driver);
@@ -278,6 +279,8 @@ public class DriverService {
      * Finish current ride
      * Updates driver status and calls RideService to finish the ride
      */
+
+    @Transactional
     public Ride finishRide(Long driverId, Location actualEndLocation, RideService rideService) {
         Driver driver = driverRepository.findById(driverId)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Driver not found"));
@@ -291,13 +294,19 @@ public class DriverService {
             throw new ResponseStatusException(BAD_REQUEST, "Can only finish rides that are in progress");
         }
 
-        // Finish the ride (handled in RideService)
         Ride finishedRide = rideService.finishRideWithDetails(currentRide.getId(), actualEndLocation);
 
-        // Update driver status
+        if (finishedRide.getDriver() == null || !finishedRide.getDriver().getId().equals(driverId)) {
+            finishedRide.setDriver(driver);
+        }
+
+       Ride savedFinishedRide = rideRepository.save(finishedRide);
+        rideRepository.flush(); // Force immediate write to database
+
         driver.setCurrentRide(null);
 
-        // Check for next scheduled ride
+        driver.setFree(true);
+
         List<Ride> nextRides = driver.getNextRides();
         boolean hasNextRide = !nextRides.isEmpty();
 
@@ -305,8 +314,7 @@ public class DriverService {
             Ride nextRide = nextRides.get(0);
             driver.setCurrentRide(nextRide);
             nextRides.remove(0);
-            driver.setFree(false);
-            driver.setAvailable(false);
+            driver.setAvailable(false); // NOT available (has scheduled ride)
 
             notificationService.createNotification(
                     driver.getId(),
@@ -315,8 +323,8 @@ public class DriverService {
                     nextRide.getId()
             );
         } else {
-            driver.setFree(true);
-            driver.setAvailable(true);
+            driver.setCurrentRide(null);
+            driver.setAvailable(true); // Available (no scheduled rides)
 
             notificationService.createNotification(
                     driver.getId(),
@@ -328,7 +336,7 @@ public class DriverService {
 
         driverRepository.save(driver);
 
-        return finishedRide;
+        return savedFinishedRide;
     }
 
     /**

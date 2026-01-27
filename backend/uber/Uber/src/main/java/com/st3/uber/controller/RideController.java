@@ -156,24 +156,7 @@ public class RideController {
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-    // POST /api/rides/{id}/complete-detailed - Complete ride with full details
-    @PostMapping(
-            value = "/{id}/complete-detailed",
-            produces = MediaType.APPLICATION_JSON_VALUE
-    )
-    public ResponseEntity<CompleteRideResponse> completeRideDetailed(@PathVariable Long id) {
-        CompleteRideResponse response = new CompleteRideResponse(
-                id,
-                RideStatus.COMPLETED,
-                LocalDateTime.now().minusMinutes(15),
-                LocalDateTime.now(),
-                "Bulevar oslobođenja 46",
-                "Futoška 10",
-                450.0,
-                8.5
-        );
-        return ResponseEntity.ok(response);
-    }
+
 
     // POST /api/rides/{id}/cancel - Cancel specific ride
     @PostMapping(
