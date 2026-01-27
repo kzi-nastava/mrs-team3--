@@ -1,6 +1,8 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { MessageService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
 import {
   UserProfileService,
   DriverProfileResponse,
@@ -44,7 +46,8 @@ interface ChangeRequest {
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [ReactiveFormsModule, CommonModule],
+  imports: [ReactiveFormsModule, CommonModule, ToastModule],
+  providers: [MessageService],
   templateUrl: './profile.html',
   styleUrl: './profile.css'
 })
@@ -56,7 +59,6 @@ export class ProfileComponent implements OnInit {
   passwordForm!: FormGroup;
   imageMarkedForRemoval = false;
   editMode = false;
-  showPasswordModal = false;
 
   selectedFile: File | null = null;
   imagePreview = '';
@@ -68,7 +70,8 @@ export class ProfileComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private profileService: UserProfileService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private messageService: MessageService
   ) {
     this.initForms();
   }
@@ -375,29 +378,7 @@ export class ProfileComponent implements OnInit {
     }
   }
 
-  openChangePassword(): void {
-    this.showPasswordModal = true;
-    this.passwordForm.reset();
-  }
 
-  closePasswordModal(): void {
-    this.showPasswordModal = false;
-    this.passwordForm.reset();
-  }
-
-  changePassword(): void {
-    if (this.passwordForm.invalid) return;
-
-    const { newPassword, confirmPassword } = this.passwordForm.value;
-
-    if (newPassword !== confirmPassword) {
-      alert('❌ Passwords do not match');
-      return;
-    }
-
-    alert('🔒 Password changed successfully (backend not connected yet)');
-    this.closePasswordModal();
-  }
 
   getProfileImageSrc(): string {
     if (this.imagePreview) {
@@ -417,6 +398,31 @@ export class ProfileComponent implements OnInit {
     }
 
     return this.user.profileImage;
+  }
+
+
+  resetPassword(): void {
+    if (!this.user) return;
+
+    this.profileService.sendResetPasswordEmail(this.user.email).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Email sent',
+          detail: 'Password reset link has been sent to your email.',
+          life: 4000
+        });
+      },
+      error: (err) => {
+        console.error(err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to send reset password email.',
+          life: 4000
+        });
+      }
+    });
   }
 
 
