@@ -14,6 +14,7 @@ import { AdminNotificationsComponent } from './notifications/admin-notifications
 import { DriverNotificationsComponent } from './notifications/driver-notifications/driver-notifications';
 import { PassengerNotificationsComponent } from './notifications/passenger-notifications/passenger-notifications';
 import { RideReviewComponent } from './ride-review/ride-review';
+import { RideTrackingComponent } from './ride-tracking/ride-tracking';
 
 export const routes: Routes = [
 
@@ -45,7 +46,8 @@ export const routes: Routes = [
     canActivate: [authGuard],
     data: { role: 'ADMIN' }
   },
-
+  { path: 'ride-tracking', component: RideTrackingComponent, canActivate: [passengerGuard] },
+  {path: 'ride-tracking/:token', component: RideTrackingComponent},
   { path: 'reset-password', component: ResetPasswordComponent },
   { path: 'forgot-password', component: ForgotPassword },
   {path: 'verification-result', component: VerificationResultComponent},
