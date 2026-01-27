@@ -6,5 +6,6 @@ public record PassengerProfileResponse(
   String firstName,
   String lastName,
   String phoneNumber,
-  String address
+  String address,
+  String profileImage
 ) {}

@@ -47,6 +47,7 @@ public class UserProfileService {
                     driver.getSurname(),
                     driver.getPhoneNumber(),
                     driver.getAddress(),
+                    driver.getProfileImage(),
                     vehicleResponse,
                     driver.isActive()
             );
@@ -59,7 +60,8 @@ public class UserProfileService {
                     passenger.getName(),
                     passenger.getSurname(),
                     passenger.getPhoneNumber(),
-                    passenger.getAddress()
+                    passenger.getAddress(),
+                    passenger.getProfileImage()
             );
         }
 
@@ -69,7 +71,8 @@ public class UserProfileService {
                 user.getName(),
                 user.getSurname(),
                 user.getPhoneNumber(),
-                user.getAddress()
+                user.getAddress(),
+                user.getProfileImage()
         );
     }
 
@@ -85,5 +88,14 @@ public class UserProfileService {
 
             userRepository.save(user);
         }
+    }
+
+    @Transactional
+    public void updateProfileImage(Long userId, String imagePath) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.setProfileImage(imagePath);
+        userRepository.save(user);
     }
 }

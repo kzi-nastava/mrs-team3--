@@ -12,9 +12,10 @@ export interface BaseProfile {
   lastName: string;
   phoneNumber: string;
   address: string;
+  profileImage: string | null;
 }
 
-export interface VehicleResponse {
+export interface VehicleResponse  {
   id: number;
   model: string;
   type: 'STANDARD' | 'VAN' | 'LUXURY';
@@ -66,10 +67,22 @@ export class UserProfileService {
   }
 
   submitDriverChangeRequest(payload: any) {
-  return this.http.post(
-    `${env.API_URL}/api/profile/change-request`,
-    payload
-  );
-}
+    return this.http.post(
+      `${env.API_URL}/api/profile/change-request`,
+      payload
+    );
+  }
+  
+  uploadProfileImage(file: File) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    return this.http.post(
+      `${this.API_URL}/me/image`,
+      formData,
+      { responseType: 'text' }
+    );
+
+  }
 
 }

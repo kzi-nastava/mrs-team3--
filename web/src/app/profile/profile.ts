@@ -60,6 +60,7 @@ export class ProfileComponent implements OnInit {
 
   selectedFile: File | null = null;
   imagePreview = '';
+  uploadedImagePath: string | null = null;
 
   pendingChanges: ChangeRequest[] = [];
   hasPendingChanges = false;
@@ -106,8 +107,8 @@ export class ProfileComponent implements OnInit {
         phoneNumber: response.phoneNumber,
         address: response.address,
         role: 'DRIVER',
-        profileImage: '',
-        activeHours: 6, 
+        profileImage: response.profileImage ?? '',
+        activeHours: 6,
         vehicle: {
           model: response.vehicle.model,
           licensePlate: response.vehicle.registrationNumber,
@@ -137,31 +138,36 @@ export class ProfileComponent implements OnInit {
       this.pendingChanges = [];
       this.hasPendingChanges = false;
 
-      return;
+    } else {
+
+      // PASSENGER / ADMIN
+      this.user = {
+        id: response.id,
+        firstName: response.firstName,
+        lastName: response.lastName,
+        email: response.email,
+        phoneNumber: response.phoneNumber,
+        address: response.address,
+        role: 'PASSENGER',
+        profileImage: response.profileImage ?? '',
+      };
+
+      this.profileForm.patchValue({
+        firstName: this.user.firstName,
+        lastName: this.user.lastName,
+        email: this.user.email,
+        phoneNumber: this.user.phoneNumber,
+        address: this.user.address
+      });
+
+      this.disableVehicleFields();
     }
 
-    // PASSENGER / ADMIN
-    this.user = {
-      id: response.id,
-      firstName: response.firstName,
-      lastName: response.lastName,
-      email: response.email,
-      phoneNumber: response.phoneNumber,
-      address: response.address,
-      role: 'PASSENGER',
-      profileImage: ''
-    };
-
-    this.profileForm.patchValue({
-      firstName: this.user.firstName,
-      lastName: this.user.lastName,
-      email: this.user.email,
-      phoneNumber: this.user.phoneNumber,
-      address: this.user.address
-    });
-
-    this.disableVehicleFields();
+    this.imagePreview = this.user.profileImage
+      ? 'http://localhost:8080' + this.user.profileImage
+      : '';
   }
+
 
   initForms(): void {
     this.profileForm = this.fb.group({
@@ -197,43 +203,50 @@ export class ProfileComponent implements OnInit {
   }
 
 
-  saveChanges(): void {
-  if (!this.user) return;        
+ saveChanges(): void {
+  if (!this.user) return;
   if (this.profileForm.invalid) return;
 
   if (this.user.role === 'DRIVER') {
 
-  const payload = this.profileForm.getRawValue();
+    const form = this.profileForm.getRawValue();
 
-  this.profileService.submitDriverChangeRequest({
-    firstName: payload.firstName,
-    lastName: payload.lastName,
-    phoneNumber: payload.phoneNumber,
-    address: payload.address,
-    profileImage: this.imagePreview || null,
+    const payload: any = {
+      firstName: form.firstName,
+      lastName: form.lastName,
+      phoneNumber: form.phoneNumber,
+      address: form.address,
 
-    vehicleModel: payload.vehicleModel,
-    vehicleRegistrationNumber: payload.vehicleLicensePlate,
-    vehicleSeatingCapacity: payload.vehicleSeats,
-    vehicleType: payload.vehicleType,
-    babyTransport: payload.babyTransport,
-    petTransport: payload.petTransport
-  }).subscribe({
-    next: () => {
-      alert('📤 Changes submitted for admin approval');
-      this.editMode = false;
-      this.loadProfile();
-    },
-    error: (err) => {
-      console.error(err);
-      alert('❌ Failed to submit change request');
+      vehicleModel: form.vehicleModel,
+      vehicleRegistrationNumber: form.vehicleLicensePlate,
+      vehicleSeatingCapacity: form.vehicleSeats,
+      vehicleType: form.vehicleType,
+      babyTransport: form.babyTransport,
+      petTransport: form.petTransport
+    };
+
+    if (this.uploadedImagePath) {
+      payload.profileImage = this.uploadedImagePath;
     }
-  });
 
-  return;
-}
+    console.log('DRIVER CHANGE PAYLOAD:', payload);
 
+    this.profileService.submitDriverChangeRequest(payload).subscribe({
+      next: () => {
+        alert('📤 Changes submitted for admin approval');
+        this.editMode = false;
+        this.loadProfile();
+      },
+      error: (err) => {
+        console.error(err);
+        alert(err.error || '❌ Failed to submit change request');
+      }
+    });
 
+    return;
+  }
+
+  // PASSENGER / ADMIN
   const payload = this.profileForm.getRawValue();
 
   this.profileService.updateMyProfile({
@@ -250,6 +263,7 @@ export class ProfileComponent implements OnInit {
     error: () => alert('❌ Update failed')
   });
 }
+
 
 
   getStatusColor(status: string): string {
@@ -284,12 +298,23 @@ onImageSelected(event: Event): void {
   const file = input.files[0];
   this.selectedFile = file;
 
+  // PREVIEW (ostaje isto)
   const reader = new FileReader();
   reader.onload = () => {
     this.imagePreview = reader.result as string;
   };
   reader.readAsDataURL(file);
+
+  // ⬇️ UPLOAD NA BEK
+  this.profileService.uploadProfileImage(file).subscribe({
+    next: (path) => {
+      this.uploadedImagePath = path;
+      console.log('Image uploaded, path:', path);
+    },
+    error: () => alert('❌ Image upload failed')
+  });
 }
+
 
 removeImage(): void {
   this.selectedFile = null;

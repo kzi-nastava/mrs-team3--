@@ -135,8 +135,7 @@ public class AuthService {
     if (req.getBase64Image() != null) {
       String fileName = UUID.randomUUID() + "." + req.getExtension();
 
-      p.setImagePath("uploads/" + fileName);
-
+      p.setProfileImage("/uploads/profiles/" + fileName);
       byte[] imageBytes = getDecoder().decode(req.getBase64Image());
       Files.write(Path.of("uploads/" + fileName), imageBytes);
     }

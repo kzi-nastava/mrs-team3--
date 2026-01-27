@@ -49,8 +49,6 @@ public abstract class User {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Notification> notifications = new ArrayList<>();
 
-    String imagePath;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UserRole role;
