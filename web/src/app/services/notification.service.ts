@@ -186,6 +186,8 @@ export class NotificationService implements OnDestroy {
         NotificationType.PROFILE_CHANGE
       ],
       DRIVER: [
+        NotificationType.ACCEPTED_RIDE,     
+        NotificationType.DECLINED_RIDE, 
         NotificationType.RIDE_REMINDER,
         NotificationType.RIDE_CANCELED,
         NotificationType.PROFILE_CHANGE,
