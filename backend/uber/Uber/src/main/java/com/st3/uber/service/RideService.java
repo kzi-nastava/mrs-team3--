@@ -285,7 +285,7 @@ public class RideService {
     Passenger passenger = passengerRepository.findById(id).orElseThrow(
         () -> new IllegalArgumentException("Passenger not found."));
 
-    List<Ride> rides = rideRepository.findPastByCreator(passenger);
+    List<Ride> rides = rideRepository.findByCreatorAndFinishedAtIsNotNull(passenger);
 
       List<Ride> favoriteRides = passenger.getFavoriteRides();
       Set<Long> favoriteRideIds = favoriteRides.stream()
@@ -297,7 +297,7 @@ public class RideService {
               r.getId(),
               r.getStatus(),
               r.getStartLocation(),
-              r.getEndLocation(),
+              r.getActualEndLocation(),
               r.getStartedAt(),
               r.getFinishedAt(),
               favoriteRideIds.contains(r.getId())
@@ -327,7 +327,7 @@ public class RideService {
         res.setId(ride.getId());
         res.setStatus(ride.getStatus());
         res.setStartLocation(ride.getStartLocation());
-        res.setEndLocation(ride.getEndLocation());
+        res.setEndLocation(ride.getActualEndLocation());
         res.setStartTime(ride.getStartedAt());
         res.setEndTime(ride.getFinishedAt());
         res.setFavorite(favorite);

@@ -97,7 +97,6 @@ public class Ride {
     @Column(nullable = false)
     private int estimatedTimeMinutes;
 
-
     private LocalDateTime scheduledAt;
     private LocalDateTime startedAt;
     private LocalDateTime finishedAt;
