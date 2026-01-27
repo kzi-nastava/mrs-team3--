@@ -71,4 +71,13 @@ public class ImageStorageService {
         }
     }
 
+    public void deleteProfileImageForUser(Long userId, String imagePath) {
+        if (imagePath == null || imagePath.isBlank()) {
+            return;
+        }
+        delete(imagePath);
+    }
+
+
+
 }

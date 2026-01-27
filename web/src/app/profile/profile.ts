@@ -54,7 +54,7 @@ export class ProfileComponent implements OnInit {
 
   profileForm!: FormGroup;
   passwordForm!: FormGroup;
-
+  imageMarkedForRemoval = false;
   editMode = false;
   showPasswordModal = false;
 
@@ -66,30 +66,30 @@ export class ProfileComponent implements OnInit {
   hasPendingChanges = false;
 
   constructor(
-  private fb: FormBuilder,
-  private profileService: UserProfileService,
-  private cdr: ChangeDetectorRef
-) {
-  this.initForms();
-}
+    private fb: FormBuilder,
+    private profileService: UserProfileService,
+    private cdr: ChangeDetectorRef
+  ) {
+    this.initForms();
+  }
 
   ngOnInit(): void {
-  this.loadProfile();
+    this.loadProfile();
   }
 
 
   loadProfile(): void {
-  this.profileService.getMyProfile().subscribe({
-    next: (response) => {
-      this.processApiResponse(response);
-      this.cdr.detectChanges();
-    },
-    error: (err) => {
-      console.error('Failed to load profile', err);
-      alert('Failed to load profile');
-    }
-  });
-}
+    this.profileService.getMyProfile().subscribe({
+      next: (response) => {
+        this.processApiResponse(response);
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Failed to load profile', err);
+        alert('Failed to load profile');
+      }
+    });
+  }
 
 
   private processApiResponse(
@@ -163,9 +163,6 @@ export class ProfileComponent implements OnInit {
       this.disableVehicleFields();
     }
 
-    this.imagePreview = this.user.profileImage
-      ? 'http://localhost:8080' + this.user.profileImage
-      : '';
   }
 
 
@@ -203,66 +200,122 @@ export class ProfileComponent implements OnInit {
   }
 
 
- saveChanges(): void {
-  if (!this.user) return;
-  if (this.profileForm.invalid) return;
+  saveChanges(): void {
+    if (!this.user) return;
+    if (this.profileForm.invalid) return;
 
-  if (this.user.role === 'DRIVER') {
+    if (this.user.role === 'DRIVER') {
+      const form = this.profileForm.getRawValue();
+
+      const payload: any = {
+        firstName: form.firstName,
+        lastName: form.lastName,
+        phoneNumber: form.phoneNumber,
+        address: form.address,
+
+        vehicleModel: form.vehicleModel,
+        vehicleRegistrationNumber: form.vehicleLicensePlate,
+        vehicleSeatingCapacity: form.vehicleSeats,
+        vehicleType: form.vehicleType,
+        babyTransport: form.babyTransport,
+        petTransport: form.petTransport
+      };
+
+      if (this.selectedFile) {
+        this.profileService.uploadProfileImage(this.selectedFile).subscribe({
+          next: (path) => {
+            payload.profileImage = path;
+
+            this.profileService.submitDriverChangeRequest(payload).subscribe({
+              next: () => {
+                alert('📤 Changes submitted for admin approval');
+                this.editMode = false;
+                this.imagePreview = '';
+                this.selectedFile = null;
+                this.loadProfile();
+              },
+              error: (err) => {
+                console.error(err);
+                alert(err.error || '❌ Failed to submit change request');
+              }
+            });
+          },
+          error: () => alert('❌ Image upload failed')
+        });
+        return;
+      }
+
+      this.profileService.submitDriverChangeRequest(payload).subscribe({
+        next: () => {
+          alert('📤 Changes submitted for admin approval');
+          this.editMode = false;
+          this.imagePreview = '';
+          this.selectedFile = null;
+          this.loadProfile();
+        },
+        error: (err) => {
+          console.error(err);
+          alert(err.error || '❌ Failed to submit change request');
+        }
+      });
+
+      return;
+    }
+
 
     const form = this.profileForm.getRawValue();
 
-    const payload: any = {
+    if (this.imageMarkedForRemoval && !this.selectedFile) {
+      this.profileService.deleteProfileImage().subscribe({
+        next: () => {
+          this.imageMarkedForRemoval = false;
+        },
+        error: () => alert('❌ Failed to remove image')
+      });
+    }
+
+    if (this.selectedFile) {
+      this.profileService.uploadProfileImage(this.selectedFile).subscribe({
+        next: () => {
+          this.profileService.updateMyProfile({
+            firstName: form.firstName,
+            lastName: form.lastName,
+            phoneNumber: form.phoneNumber,
+            address: form.address
+          }).subscribe({
+            next: () => {
+              alert('✅ Profile updated');
+              this.editMode = false;
+              this.imagePreview = '';
+              this.selectedFile = null;
+              this.loadProfile();
+            },
+            error: () => alert('❌ Update failed')
+          });
+        },
+        error: () => alert('❌ Image upload failed')
+      });
+      return;
+    }
+
+    this.profileService.updateMyProfile({
       firstName: form.firstName,
       lastName: form.lastName,
       phoneNumber: form.phoneNumber,
-      address: form.address,
-
-      vehicleModel: form.vehicleModel,
-      vehicleRegistrationNumber: form.vehicleLicensePlate,
-      vehicleSeatingCapacity: form.vehicleSeats,
-      vehicleType: form.vehicleType,
-      babyTransport: form.babyTransport,
-      petTransport: form.petTransport
-    };
-
-    if (this.uploadedImagePath) {
-      payload.profileImage = this.uploadedImagePath;
-    }
-
-    console.log('DRIVER CHANGE PAYLOAD:', payload);
-
-    this.profileService.submitDriverChangeRequest(payload).subscribe({
+      address: form.address
+    }).subscribe({
       next: () => {
-        alert('📤 Changes submitted for admin approval');
+        alert('✅ Profile updated');
         this.editMode = false;
+        this.imagePreview = '';
+        this.selectedFile = null;
         this.loadProfile();
       },
-      error: (err) => {
-        console.error(err);
-        alert(err.error || '❌ Failed to submit change request');
-      }
+      error: () => alert('❌ Update failed')
     });
 
-    return;
   }
 
-  // PASSENGER / ADMIN
-  const payload = this.profileForm.getRawValue();
-
-  this.profileService.updateMyProfile({
-    firstName: payload.firstName,
-    lastName: payload.lastName,
-    phoneNumber: payload.phoneNumber,
-    address: payload.address
-  }).subscribe({
-    next: () => {
-      this.editMode = false;
-      alert('✅ Profile updated');
-      this.loadProfile();
-    },
-    error: () => alert('❌ Update failed')
-  });
-}
 
 
 
@@ -286,64 +339,85 @@ export class ProfileComponent implements OnInit {
 
   toggleEditMode(): void {
     if (this.editMode) {
+      this.imagePreview = '';
+      this.selectedFile = null;
+      this.uploadedImagePath = null;
+
       this.loadProfile();
     }
     this.editMode = !this.editMode;
   }
 
-onImageSelected(event: Event): void {
-  const input = event.target as HTMLInputElement;
-  if (!input.files || input.files.length === 0) return;
 
-  const file = input.files[0];
-  this.selectedFile = file;
+  onImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
 
-  // PREVIEW (ostaje isto)
-  const reader = new FileReader();
-  reader.onload = () => {
-    this.imagePreview = reader.result as string;
-  };
-  reader.readAsDataURL(file);
+    this.selectedFile = input.files[0];
 
-  // ⬇️ UPLOAD NA BEK
-  this.profileService.uploadProfileImage(file).subscribe({
-    next: (path) => {
-      this.uploadedImagePath = path;
-      console.log('Image uploaded, path:', path);
-    },
-    error: () => alert('❌ Image upload failed')
-  });
-}
-
-
-removeImage(): void {
-  this.selectedFile = null;
-  this.imagePreview = '';
-}
-
-openChangePassword(): void {
-  this.showPasswordModal = true;
-  this.passwordForm.reset();
-}
-
-closePasswordModal(): void {
-  this.showPasswordModal = false;
-  this.passwordForm.reset();
-}
-
-changePassword(): void {
-  if (this.passwordForm.invalid) return;
-
-  const { newPassword, confirmPassword } = this.passwordForm.value;
-
-  if (newPassword !== confirmPassword) {
-    alert('❌ Passwords do not match');
-    return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.imagePreview = reader.result as string;
+    };
+    reader.readAsDataURL(this.selectedFile);
   }
 
-  alert('🔒 Password changed successfully (backend not connected yet)');
-  this.closePasswordModal();
-}
 
-  
+
+  removeImage(): void {
+    this.imagePreview = '';
+    this.selectedFile = null;
+    this.uploadedImagePath = null;
+    this.imageMarkedForRemoval = true;
+
+    if (this.user) {
+      this.user.profileImage = '';
+    }
+  }
+
+  openChangePassword(): void {
+    this.showPasswordModal = true;
+    this.passwordForm.reset();
+  }
+
+  closePasswordModal(): void {
+    this.showPasswordModal = false;
+    this.passwordForm.reset();
+  }
+
+  changePassword(): void {
+    if (this.passwordForm.invalid) return;
+
+    const { newPassword, confirmPassword } = this.passwordForm.value;
+
+    if (newPassword !== confirmPassword) {
+      alert('❌ Passwords do not match');
+      return;
+    }
+
+    alert('🔒 Password changed successfully (backend not connected yet)');
+    this.closePasswordModal();
+  }
+
+  getProfileImageSrc(): string {
+    if (this.imagePreview) {
+      return this.imagePreview;
+    }
+
+    if (!this.user?.profileImage) {
+      return '';
+    }
+
+    if (this.user.profileImage.startsWith('data:image')) {
+      return this.user.profileImage;
+    }
+
+    if (this.user.profileImage.startsWith('/uploads/')) {
+      return 'http://localhost:8080' + this.user.profileImage;
+    }
+
+    return this.user.profileImage;
+  }
+
+
 }

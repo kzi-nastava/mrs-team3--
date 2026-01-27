@@ -98,4 +98,12 @@ public class UserProfileService {
         user.setProfileImage(imagePath);
         userRepository.save(user);
     }
+
+    public String getProfileImagePath(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return user.getProfileImage();
+    }
+
+
 }

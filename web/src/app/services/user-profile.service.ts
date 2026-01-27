@@ -15,7 +15,7 @@ export interface BaseProfile {
   profileImage: string | null;
 }
 
-export interface VehicleResponse  {
+export interface VehicleResponse {
   id: number;
   model: string;
   type: 'STANDARD' | 'VAN' | 'LUXURY';
@@ -30,9 +30,9 @@ export interface DriverProfileResponse extends BaseProfile {
   active: boolean;
 }
 
-export interface PassengerProfileResponse extends BaseProfile {}
+export interface PassengerProfileResponse extends BaseProfile { }
 
-export interface AdminProfileResponse extends BaseProfile {}
+export interface AdminProfileResponse extends BaseProfile { }
 
 export interface UpdateUserProfileRequest {
   firstName: string;
@@ -48,7 +48,7 @@ export class UserProfileService {
 
   private readonly API_URL = env.API_URL + "/api/profile";
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
 
   getMyProfile(): Observable<
@@ -72,7 +72,7 @@ export class UserProfileService {
       payload
     );
   }
-  
+
   uploadProfileImage(file: File) {
     const formData = new FormData();
     formData.append('file', file);
@@ -83,6 +83,10 @@ export class UserProfileService {
       { responseType: 'text' }
     );
 
+  }
+
+  deleteProfileImage(): Observable<void> {
+    return this.http.delete<void>(`${this.API_URL}/me/image`);
   }
 
 }

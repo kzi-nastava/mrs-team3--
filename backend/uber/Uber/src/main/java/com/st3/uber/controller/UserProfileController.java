@@ -65,13 +65,41 @@ public class UserProfileController {
             @RequestParam("file") MultipartFile file
     ) {
         Long userId = jwt.getClaim("uid");
+
+        String oldImage = userProfileService.getProfileImagePath(userId);
+
+        imageStorageService.deleteProfileImageForUser(userId, oldImage);
+
         String imagePath = imageStorageService.saveProfileImage(file, userId);
+
         String role = jwt.getClaim("role");
         if (!"DRIVER".equals(role)) {
             userProfileService.updateProfileImage(userId, imagePath);
         }
+
         return ResponseEntity.ok(imagePath);
     }
+
+
+    @DeleteMapping("/me/image")
+    public ResponseEntity<Void> deleteProfileImage(
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        Long userId = jwt.getClaim("uid");
+        String role = jwt.getClaim("role");
+
+        String imagePath = userProfileService.getProfileImagePath(userId);
+
+        imageStorageService.delete(imagePath);
+
+        if (!"DRIVER".equals(role)) {
+            userProfileService.updateProfileImage(userId, null);
+        }
+
+        return ResponseEntity.ok().build();
+    }
+
+
 
     @ExceptionHandler(PendingProfileChangeRequestException.class)
     public ResponseEntity<String> handlePendingProfileChange(
