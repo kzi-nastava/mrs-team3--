@@ -15,6 +15,7 @@ export interface RideTrackingData {
   startLocation: Location;
   endLocation: Location;
   stops: Location[];
+  stopsReached: boolean[];  // NEW: Array indicating which stops have been reached
   driverCurrentLocation: Location | null;
   driverName: string;
   driverPhone: string | null;

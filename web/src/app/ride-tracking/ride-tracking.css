@@ -704,3 +704,32 @@
     min-width: auto;
   }
 }
+
+.route-point.reached {
+  opacity: 0.7;
+}
+
+.route-point.reached .route-text {
+  color: #6b7280;
+}
+
+.route-icon.stop.reached {
+  background-color: #fbbf24; 
+  color: #ffffff;
+  font-weight: bold;
+}
+
+.route-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.route-point.reached .route-address {
+  text-decoration: line-through;
+  color: #9ca3af;
+}
+
+.route-point.reached .route-address {
+  color: #6b7280;
+  font-style: italic;
+}
