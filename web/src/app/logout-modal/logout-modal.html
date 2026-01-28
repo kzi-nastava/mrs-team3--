@@ -1,18 +1,18 @@
 <div class="modal-overlay" (click)="onCancel()">
   <div class="modal-content" (click)="$event.stopPropagation()">
     <div class="modal-header">
-      <h2>Potvrda odjave</h2>
+      <h2>Logout Confirmation</h2>
       <button class="close-btn" (click)="onCancel()">&times;</button>
     </div>
     <div class="modal-body">
       <div class="icon-container">
         <span class="logout-icon">🚪</span>
       </div>
-      <p>Da li ste sigurni da želite da se odjavite?</p>
+      <p>Are you sure you want to logout?</p>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-cancel" (click)="onCancel()">Otkaži</button>
-      <button class="btn btn-confirm" (click)="onConfirm()">Odjavi se</button>
+      <button class="btn btn-cancel" (click)="onCancel()">Cancel</button>
+      <button class="btn btn-confirm" (click)="onConfirm()">Logout</button>
     </div>
   </div>
 </div>
