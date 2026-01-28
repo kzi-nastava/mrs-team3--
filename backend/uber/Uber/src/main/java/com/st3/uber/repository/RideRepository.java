@@ -5,12 +5,15 @@ import com.st3.uber.domain.Passenger;
 import com.st3.uber.domain.Ride;
 import com.st3.uber.enums.RideStatus;
 import com.st3.uber.enums.VehicleType;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface RideRepository extends JpaRepository<Ride, Long> {
 
@@ -82,4 +85,22 @@ public interface RideRepository extends JpaRepository<Ride, Long> {
             @Param("requiresBabyTransport") boolean requiresBabyTransport,
             @Param("requiresPetTransport") boolean requiresPetTransport
     );
+
+    @Query("""
+    SELECT DISTINCT r FROM Ride r
+    LEFT JOIN FETCH r.passengers
+    LEFT JOIN FETCH r.driver
+    WHERE r.status = :status
+    AND r.scheduledAt IS NOT NULL
+""")
+    List<Ride> findPendingRidesForReminders(@Param("status") RideStatus status);
+
+
+    /**
+     * For finishing rides - with pessimistic lock to prevent concurrent access
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT r FROM Ride r WHERE r.id = :id")
+    Optional<Ride> findByIdWithLock(@Param("id") Long id);
+
 }
