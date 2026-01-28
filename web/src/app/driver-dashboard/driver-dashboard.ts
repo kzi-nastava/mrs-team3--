@@ -32,6 +32,10 @@ export class DriverDashboardComponent implements OnInit, OnDestroy {
   // Modals
   protected showFinishModal = signal<boolean>(false);
 
+  protected showCancelModal = signal<boolean>(false);
+  protected cancelReason = signal<string>('');
+
+
   // Toast notifications
   protected toasts: Toast[] = [];
   private toastIdCounter = 0;
@@ -48,7 +52,7 @@ export class DriverDashboardComponent implements OnInit, OnDestroy {
 
   private loadData(): void {
     this.loading.set(true);
-    
+
     this.service.getMyRides().subscribe({
       next: (rides) => {
         this.myRides.set(rides);
@@ -132,18 +136,18 @@ export class DriverDashboardComponent implements OnInit, OnDestroy {
 
   protected finishRide(): void {
     const ride = this.selectedRide() as DriverRide;
-    
+
     // FIXED: Pass the actual rideId
     this.service.finishRide(ride.rideId, null).subscribe({
       next: (response) => {
         this.closeFinishModal();
-        
+
         if (response.hasNextRide) {
           this.showToast('Ride completed! Your next ride is now active.', 'success');
         } else {
           this.showToast('Ride completed! You are now available for new rides.', 'success');
         }
-        
+
         this.loadData();
       },
       error: (err) => {
@@ -158,7 +162,7 @@ export class DriverDashboardComponent implements OnInit, OnDestroy {
       next: (updatedRide) => {
         this.selectedRide.set(updatedRide);
         this.showToast(`Stop ${stopIndex + 1} marked as reached`, 'success');
-        
+
         // Update the markers on the map
         this.addMarkers(updatedRide);
       },
@@ -175,9 +179,9 @@ export class DriverDashboardComponent implements OnInit, OnDestroy {
       message,
       type
     };
-    
+
     this.toasts.push(toast);
-    
+
     setTimeout(() => {
       this.removeToast(toast.id);
     }, 5000);
@@ -231,13 +235,13 @@ export class DriverDashboardComponent implements OnInit, OnDestroy {
 
     // Stop markers (blue for unreached, gold for reached)
     ride.stops.forEach((stop, index) => {
-      const reached = this.isDriverRide(ride) 
-        ? ride.stopStatuses[index]?.reached 
+      const reached = this.isDriverRide(ride)
+        ? ride.stopStatuses[index]?.reached
         : false;
-      
+
       const color = reached ? 'gold' : 'blue';
       const label = reached ? `Stop ${index + 1} ✓` : `Stop ${index + 1}`;
-      
+
       const stopMarker = L.marker([stop.lat, stop.lng], {
         icon: this.getIcon(color)
       }).addTo(this.map).bindPopup(label);
@@ -348,5 +352,46 @@ export class DriverDashboardComponent implements OnInit, OnDestroy {
 
   protected refreshRides(): void {
     this.loadData();
+  }
+
+  protected openCancelModal(): void {
+    const ride = this.selectedRide();
+    if (!ride || !this.isDriverRide(ride)) return;
+
+    if (ride.status !== 'ACCEPTED') {
+      this.showToast('Ride cannot be cancelled at this stage', 'warning');
+      return;
+    }
+
+    this.cancelReason.set('');
+    this.showCancelModal.set(true);
+  }
+
+  protected closeCancelModal(): void {
+    this.showCancelModal.set(false);
+  }
+
+  protected confirmCancelRide(): void {
+    const ride = this.selectedRide();
+    if (!ride || !this.isDriverRide(ride)) return;
+
+    if (ride.status !== 'ACCEPTED') {
+      this.showToast('Ride cannot be cancelled at this stage', 'warning');
+      return;
+    }
+
+    const reason = this.cancelReason().trim();
+    if (!reason) return;
+
+    this.service.cancelRide(ride.rideId, reason).subscribe({
+      next: () => {
+        this.showToast('Ride cancelled successfully', 'success');
+        this.showCancelModal.set(false);
+        this.loadData();
+      },
+      error: (err) => {
+        this.showToast('Failed to cancel ride: ' + (err.error?.message || 'Unknown error'), 'error');
+      }
+    });
   }
 }
