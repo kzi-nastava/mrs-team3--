@@ -126,10 +126,15 @@
             </div>
 
             @for (stop of rideData()!.stops; track stop; let i = $index) {
-              <div class="route-point">
-                <div class="route-icon stop">{{ i + 1 }}</div>
+              <div class="route-point" [class.reached]="rideData()!.stopsReached && rideData()!.stopsReached[i]">
+                <div class="route-icon stop" [class.reached]="rideData()!.stopsReached && rideData()!.stopsReached[i]">
+                  {{ rideData()!.stopsReached && rideData()!.stopsReached[i] ? '✓' : (i + 1) }}
+                </div>
                 <div class="route-text">
-                  <span class="route-label">Stop {{ i + 1 }}</span>
+                  <span class="route-label">
+                    Stop {{ i + 1 }}
+                    {{ rideData()!.stopsReached && rideData()!.stopsReached[i] ? '(Reached)' : '' }}
+                  </span>
                   <span class="route-address">{{ stop.address }}</span>
                 </div>
               </div>
