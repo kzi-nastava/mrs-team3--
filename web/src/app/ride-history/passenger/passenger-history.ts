@@ -515,4 +515,25 @@ export class PassengerHistoryComponent implements OnInit, AfterViewInit {
       inconsistencyReport,
     };
   }
+
+  private readonly REVIEW_WINDOW_DAYS = 3;
+
+  protected canReview(ride: Ride): boolean {
+    if (!ride.endTime) return false;
+
+    const end = new Date(ride.endTime).getTime();
+    const now = Date.now();
+    const diffMs = now - end;
+
+    if (diffMs < 0) return false;
+
+    const threeDaysMs = this.REVIEW_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+    return diffMs <= threeDaysMs;
+  }
+
+  protected openReview(ride: Ride): void {
+    this.router.navigate(['/ride-review', ride.id]);
+
+  }
+
 }

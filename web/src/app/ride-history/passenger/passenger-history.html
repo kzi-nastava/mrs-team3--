@@ -218,14 +218,23 @@
   </button>
 
   <div class="ride-actions">
+    @if (canReview(selectedRide()!)) {
     <button
       type="button"
-      class="favorite-btn book-btn"
-      (click)="bookAgain($event, selectedRide()!)">
-      🚕 Book again
+      class="favorite-btn review-btn"
+      (click)="openReview(selectedRide()!)">
+      ✍️ Leave a review
     </button>
+    }
 
-  </div>
+  <button
+    type="button"
+    class="favorite-btn book-btn"
+    (click)="bookAgain($event, selectedRide()!)">
+    🚕 Book again
+  </button>
+
+</div>
 </div>
 
 </div>

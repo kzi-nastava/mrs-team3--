@@ -51,7 +51,9 @@ public class ReviewService {
         boolean isPassengerInRide = ride.getPassengers().stream()
                 .anyMatch(p -> p.getId().equals(passengerId));
 
-        if (!isPassengerInRide) {
+        boolean isCreator = ride.getCreator().getId().equals(passengerId);
+
+        if (!isPassengerInRide && !isCreator) {
             throw new IllegalArgumentException("You were not a passenger on this ride");
         }
 
@@ -114,7 +116,9 @@ public class ReviewService {
         boolean isPassengerInRide = ride.getPassengers().stream()
                 .anyMatch(p -> p.getId().equals(passengerId));
 
-        if (!isPassengerInRide) {
+        boolean isCreator = ride.getCreator().getId().equals(passengerId);
+
+        if (!isPassengerInRide && !isCreator) {
             throw new IllegalArgumentException("You were not a passenger on this ride");
         }
 
