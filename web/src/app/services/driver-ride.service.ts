@@ -122,4 +122,11 @@ export class DriverRideService {
       { stopIndex }
     );
   }
+
+  cancelRide(rideId: number, reason: string): Observable<void> {
+    return this.http.post<void>(
+      `${this.apiUrl}/${rideId}/cancel`,
+      { reason }
+    );
+  }
 }

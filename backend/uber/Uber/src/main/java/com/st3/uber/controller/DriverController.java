@@ -373,6 +373,14 @@ public class DriverController {
                 ride.getPassengers().size()
         );
     }
+
+    @PostMapping("/{rideId}/cancel")
+    public void cancelRideByDriver(@RequestBody DriverCancelRideRequest reason,
+                                   @AuthenticationPrincipal Jwt jwt,
+                                   @PathVariable Long rideId) {
+        Long driverId = jwt.getClaim("uid");
+        driverService.cancelRideByDriver(rideId, driverId, reason);
+    }
 }
 
 

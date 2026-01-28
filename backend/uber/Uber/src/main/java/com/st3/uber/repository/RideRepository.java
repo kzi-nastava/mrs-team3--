@@ -103,4 +103,9 @@ public interface RideRepository extends JpaRepository<Ride, Long> {
     @Query("SELECT r FROM Ride r WHERE r.id = :id")
     Optional<Ride> findByIdWithLock(@Param("id") Long id);
 
+    List<Ride> findByCreatorAndScheduledAtAfterAndStatusIn(
+        Passenger creator,
+        LocalDateTime dateTime,
+        List<RideStatus> statuses
+    );
 }

@@ -1,11 +1,9 @@
 package com.st3.uber.service;
 
 import com.st3.uber.domain.*;
-import com.st3.uber.dto.ride.CreateRideRequest;
-import com.st3.uber.dto.ride.InconsistencyReportItemResponse;
-import com.st3.uber.dto.ride.PassengerRideSummaryExtendedResponse;
-import com.st3.uber.dto.ride.PassengerRideSummaryResponse;
+import com.st3.uber.dto.ride.*;
 import com.st3.uber.dto.route.RouteInfo;
+import com.st3.uber.enums.CancelledBy;
 import com.st3.uber.enums.NotificationType;
 import com.st3.uber.enums.RideStatus;
 import com.st3.uber.repository.PassengerRepository;
@@ -412,7 +410,6 @@ public class RideService {
         return savedRide;
     }
 
-
     public Ride reachStop(Long rideId, int stopIndex) {
         Ride ride = rideRepository.findById(rideId)
                 .orElseThrow(() -> new IllegalArgumentException("Ride not found"));
@@ -437,7 +434,6 @@ public class RideService {
 
         return rideRepository.save(ride);
     }
-
 
     public Ride acceptRide(Long rideId, Driver driver) {
         Ride ride = rideRepository.findById(rideId)
@@ -475,5 +471,40 @@ public class RideService {
         );
 
         return savedRide;
+    }
+
+    public List<IncomingRideResponse> getAllIncomingRidesForPassenger(Long id) {
+        Passenger passenger = passengerRepository.findById(id).orElseThrow(
+                () -> new IllegalArgumentException("Passenger not found."));
+
+        List<Ride> rides = rideRepository.findByCreatorAndScheduledAtAfterAndStatusIn(
+                passenger,
+                LocalDateTime.now(),
+                List.of(RideStatus.ACCEPTED, RideStatus.PENDING)
+        );
+
+        return rides.stream().map(r -> {
+            IncomingRideResponse item = new IncomingRideResponse();
+            item.setId(r.getId());
+            item.setStartLocation(r.getStartLocation());
+            item.setEndLocation(r.getEndLocation());
+            item.setStartTime(r.getScheduledAt());
+            return item;
+        }).toList();
+
+    }
+
+    public void cancelRideByPassenger(Long rideId, Long passengerId){
+        Passenger passenger = passengerRepository.findById(passengerId)
+                .orElseThrow(() -> new IllegalArgumentException("Passenger not found"));
+        Ride ride = rideRepository.findById(rideId)
+                .orElseThrow(() -> new IllegalArgumentException("Ride not found"));
+        if (!ride.getCreator().equals(passenger))
+            return;
+
+        ride.setStatus(RideStatus.CANCELLED_BY_PASSENGER);
+        ride.setCancelledAt(LocalDateTime.now());
+        ride.setCancelledBy(CancelledBy.PASSENGER);
+        rideRepository.save(ride);
     }
 }

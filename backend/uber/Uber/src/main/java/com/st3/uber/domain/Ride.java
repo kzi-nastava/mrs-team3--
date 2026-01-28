@@ -125,7 +125,6 @@ public class Ride {
     @Column(nullable = false)
     private boolean petTransport;
 
-
     @Enumerated(EnumType.STRING)
     private CancelledBy cancelledBy;
 
