@@ -36,7 +36,7 @@ export class IncomingRidesService {
   }
 
   cancelIncomingRide(rideId: number) : Observable<void> {
-    return this.http.post<void>(`${this.apiUrl}/${rideId}/cancel`, {});
+    return this.http.post<void>(`${this.apiUrl}/passenger/${rideId}/cancel`, {});
   }
 
 }

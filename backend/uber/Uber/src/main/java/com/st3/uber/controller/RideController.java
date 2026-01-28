@@ -388,4 +388,16 @@ public class RideController {
         List<IncomingRideResponse> res = rideService.getAllIncomingRidesForPassenger(id);
         return ResponseEntity.ok(res);
     }
+
+    @PostMapping("/incoming-rides/passenger/{rideId}/cancel")
+    @RolesAllowed("PASSENGER")
+    public ResponseEntity<Void> cancelIncomingRideForPassenger(
+        @AuthenticationPrincipal Jwt jwt,
+        @PathVariable Long rideId
+    ){
+        Long id = jwt.getClaim("uid");
+        rideService.cancelRideByPassenger(rideId, id);
+        return ResponseEntity.noContent().build();
+    }
+
 }

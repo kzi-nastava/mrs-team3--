@@ -3,6 +3,7 @@ package com.st3.uber.service;
 import com.st3.uber.domain.*;
 import com.st3.uber.dto.ride.*;
 import com.st3.uber.dto.route.RouteInfo;
+import com.st3.uber.enums.CancelledBy;
 import com.st3.uber.enums.NotificationType;
 import com.st3.uber.enums.RideStatus;
 import com.st3.uber.repository.PassengerRepository;
@@ -491,5 +492,19 @@ public class RideService {
             return item;
         }).toList();
 
+    }
+
+    public void cancelRideByPassenger(Long rideId, Long passengerId){
+        Passenger passenger = passengerRepository.findById(passengerId)
+                .orElseThrow(() -> new IllegalArgumentException("Passenger not found"));
+        Ride ride = rideRepository.findById(rideId)
+                .orElseThrow(() -> new IllegalArgumentException("Ride not found"));
+        if (!ride.getCreator().equals(passenger))
+            return;
+
+        ride.setStatus(RideStatus.CANCELLED_BY_PASSENGER);
+        ride.setCancelledAt(LocalDateTime.now());
+        ride.setCancelledBy(CancelledBy.PASSENGER);
+        rideRepository.save(ride);
     }
 }
