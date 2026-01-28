@@ -1,1 +1,74 @@
-<p>incoming-rides works!</p>
+<div class="ride-history-container">
+
+  <div class="ride-history-header">
+    <h1>Incoming rides</h1>
+  </div>
+
+  @if (rides().length === 0) {
+  <div class="empty-state">
+    <div class="empty-state-icon">🕒</div>
+    <h3>No incoming rides</h3>
+    <p>You don't have any scheduled rides.</p>
+  </div>
+  } @else {
+
+  <div class="rides-grid">
+    @for (ride of rides(); track ride.id) {
+
+  <div class="ride-card no-click">
+
+    <div class="ride-route">
+      <div class="route-point">
+        <div class="route-icon start"></div>
+        <div class="route-address">{{ ride.startLocation.address }}</div>
+      </div>
+
+      @if (ride.stops?.length) {
+      <div class="route-point stop">
+        <div class="route-icon stop"></div>
+        <div class="route-address">
+          Stops:
+          @for (s of (ride.stops ?? []); track $index) {
+      <span class="stop-chip">{{ s.address }}</span>
+      }
+      </div>
+    </div>
+      }
+
+      <div class="route-point">
+        <div class="route-icon end"></div>
+        <div class="route-address">{{ ride.endLocation.address }}</div>
+      </div>
+    </div>
+
+    <div class="ride-info">
+      <div class="info-item">
+        <span class="info-label">Start time</span>
+        <span class="info-value">{{ formatDateTime(ride.startTime) }}</span>
+      </div>
+    </div>
+
+    <div class="ride-actions">
+      <button
+        type="button"
+        class="favorite-btn cancel-btn"
+        [disabled]="!canCancel(ride)"
+        (click)="cancelRide($event, ride)">
+        ❌ Cancel ride
+      </button>
+
+      @if (!canCancel(ride)) {
+      <small class="cannot-cancel">
+        You can cancel up to 10 minutes before start.
+        (Starts in {{ minutesToStart(ride) }} min)
+  </small>
+      }
+
+    </div>
+
+  </div>
+  }
+  </div>
+  }
+
+</div>

@@ -173,10 +173,6 @@ public class RideController {
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-
-
-
-
     // ============ REVIEW ENDPOINTS ============
 
     /**
@@ -376,11 +372,20 @@ public class RideController {
         );
     }
 
-
-
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public ResponseEntity<Void> deleteRide(@PathVariable Long id) {
         return ResponseEntity.noContent().build();
+    }
+
+
+    @GetMapping("/incoming-rides/passenger")
+    @RolesAllowed("PASSENGER")
+    public ResponseEntity<List<IncomingRideResponse>> getAllIncomingRidesForPassenger(
+        @AuthenticationPrincipal Jwt jwt
+    ){
+        Long id = jwt.getClaim("uid");
+        List<IncomingRideResponse> res = rideService.getAllIncomingRidesForPassenger(id);
+        return ResponseEntity.ok(res);
     }
 }
