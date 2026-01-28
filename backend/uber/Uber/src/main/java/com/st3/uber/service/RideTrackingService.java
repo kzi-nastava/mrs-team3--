@@ -92,11 +92,11 @@ public class RideTrackingService {
 
         Ride ride = inviteOpt.get().getRide();
         if (ride.getStatus() == RideStatus.COMPLETED
-            || ride.getStatus() == RideStatus.CANCELLED
-            || ride.getStatus() == RideStatus.CANCELLED_BY_DRIVER
-            || ride.getStatus() == RideStatus.CANCELLED_BY_PASSENGER
-            || ride.getStatus() == RideStatus.REJECTED
-            || ride.getStatus() == RideStatus.FINISHED_EARLY) {
+                || ride.getStatus() == RideStatus.CANCELLED
+                || ride.getStatus() == RideStatus.CANCELLED_BY_DRIVER
+                || ride.getStatus() == RideStatus.CANCELLED_BY_PASSENGER
+                || ride.getStatus() == RideStatus.REJECTED
+                || ride.getStatus() == RideStatus.FINISHED_EARLY) {
             return new TrackingTokenValidationResponse(false, "Ride has ended");
         }
 
@@ -204,7 +204,7 @@ public class RideTrackingService {
     }
 
     /**
-     * FIXED: Build tracking response with dynamic time calculation
+     * FIXED: Build tracking response with dynamic time calculation and stop statuses
      */
     private RideTrackingResponse buildTrackingResponse(Ride ride) {
         Driver driver = ride.getDriver();
@@ -226,12 +226,24 @@ public class RideTrackingService {
         // FIXED: Calculate remaining time based on current position
         int remainingMinutes = calculateRemainingMinutes(ride, info);
 
+        // FIXED: Calculate which stops have been reached
+        List<Boolean> stopsReached = ride.getRideStops().stream()
+                .map(plannedStop ->
+                        ride.getActualRideStops().stream()
+                                .anyMatch(actualStop ->
+                                        actualStop.getLat().equals(plannedStop.getLat()) &&
+                                                actualStop.getLng().equals(plannedStop.getLng())
+                                )
+                )
+                .toList();
+
         return new RideTrackingResponse(
                 ride.getId(),
                 ride.getStatus(),
                 ride.getStartLocation(),
                 ride.getEndLocation(),
                 ride.getRideStops(),
+                stopsReached,
                 driverLocation,
                 driverName,
                 driverPhone,
@@ -250,19 +262,32 @@ public class RideTrackingService {
 
     /**
      * Calculate route dynamically - if driver location exists and ride is in progress,
-     * calculate from driver's current location to destination
+     * calculate from driver's current location to destination, considering only unreached stops
      */
     private RouteInfo calculateDynamicRoute(Ride ride, Location driverLocation) {
-        // If ride is in progress and driver location is known, calculate from current position
+        // If ride is in progress and driver location is known, calculate remaining route
         if (ride.getStatus() == RideStatus.IN_PROGRESS && driverLocation != null) {
+            // Get only the stops that haven't been reached yet
+            List<Location> unreachedStops = ride.getRideStops().stream()
+                    .filter(plannedStop -> {
+                        // Check if this stop has been reached (exists in actualRideStops)
+                        return ride.getActualRideStops().stream()
+                                .noneMatch(actualStop ->
+                                        actualStop.getLat().equals(plannedStop.getLat()) &&
+                                                actualStop.getLng().equals(plannedStop.getLng())
+                                );
+                    })
+                    .toList();
+
+            // Calculate route from current position through unreached stops to destination
             return routeCalculationService.calculateRoute(
                     driverLocation,
                     ride.getEndLocation(),
-                    ride.getRideStops()
+                    unreachedStops
             );
         }
 
-        // Otherwise calculate full route from start to end
+        // Otherwise calculate full route from start to end with all planned stops
         return routeCalculationService.calculateRoute(
                 ride.getStartLocation(),
                 ride.getEndLocation(),

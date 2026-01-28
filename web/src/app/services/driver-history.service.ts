@@ -61,11 +61,17 @@ export class DriverHistoryService {
     let params = new HttpParams();
     
     if (startDate) {
-      params = params.set('startDate', startDate);
+      // Convert YYYY-MM-DD to ISO DateTime (start of day)
+      const startDateTime = new Date(startDate);
+      startDateTime.setHours(0, 0, 0, 0);
+      params = params.set('startDate', startDateTime.toISOString());
     }
     
     if (endDate) {
-      params = params.set('endDate', endDate);
+      // Convert YYYY-MM-DD to ISO DateTime (end of day)
+      const endDateTime = new Date(endDate);
+      endDateTime.setHours(23, 59, 59, 999);
+      params = params.set('endDate', endDateTime.toISOString());
     }
 
     return this.http.get<any[]>(`${this.apiUrl}/${driverId}/rides`, { params })

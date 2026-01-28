@@ -47,7 +47,7 @@ export class DriverDashboardComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    if (this.map) this.map.remove();
+    this.clearMap();
   }
 
   private loadData(): void {
@@ -141,7 +141,11 @@ export class DriverDashboardComponent implements OnInit, OnDestroy {
     this.service.finishRide(ride.rideId, null).subscribe({
       next: (response) => {
         this.closeFinishModal();
-
+        
+        // Clear the map and selected ride to prevent residue
+        this.clearMap();
+        this.selectedRide.set(null);
+        
         if (response.hasNextRide) {
           this.showToast('Ride completed! Your next ride is now active.', 'success');
         } else {
@@ -162,9 +166,10 @@ export class DriverDashboardComponent implements OnInit, OnDestroy {
       next: (updatedRide) => {
         this.selectedRide.set(updatedRide);
         this.showToast(`Stop ${stopIndex + 1} marked as reached`, 'success');
-
-        // Update the markers on the map
+        
+        // Update the markers and redraw route to reflect the new state
         this.addMarkers(updatedRide);
+        this.drawRoute(updatedRide);
       },
       error: () => {
         this.showToast('Failed to mark stop as reached', 'error');
@@ -276,7 +281,25 @@ export class DriverDashboardComponent implements OnInit, OnDestroy {
     this.routeLines.forEach(l => this.map.removeLayer(l));
     this.routeLines = [];
 
-    const waypoints = [ride.startLocation, ...ride.stops, ride.endLocation];
+    let waypoints: Location[];
+
+    // For in-progress rides, only draw route from current position through unreached stops
+    if (this.isDriverRide(ride) && ride.status === 'IN_PROGRESS') {
+      // Get unreached stops only
+      const unreachedStops = ride.stops.filter((stop, index) => 
+        !ride.stopStatuses[index]?.reached
+      );
+
+      // Start from driver's current position (or start location as fallback)
+      const currentPosition = this.driverMarker 
+        ? { lat: this.driverMarker.getLatLng().lat, lng: this.driverMarker.getLatLng().lng, address: 'Current Position' }
+        : ride.startLocation;
+
+      waypoints = [currentPosition, ...unreachedStops, ride.endLocation];
+    } else {
+      // For pending/accepted rides, show full route
+      waypoints = [ride.startLocation, ...ride.stops, ride.endLocation];
+    }
 
     for (let i = 0; i < waypoints.length - 1; i++) {
       this.drawRouteBetween(waypoints[i], waypoints[i + 1]);
@@ -313,7 +336,11 @@ export class DriverDashboardComponent implements OnInit, OnDestroy {
 
     this.service.updateLocation(latlng.lat, latlng.lng).subscribe({
       next: () => {
-        // Silent success
+        // Redraw route from new position to update remaining distance/time
+        const ride = this.selectedRide();
+        if (ride && this.isDriverRide(ride)) {
+          this.drawRoute(ride);
+        }
       },
       error: () => {
         this.showToast('Failed to update location', 'error');
@@ -393,5 +420,31 @@ export class DriverDashboardComponent implements OnInit, OnDestroy {
         this.showToast('Failed to cancel ride: ' + (err.error?.message || 'Unknown error'), 'error');
       }
     });
+  }
+}
+  private clearMap(): void {
+    // Remove all markers
+    this.markers.forEach(m => {
+      if (this.map) this.map.removeLayer(m);
+    });
+    this.markers = [];
+
+    // Remove driver marker
+    if (this.driverMarker && this.map) {
+      this.map.removeLayer(this.driverMarker);
+      this.driverMarker = null;
+    }
+
+    // Remove route lines
+    this.routeLines.forEach(l => {
+      if (this.map) this.map.removeLayer(l);
+    });
+    this.routeLines = [];
+
+    // Remove the map entirely
+    if (this.map) {
+      this.map.remove();
+      this.map = null;
+    }
   }
 }

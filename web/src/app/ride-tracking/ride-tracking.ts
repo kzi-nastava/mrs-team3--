@@ -191,12 +191,17 @@ export class RideTrackingComponent implements OnInit, OnDestroy {
     ).addTo(this.map).bindPopup('Start: ' + ride.startLocation.address);
     this.markers.push(startMarker);
 
+    // Stop markers with color based on reached status
     ride.stops.forEach((stop, index) => {
+      const reached = ride.stopsReached && ride.stopsReached[index];
+      const color = reached ? 'gold' : 'blue';
+      const label = reached ? `Stop ${index + 1} ✓` : `Stop ${index + 1}`;
+      
       const stopMarker = L.marker(
         [stop.lat, stop.lng],
         {
           icon: L.icon({
-            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+            iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
             shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
             iconSize: [25, 41],
             iconAnchor: [12, 41],
@@ -204,7 +209,7 @@ export class RideTrackingComponent implements OnInit, OnDestroy {
             shadowSize: [41, 41]
           })
         }
-      ).addTo(this.map).bindPopup(`Stop ${index + 1}: ${stop.address}`);
+      ).addTo(this.map).bindPopup(label);
       this.markers.push(stopMarker);
     });
 
@@ -254,11 +259,20 @@ export class RideTrackingComponent implements OnInit, OnDestroy {
     this.routeLines.forEach(l => this.map.removeLayer(l));
     this.routeLines = [];
 
-    const waypoints: Location[] = [
-      ride.startLocation,
-      ...ride.stops,
-      ride.endLocation
-    ];
+    let waypoints: Location[];
+
+    // For in-progress rides, only draw route from driver position through unreached stops
+    if (ride.status === 'IN_PROGRESS' && ride.driverCurrentLocation) {
+      // Get unreached stops only
+      const unreachedStops = ride.stops.filter((stop, index) => 
+        !ride.stopsReached || !ride.stopsReached[index]
+      );
+
+      waypoints = [ride.driverCurrentLocation, ...unreachedStops, ride.endLocation];
+    } else {
+      // For pending/accepted rides, show full route
+      waypoints = [ride.startLocation, ...ride.stops, ride.endLocation];
+    }
 
     for (let i = 0; i < waypoints.length - 1; i++) {
       this.drawRouteBetween(waypoints[i], waypoints[i + 1], requestId);
