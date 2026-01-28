@@ -1,7 +1,9 @@
 package com.st3.uber.service;
 
 import com.st3.uber.domain.*;
+import com.st3.uber.dto.user.driver.DriverCancelRideRequest;
 import com.st3.uber.dto.vehicle.ActiveVehicleResponse;
+import com.st3.uber.enums.CancelledBy;
 import com.st3.uber.enums.NotificationType;
 import com.st3.uber.enums.RideRejectReason;
 import com.st3.uber.enums.RideStatus;
@@ -390,5 +392,24 @@ public class DriverService {
         driverRepository.save(driver);
 
         return startedRide;
+    }
+
+
+    @Transactional
+    public void cancelRideByDriver(Long rideId, Long driverId, DriverCancelRideRequest reason){
+        driverRepository.findById(driverId)
+            .orElseThrow(() -> new IllegalArgumentException("Driver not found"));
+
+        Ride ride = rideRepository.findById(rideId)
+            .orElseThrow(() -> new IllegalArgumentException("Ride not found"));
+
+        if (ride.getDriver() == null || !ride.getDriver().getId().equals(driverId))
+            return;
+
+        ride.setStatus(RideStatus.CANCELLED_BY_DRIVER);
+        ride.setCancelledAt(LocalDateTime.now());
+        ride.setCancelledBy(CancelledBy.DRIVER);
+        ride.setTerminationReason(reason.getCancellationReason());
+        rideRepository.save(ride);
     }
 }

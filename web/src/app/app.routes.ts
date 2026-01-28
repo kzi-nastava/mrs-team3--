@@ -16,6 +16,7 @@ import { PassengerNotificationsComponent } from './notifications/passenger-notif
 import { RideReviewComponent } from './ride-review/ride-review';
 import { RideTrackingComponent } from './ride-tracking/ride-tracking';
 import { DriverDashboardComponent } from './driver-dashboard/driver-dashboard';
+import {IncomingRides} from './incoming-rides/incoming-rides';
 
 export const routes: Routes = [
 
@@ -38,7 +39,7 @@ export const routes: Routes = [
 
   { path: 'driver-history', component: DriverHistoryComponent, canActivate: [driverGuard] },
   { path: 'passenger-history', component: PassengerHistoryComponent, canActivate: [passengerGuard] },
- 
+
   {
     path: 'admin/profile-change-requests',
     loadComponent: () =>
@@ -57,5 +58,6 @@ export const routes: Routes = [
   { path: 'passenger-notifications', component: PassengerNotificationsComponent, canActivate: [passengerGuard]},
   {path: 'ride-review/:id', component: RideReviewComponent, canActivate: [passengerGuard]},
   { path: 'driver-dashboard', component: DriverDashboardComponent, canActivate: [driverGuard] },
+  {path: 'incoming-rides', component: IncomingRides, canActivate: [passengerGuard]},
   { path: '**', component: ErrorComponent }
 ];

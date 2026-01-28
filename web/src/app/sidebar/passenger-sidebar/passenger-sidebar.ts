@@ -21,7 +21,7 @@ export class PassengerSidebarComponent implements OnInit, OnDestroy {
     private notificationService: NotificationService,
     private router: Router,
     private authService: AuthService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
   ) { }
 
   ngOnInit(): void {
@@ -79,5 +79,9 @@ export class PassengerSidebarComponent implements OnInit, OnDestroy {
 
   onLogoutCancel() {
     this.showLogoutModal = false;
+  }
+
+  incomingRides() {
+    this.router.navigate(['/incoming-rides']);
   }
 }

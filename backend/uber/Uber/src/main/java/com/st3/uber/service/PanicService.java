@@ -85,6 +85,7 @@ public class PanicService {
         PanicEvent panicEvent = new PanicEvent();
         panicEvent.setRide(ride);
         panicEvent.setTriggeredBy(user);
+        panicEvent.setEmail(user.getEmail());
         panicEvent.setCreatedAt(java.time.LocalDateTime.now());
         ride.getPanicEvents().add(panicEvent);
 

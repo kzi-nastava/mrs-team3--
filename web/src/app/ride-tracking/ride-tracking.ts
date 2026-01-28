@@ -352,6 +352,11 @@ export class RideTrackingComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if(ride.status !== 'IN_PROGRESS' && ride.status !== 'PANIC') {
+      this.showToast('Panic can only be triggered during an active ride', 'warning');
+      return;
+    }
+
     const req$ = (this.isGuestMode && this.trackingToken)
       ? this.rideTrackingService.panicByToken(this.trackingToken)
       : this.rideTrackingService.panic(ride.rideId);
