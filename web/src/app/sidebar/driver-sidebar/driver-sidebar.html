@@ -1,10 +1,7 @@
 <div class="icon-sidebar">
-
   <button class="icon-btn" (click)="goHistory()" title="Ride History">
     📊
   </button>
-
-
   <button class="icon-btn" (click)="goMessages()" title="Messages">
     💬
   </button>
@@ -15,21 +12,28 @@
 
   <button class="icon-btn notification-btn" (click)="goNotifications()" title="Notifications">
     <span class="bell-icon">🔔</span>
-    <span class="notification-badge" *ngIf="unreadCount > 0">{{unreadCount}}</span>
+    @if (unreadCount > 0) {
+    <span class="notification-badge">{{unreadCount}}</span>
+    }
   </button>
-
   <div class="spacer"></div>
-
   <button class="icon-btn" (click)="toggleActiveStatus()" [title]="isActive ? 'Go Inactive' : 'Go Active'">
-    <span *ngIf="isActive">🟢</span>
-    <span *ngIf="!isActive">🔴</span>
+    @if (isActive) {
+    <span>🟢</span>
+    }
+    @if (!isActive) {
+    <span>🔴</span>
+    }
   </button>
-
   <button class="icon-btn" (click)="goProfile()" title="Profile">
     👤
   </button>
-
   <button class="icon-btn logout-btn" (click)="logout()" title="Logout">
     🚪
   </button>
 </div>
+
+@if (showLogoutModal) {
+<app-logout-modal (confirm)="onLogoutConfirm()" (cancel)="onLogoutCancel()">
+</app-logout-modal>
+}

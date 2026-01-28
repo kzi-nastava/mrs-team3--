@@ -9,6 +9,7 @@ public record DriverProfileResponse(
   String lastName,
   String phoneNumber,
   String address,
+  String profileImage,
   VehicleResponse vehicle,
   boolean active
 ) {}

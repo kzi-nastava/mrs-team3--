@@ -24,7 +24,7 @@ export class RideTrackingComponent implements OnInit, OnDestroy {
   protected rideData = signal<RideTrackingData | null>(null);
   protected loading = signal<boolean>(true);
   protected error = signal<string | null>(null);
-  
+
   // For guest mode
   protected trackingToken: string | null = null;
   protected isGuestMode = false;
@@ -56,7 +56,7 @@ export class RideTrackingComponent implements OnInit, OnDestroy {
     this.route.params.subscribe(params => {
       this.trackingToken = params['token'];
       this.isGuestMode = !!this.trackingToken;
-      
+
       if (this.isGuestMode) {
         this.validateAndLoadGuestRide();
       } else {
@@ -99,7 +99,7 @@ export class RideTrackingComponent implements OnInit, OnDestroy {
         this.rideData.set(data);
         this.loading.set(false);
         this.error.set(null);
-        
+
         setTimeout(() => this.initMap(), 100);
       },
       error: (err) => {
@@ -116,19 +116,19 @@ export class RideTrackingComponent implements OnInit, OnDestroy {
         this.rideData.set(data);
         this.loading.set(false);
         this.error.set(null);
-        
+
         setTimeout(() => this.initMap(), 100);
       },
       error: (err) => {
         console.error('Error loading current ride:', err);
-        
+
         if (err.status === 204) {
           this.rideData.set(null);
           this.error.set(null);
         } else {
           this.error.set('Failed to load ride information');
         }
-        
+
         this.loading.set(false);
       }
     });
@@ -136,7 +136,7 @@ export class RideTrackingComponent implements OnInit, OnDestroy {
 
   protected refreshRide(): void {
     this.loading.set(true);
-    
+
     if (this.isGuestMode && this.trackingToken) {
       this.loadGuestRide();
     } else {
@@ -294,7 +294,7 @@ export class RideTrackingComponent implements OnInit, OnDestroy {
       this.showToast('Cannot report: No driver assigned yet', 'warning');
       return;
     }
-    
+
     this.showReportModal.set(true);
     this.reportText = '';
   }
@@ -332,8 +332,28 @@ export class RideTrackingComponent implements OnInit, OnDestroy {
   }
 
   protected handlePanic(): void {
-    this.showToast('Panic button - to be implemented', 'info');
+    const ride = this.rideData();
+    if (!ride) {
+      this.showToast('No ride loaded', 'warning');
+      return;
+    }
+
+    const req$ = (this.isGuestMode && this.trackingToken)
+      ? this.rideTrackingService.panicByToken(this.trackingToken)
+      : this.rideTrackingService.panic(ride.rideId);
+
+    req$.subscribe({
+      next: () => {
+        this.showToast('Panic alert sent successfully!', 'success');
+        this.refreshRide();
+      },
+      error: (err) => {
+        console.error('Error sending panic alert:', err);
+        this.showToast('Failed to send panic alert. Please try again.', 'error');
+      }
+    });
   }
+
 
   // Toast notification methods
   protected showToast(message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info'): void {
@@ -342,9 +362,9 @@ export class RideTrackingComponent implements OnInit, OnDestroy {
       message,
       type
     };
-    
+
     this.toasts.push(toast);
-    
+
     setTimeout(() => {
       this.removeToast(toast.id);
     }, 5000);
@@ -380,7 +400,7 @@ export class RideTrackingComponent implements OnInit, OnDestroy {
     if (minutes < 1) return 'Less than 1 min';
     if (minutes >= 999999) return 'Calculating...';
     if (minutes < 60) return `${minutes} min`;
-    
+
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     return `${hours}h ${mins}m`;

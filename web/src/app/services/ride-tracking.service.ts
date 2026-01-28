@@ -11,7 +11,7 @@ export interface Location {
 
 export interface RideTrackingData {
   rideId: number;
-  status: 'PENDING' | 'ACCEPTED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  status: 'PENDING' | 'ACCEPTED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'PANIC';
   startLocation: Location;
   endLocation: Location;
   stops: Location[];
@@ -87,5 +87,13 @@ export class RideTrackingService {
     return this.http.post<ReportResponse>(`${this.apiUrl}/token/${token}/report`, {
       reportText
     });
+  }
+
+  panic(rideId: number): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}/${rideId}/panic`, {});
+  }
+
+  panicByToken(token: string): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}/token/${token}/panic`, {});
   }
 }

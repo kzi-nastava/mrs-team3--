@@ -1,263 +1,221 @@
-
-
+<p-toast position="top-right"></p-toast>
 @if (user) {
 <div class="profile-container">
   <div class="profile-card">
-    <!-- Header -->
     <div class="profile-header">
       <h1>My Profile</h1>
       @if (!editMode) {
-        <button class="edit-btn" (click)="toggleEditMode()">✏️ Edit Profile</button>
+      <button class="edit-btn" (click)="toggleEditMode()">✏️ Edit Profile</button>
       }
     </div>
 
-    <!-- Pending changes warning (samo za vozače) -->
     @if (hasPendingChanges && user.role === 'DRIVER') {
-      <div class="pending-warning">
-        ⚠️ You have pending changes waiting for admin approval
-      </div>
+    <div class="pending-warning">
+      ⚠️ You have pending changes waiting for admin approval
+    </div>
     }
 
-    <!-- Profile Image -->
     <div class="image-section">
       <div class="image-wrapper">
-        @if (imagePreview && imagePreview !== '') {
-          <img [src]="imagePreview" alt="Profile" class="profile-image">
+        @if (imagePreview || user.profileImage) {
+        <img [src]="getProfileImageSrc()" alt="Profile" class="profile-image">
         } @else {
-          <div class="profile-image-placeholder">
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="8" r="4" stroke="#9b7fc9" stroke-width="1.5"/>
-              <path d="M6 20C6 16.6863 8.68629 14 12 14C15.3137 14 18 16.6863 18 20" stroke="#9b7fc9" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
-          </div>
+        <div class="profile-image-placeholder">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="8" r="4" stroke="#9b7fc9" stroke-width="1.5" />
+            <path d="M6 20C6 16.6863 8.68629 14 12 14C15.3137 14 18 16.6863 18 20" stroke="#9b7fc9" stroke-width="1.5"
+              stroke-linecap="round" />
+          </svg>
+        </div>
         }
         @if (editMode) {
-          <div class="image-actions">
-            <label for="file-upload" class="upload-btn">
-              📷 Upload Photo
-            </label>
-            <input id="file-upload" type="file" accept="image/*" (change)="onImageSelected($event)" style="display: none;">
-            <button class="remove-image-btn" (click)="removeImage()">🗑️ Remove</button>
-          </div>
+        <div class="image-actions">
+          <label for="file-upload" class="upload-btn">
+            📷 Upload Photo
+          </label>
+          <input id="file-upload" type="file" accept="image/*" (change)="onImageSelected($event)"
+            style="display: none;">
+          <button class="remove-image-btn" (click)="removeImage()">🗑️ Remove</button>
+        </div>
         }
       </div>
     </div>
 
-    <!-- Basic Information -->
     <form [formGroup]="profileForm" (ngSubmit)="saveChanges()">
       <div class="section">
         <h2 class="section-header">Basic Information</h2>
-        
+
         <div class="grid-2">
           <div class="form-group">
             <label class="form-label">First Name</label>
             @if (editMode) {
-              <input type="text" formControlName="firstName" class="form-input">
+            <input type="text" formControlName="firstName" class="form-input">
             } @else {
-              <p class="form-value">{{ user.firstName }}</p>
+            <p class="form-value">{{ user.firstName }}</p>
             }
           </div>
 
           <div class="form-group">
             <label class="form-label">Last Name</label>
             @if (editMode) {
-              <input type="text" formControlName="lastName" class="form-input">
+            <input type="text" formControlName="lastName" class="form-input">
             } @else {
-              <p class="form-value">{{ user.lastName }}</p>
+            <p class="form-value">{{ user.lastName }}</p>
             }
           </div>
 
           <div class="form-group">
             <label class="form-label">Email</label>
             @if (editMode) {
-              <input type="email" formControlName="email" class="form-input">
+            <input type="email" formControlName="email" class="form-input">
             } @else {
-              <p class="form-value">{{ user.email }}</p>
+            <p class="form-value">{{ user.email }}</p>
             }
           </div>
 
           <div class="form-group">
             <label class="form-label">Phone Number</label>
             @if (editMode) {
-              <input type="tel" formControlName="phoneNumber" class="form-input">
+            <input type="tel" formControlName="phoneNumber" class="form-input">
             } @else {
-              <p class="form-value">{{ user.phoneNumber }}</p>
+            <p class="form-value">{{ user.phoneNumber }}</p>
             }
           </div>
 
           <div class="form-group full-width">
             <label class="form-label">Address</label>
             @if (editMode) {
-              <input type="text" formControlName="address" class="form-input">
+            <input type="text" formControlName="address" class="form-input">
             } @else {
-              <p class="form-value">{{ user.address }}</p>
+            <p class="form-value">{{ user.address }}</p>
             }
           </div>
         </div>
       </div>
 
-      <!-- Driver Specific Info - SAMO AKO JE VOZAČ -->
       @if (user.role === 'DRIVER') {
-        <div class="section">
-          <h2 class="section-header">Driver Information</h2>
-          
-          <div class="stat-card">
-            <div class="stat-icon">⏱️</div>
-            <div class="stat-info">
-              <span class="stat-label">Active Hours (24h)</span>
-              <span class="stat-value">{{ user.activeHours || 0 }} hours</span>
-            </div>
-          </div>
+      <div class="section">
+        <h2 class="section-header">Driver Information</h2>
 
-          <h3 class="section-subheader">Vehicle Information</h3>
-          <div class="grid-2">
-            <div class="form-group">
-              <label class="form-label">Model</label>
-              @if (editMode) {
-                <input type="text" formControlName="vehicleModel" class="form-input">
-              } @else {
-                <p class="form-value">{{ user.vehicle?.model || 'Not specified' }}</p>
-              }
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">License Plate</label>
-              @if (editMode) {
-                <input type="text" formControlName="vehicleLicensePlate" class="form-input">
-              } @else {
-                <p class="form-value">{{ user.vehicle?.licensePlate || 'Not specified' }}</p>
-              }
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Number of Seats</label>
-              @if (editMode) {
-                <input type="number" formControlName="vehicleSeats" class="form-input">
-              } @else {
-                <p class="form-value">{{ user.vehicle?.seats || 'Not specified' }}</p>
-              }
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Vehicle Type</label>
-              @if (editMode) {
-                <select formControlName="vehicleType" class="form-input">
-                  <option value="STANDARD">Standard</option>
-                  <option value="VAN">Van</option>
-                  <option value="LUXURY">Luxury</option>
-                </select>
-              } @else {
-                <p class="form-value">{{ user.vehicle?.vehicleType || 'Not specified' }}</p>
-              }
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Baby Transport</label>
-              @if (editMode) {
-                <select formControlName="babyTransport" class="form-input">
-                  <option [value]="true">Yes</option>
-                  <option [value]="false">No</option>
-                </select>
-              } @else {
-                <p class="form-value">{{ user.vehicle?.babyTransport === true ? 'Yes' : 
-                                      user.vehicle?.babyTransport === false ? 'No' : 'Not specified' }}</p>
-              }
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Pet Transport</label>
-              @if (editMode) {
-                <select formControlName="petTransport" class="form-input">
-                  <option [value]="true">Yes</option>
-                  <option [value]="false">No</option>
-                </select>
-              } @else {
-                <p class="form-value">{{ user.vehicle?.petTransport === true ? 'Yes' : 
-                                      user.vehicle?.petTransport === false ? 'No' : 'Not specified' }}</p>
-              }
-            </div>
+        <div class="stat-card">
+          <div class="stat-icon">⏱️</div>
+          <div class="stat-info">
+            <span class="stat-label">Active Hours (24h)</span>
+            <span class="stat-value">{{ user.activeHours || 0 }} hours</span>
           </div>
         </div>
 
-        <!-- Pending Changes List - SAMO ZA VOZAČE -->
-        @if (pendingChanges.length > 0) {
-          <div class="section">
-            <h2 class="section-header">Change Requests</h2>
-            <div class="pending-changes">
-              @for (change of pendingChanges; track change.id) {
-                <div class="change-item">
-                  <div class="change-info">
-                    <span class="change-field">{{ change.field }}</span>
-                    <div class="change-values">
-                      <span class="old-value">{{ change.oldValue }}</span>
-                      <span class="arrow">→</span>
-                      <span class="new-value">{{ change.newValue }}</span>
-                    </div>
-                    <span class="change-date">{{ change.requestedAt | date:'short' }}</span>
-                  </div>
-                  <span class="change-status" [style.color]="getStatusColor(change.status)">
-                    {{ getStatusText(change.status) }}
-                  </span>
-                </div>
-              }
-            </div>
+        <h3 class="section-subheader">Vehicle Information</h3>
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Model</label>
+            @if (editMode) {
+            <input type="text" formControlName="vehicleModel" class="form-input">
+            } @else {
+            <p class="form-value">{{ user.vehicle?.model || 'Not specified' }}</p>
+            }
           </div>
-        }
+
+          <div class="form-group">
+            <label class="form-label">License Plate</label>
+            @if (editMode) {
+            <input type="text" formControlName="vehicleLicensePlate" class="form-input">
+            } @else {
+            <p class="form-value">{{ user.vehicle?.licensePlate || 'Not specified' }}</p>
+            }
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Number of Seats</label>
+            @if (editMode) {
+            <input type="number" formControlName="vehicleSeats" class="form-input">
+            } @else {
+            <p class="form-value">{{ user.vehicle?.seats || 'Not specified' }}</p>
+            }
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Vehicle Type</label>
+            @if (editMode) {
+            <select formControlName="vehicleType" class="form-input">
+              <option value="STANDARD">Standard</option>
+              <option value="VAN">Van</option>
+              <option value="LUXURY">Luxury</option>
+            </select>
+            } @else {
+            <p class="form-value">{{ user.vehicle?.vehicleType || 'Not specified' }}</p>
+            }
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Baby Transport</label>
+            @if (editMode) {
+            <select formControlName="babyTransport" class="form-input">
+              <option [value]="true">Yes</option>
+              <option [value]="false">No</option>
+            </select>
+            } @else {
+            <p class="form-value">{{ user.vehicle?.babyTransport === true ? 'Yes' :
+              user.vehicle?.babyTransport === false ? 'No' : 'Not specified' }}</p>
+            }
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Pet Transport</label>
+            @if (editMode) {
+            <select formControlName="petTransport" class="form-input">
+              <option [value]="true">Yes</option>
+              <option [value]="false">No</option>
+            </select>
+            } @else {
+            <p class="form-value">{{ user.vehicle?.petTransport === true ? 'Yes' :
+              user.vehicle?.petTransport === false ? 'No' : 'Not specified' }}</p>
+            }
+          </div>
+        </div>
+      </div>
+
+      @if (pendingChanges.length > 0) {
+      <div class="section">
+        <h2 class="section-header">Change Requests</h2>
+        <div class="pending-changes">
+          @for (change of pendingChanges; track change.id) {
+          <div class="change-item">
+            <div class="change-info">
+              <span class="change-field">{{ change.field }}</span>
+              <div class="change-values">
+                <span class="old-value">{{ change.oldValue }}</span>
+                <span class="arrow">→</span>
+                <span class="new-value">{{ change.newValue }}</span>
+              </div>
+              <span class="change-date">{{ change.requestedAt | date:'short' }}</span>
+            </div>
+            <span class="change-status" [style.color]="getStatusColor(change.status)">
+              {{ getStatusText(change.status) }}
+            </span>
+          </div>
+          }
+        </div>
+      </div>
+      }
       }
 
-      <!-- Action Buttons -->
       <div class="action-buttons">
         @if (editMode) {
-          <button type="submit" class="save-btn" [disabled]="profileForm.invalid">
-            @if (user.role === 'DRIVER') {
-              📤 Submit for Approval
-            } @else {
-              💾 Save Changes
-            }
-          </button>
-          <button type="button" class="cancel-btn" (click)="toggleEditMode()">❌ Cancel</button>
+        <button type="submit" class="save-btn" [disabled]="profileForm.invalid">
+          @if (user.role === 'DRIVER') {
+          📤 Submit for Approval
+          } @else {
+          💾 Save Changes
+          }
+        </button>
+        <button type="button" class="cancel-btn" (click)="toggleEditMode()">❌ Cancel</button>
         } @else {
-          <button type="button" class="password-btn" (click)="openChangePassword()">🔒 Change Password</button>
+        <button type="button" class="password-btn" (click)="resetPassword()">🔒 Change Password</button>
         }
       </div>
     </form>
   </div>
 </div>
-
-<!-- Password Change Modal -->
-@if (showPasswordModal) {
-  <div class="modal-overlay" (click)="closePasswordModal()">
-    <div class="modal" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h2 class="modal-title">Change Password</h2>
-        <button class="modal-close" (click)="closePasswordModal()">✕</button>
-      </div>
-      
-      <form [formGroup]="passwordForm" (ngSubmit)="changePassword()">
-        <div class="modal-body">
-          <div class="form-group">
-            <label class="form-label">Old Password</label>
-            <input type="password" formControlName="oldPassword" class="form-input" placeholder="Enter old password">
-          </div>
-          
-          <div class="form-group">
-            <label class="form-label">New Password</label>
-            <input type="password" formControlName="newPassword" class="form-input" placeholder="Enter new password">
-          </div>
-          
-          <div class="form-group">
-            <label class="form-label">Confirm New Password</label>
-            <input type="password" formControlName="confirmPassword" class="form-input" placeholder="Confirm new password">
-          </div>
-        </div>
-        
-        <div class="modal-footer">
-          <button type="submit" class="save-btn" [disabled]="passwordForm.invalid">💾 Change Password</button>
-          <button type="button" class="cancel-btn" (click)="closePasswordModal()">Cancel</button>
-        </div>
-      </form>
-    </div>
-  </div>
-}
 
 }

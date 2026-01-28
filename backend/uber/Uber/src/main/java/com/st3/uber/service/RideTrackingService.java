@@ -41,7 +41,7 @@ public class RideTrackingService {
     public Optional<RideTrackingResponse> getCurrentRideForPassenger(Passenger passenger) {
         List<Ride> activeRides = rideRepository.findByPassengersContainingAndStatusIn(
                 passenger,
-                List.of(RideStatus.PENDING, RideStatus.ACCEPTED, RideStatus.IN_PROGRESS)
+                List.of(RideStatus.PENDING, RideStatus.ACCEPTED, RideStatus.IN_PROGRESS, RideStatus.PANIC)
         );
 
         if (activeRides.isEmpty()) {
@@ -74,7 +74,8 @@ public class RideTrackingService {
         return switch (status) {
             case IN_PROGRESS -> 1;  // Highest priority
             case ACCEPTED -> 2;
-            case PENDING -> 3;      // Lowest priority
+            case PENDING -> 3;
+            case PANIC -> 4; // Lowest priority
             default -> 99;
         };
     }
@@ -90,9 +91,15 @@ public class RideTrackingService {
         }
 
         Ride ride = inviteOpt.get().getRide();
-        if (ride.getStatus() == RideStatus.COMPLETED || ride.getStatus() == RideStatus.CANCELLED) {
+        if (ride.getStatus() == RideStatus.COMPLETED
+            || ride.getStatus() == RideStatus.CANCELLED
+            || ride.getStatus() == RideStatus.CANCELLED_BY_DRIVER
+            || ride.getStatus() == RideStatus.CANCELLED_BY_PASSENGER
+            || ride.getStatus() == RideStatus.REJECTED
+            || ride.getStatus() == RideStatus.FINISHED_EARLY) {
             return new TrackingTokenValidationResponse(false, "Ride has ended");
         }
+
 
         return new TrackingTokenValidationResponse(true, "Valid token");
     }

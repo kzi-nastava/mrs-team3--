@@ -280,28 +280,28 @@ public class RideService {
     }
 
     public List<PassengerRideSummaryResponse> getPastPassengerRides(Long id) {
-        Passenger passenger = passengerRepository.findById(id).orElseThrow(
-                () -> new IllegalArgumentException("Passenger not found."));
+    Passenger passenger = passengerRepository.findById(id).orElseThrow(
+        () -> new IllegalArgumentException("Passenger not found."));
 
-        List<Ride> rides = rideRepository.findPastByCreator(passenger);
+    List<Ride> rides = rideRepository.findByCreatorAndFinishedAtIsNotNull(passenger);
 
-        List<Ride> favoriteRides = passenger.getFavoriteRides();
-        Set<Long> favoriteRideIds = favoriteRides.stream()
-                .map(Ride::getId)
-                .collect(Collectors.toSet());
+      List<Ride> favoriteRides = passenger.getFavoriteRides();
+      Set<Long> favoriteRideIds = favoriteRides.stream()
+          .map(Ride::getId)
+          .collect(Collectors.toSet());
 
-        return rides.stream()
-                .map(r -> new PassengerRideSummaryResponse(
-                        r.getId(),
-                        r.getStatus(),
-                        r.getStartLocation(),
-                        r.getEndLocation(),
-                        r.getStartedAt(),
-                        r.getFinishedAt(),
-                        favoriteRideIds.contains(r.getId())
-                ))
-                .toList();
-    }
+      return rides.stream()
+          .map(r -> new PassengerRideSummaryResponse(
+              r.getId(),
+              r.getStatus(),
+              r.getStartLocation(),
+              r.getActualEndLocation(),
+              r.getStartedAt(),
+              r.getFinishedAt(),
+              favoriteRideIds.contains(r.getId())
+          ))
+          .toList();
+  }
 
     public PassengerRideSummaryExtendedResponse getPastRideDetails(Long id, Long rideId) {
         Passenger passenger = passengerRepository.findById(id).orElseThrow(
@@ -325,7 +325,7 @@ public class RideService {
         res.setId(ride.getId());
         res.setStatus(ride.getStatus());
         res.setStartLocation(ride.getStartLocation());
-        res.setEndLocation(ride.getEndLocation());
+        res.setEndLocation(ride.getActualEndLocation());
         res.setStartTime(ride.getStartedAt());
         res.setEndTime(ride.getFinishedAt());
         res.setFavorite(favorite);

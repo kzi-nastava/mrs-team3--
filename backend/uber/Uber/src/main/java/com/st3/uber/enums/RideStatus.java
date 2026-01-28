@@ -9,5 +9,6 @@ public enum RideStatus {
     CANCELLED_BY_PASSENGER,
     COMPLETED,
     IN_PROGRESS,
-    FINISHED_EARLY
+    FINISHED_EARLY,
+    PANIC
 }
