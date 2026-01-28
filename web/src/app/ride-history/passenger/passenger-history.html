@@ -218,6 +218,14 @@
   </button>
 
   <div class="ride-actions">
+  @if (selectedRide() && canLeaveReview(selectedRide()!)) {
+  <button
+    type="button"
+    class="favorite-btn"
+    (click)="goToReview($event, selectedRide()!)">
+    ✍️ Leave review
+  </button>
+  }
     <button
       type="button"
       class="favorite-btn book-btn"

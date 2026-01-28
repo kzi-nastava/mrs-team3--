@@ -515,4 +515,38 @@ export class PassengerHistoryComponent implements OnInit, AfterViewInit {
       inconsistencyReport,
     };
   }
+
+  protected showReviewModal = signal(false);
+  protected reviewDriver = 0;
+  protected reviewRide = 0;
+  protected reviewComments = '';
+
+  protected canLeaveReview(ride: Ride): boolean {
+    const end = new Date(ride.endTime ?? '').getTime();
+    const now = Date.now();
+    const threeDays = 3 * 24 * 60 * 60 * 1000;
+    return end > 0 && (now - end) <= threeDays;
+  }
+
+  protected openReviewModal(event: Event): void {
+    event.stopPropagation();
+    const ride = this.selectedRide();
+    if (!ride || !this.canLeaveReview(ride))
+      return;
+
+    this.reviewDriver = ride.driverReview ?? 0;
+    this.reviewRide = ride.rideReview ?? 0;
+    this.reviewComments = '';
+
+    this.showReviewModal.set(true);
+  }
+  protected goToReview(event: Event, ride: Ride): void {
+    event.stopPropagation();
+    this.router.navigate(['/ride-review', ride.id]); // adjust path if different
+  }
+  // protected closeReviewModal(event? : Event): void {
+  //   event?.stopPropagation?.();
+  //   this.showReviewModal.set(false);
+  // }
+
 }
