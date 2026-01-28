@@ -464,11 +464,6 @@ export class PassengerHistoryComponent implements OnInit, AfterViewInit {
     this.selectedRide.set(null);
   }
 
-  protected scheduleRide(event: Event, ride: Ride): void {
-    event.stopPropagation();
-    console.log('Schedule:', ride);
-  }
-
   private routeText(r: RideForRouteText): string {
     return `${r.startLocation.address} -> ${r.endLocation.address}`;
   }
@@ -528,25 +523,9 @@ export class PassengerHistoryComponent implements OnInit, AfterViewInit {
     return end > 0 && (now - end) <= threeDays;
   }
 
-  protected openReviewModal(event: Event): void {
-    event.stopPropagation();
-    const ride = this.selectedRide();
-    if (!ride || !this.canLeaveReview(ride))
-      return;
-
-    this.reviewDriver = ride.driverReview ?? 0;
-    this.reviewRide = ride.rideReview ?? 0;
-    this.reviewComments = '';
-
-    this.showReviewModal.set(true);
-  }
   protected goToReview(event: Event, ride: Ride): void {
     event.stopPropagation();
-    this.router.navigate(['/ride-review', ride.id]); // adjust path if different
+    this.router.navigate(['/ride-review', ride.id]);
   }
-  // protected closeReviewModal(event? : Event): void {
-  //   event?.stopPropagation?.();
-  //   this.showReviewModal.set(false);
-  // }
 
 }
