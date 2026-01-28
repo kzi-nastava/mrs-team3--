@@ -107,6 +107,13 @@
 
         <!-- IN_PROGRESS -->
         <div *ngIf="ride.status === 'IN_PROGRESS'" class="control-buttons">
+          <button
+            *ngIf="canShowPanicButton(ride)"
+            class="btn-danger panic-btn"
+            (click)="panicRide()"
+          >
+            🚨 PANIC
+          </button>
           <p class="info">💡 Click on map to move car</p>
 
           <div class="stop-buttons">

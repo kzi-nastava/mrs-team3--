@@ -394,7 +394,6 @@ public class DriverService {
         return startedRide;
     }
 
-
     @Transactional
     public void cancelRideByDriver(Long rideId, Long driverId, DriverCancelRideRequest reason){
         driverRepository.findById(driverId)
@@ -410,6 +409,22 @@ public class DriverService {
         ride.setCancelledAt(LocalDateTime.now());
         ride.setCancelledBy(CancelledBy.DRIVER);
         ride.setTerminationReason(reason.getCancellationReason());
+        rideRepository.save(ride);
+    }
+
+    @Transactional
+    public void panicRideByDriver(Long rideId, Long driverId){
+        Driver driver = driverRepository.findById(driverId)
+            .orElseThrow(() -> new IllegalArgumentException("Driver not found"));
+
+        Ride ride = rideRepository.findById(rideId)
+            .orElseThrow(() -> new IllegalArgumentException("Ride not found"));
+
+        if (ride.getDriver() != driver || !ride.getDriver().getId().equals(driverId))
+            return;
+
+        ride.setStatus(RideStatus.PANIC);
+        ride.setPanic(true);
         rideRepository.save(ride);
     }
 }

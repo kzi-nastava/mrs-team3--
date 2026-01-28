@@ -129,4 +129,11 @@ export class DriverRideService {
       { reason }
     );
   }
+
+  panicRide(rideId: number): Observable<void> {
+    return this.http.post<void>(
+      `${this.apiUrl}/rides/${rideId}/panic`,
+      {}
+    );
+  }
 }
