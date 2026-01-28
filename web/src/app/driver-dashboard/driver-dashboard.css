@@ -536,3 +536,110 @@
     margin: 0.5rem;
   }
 }
+.btn-danger {
+  padding: 0.875rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.3s;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+}
+
+.btn-danger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+/* PANIC emphasis */
+.btn-panic {
+  width: 100%;
+  letter-spacing: 0.6px;
+  animation: panicPulse 1.4s infinite;
+}
+
+@keyframes panicPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 12px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+/* Make danger buttons consistent everywhere (controls + modals) */
+.btn-danger {
+  padding: 0.875rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.35);
+  filter: brightness(1.02);
+}
+
+.btn-danger:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 3px 10px rgba(239, 68, 68, 0.25);
+}
+
+.btn-danger:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.25), 0 6px 16px rgba(0,0,0,0.12);
+}
+
+.btn-danger:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* In controls section, make Cancel full-width and aligned like other buttons */
+.controls .btn-danger {
+  width: 100%;
+}
+
+/* Cancel modal textarea - make it match your design */
+.modal-textarea {
+  width: 100%;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  font-size: 1rem;
+  line-height: 1.4;
+  color: #111827;
+  background: #fff;
+  resize: vertical;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+  margin-top: 0.5rem;
+}
+
+.modal-textarea::placeholder {
+  color: #9ca3af;
+}
+
+.modal-textarea:focus {
+  outline: none;
+  border-color: #ef4444;
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.15);
+}
+
+/* Optional: make the cancel modal warning look a bit stronger */
+.modal-overlay .warning-box {
+  border-radius: 10px;
+}

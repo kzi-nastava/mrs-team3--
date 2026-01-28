@@ -446,4 +446,28 @@ export class DriverDashboardComponent implements OnInit, OnDestroy {
       this.map = null;
     }
   }
+
+  protected canShowPanicButton(ride: any): boolean {
+    if (!this.isDriverRide(ride)) return false;
+
+    return ride.status === 'IN_PROGRESS';
+  }
+
+  protected panicRide(): void {
+    const ride = this.selectedRide();
+    if (!ride || !this.isDriverRide(ride)) return;
+
+    this.service.panicRide(ride.rideId).subscribe({
+      next: () => {
+        this.showToast('🚨 Panic activated! Help is on the way.', 'warning');
+      },
+      error: (err) => {
+        this.showToast(
+          'Failed to activate panic: ' + (err.error?.message || 'Unknown error'),
+          'error'
+        );
+      }
+    });
+  }
+
 }

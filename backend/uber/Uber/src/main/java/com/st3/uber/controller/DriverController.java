@@ -381,6 +381,14 @@ public class DriverController {
         Long driverId = jwt.getClaim("uid");
         driverService.cancelRideByDriver(rideId, driverId, reason);
     }
+
+    @PostMapping("/rides/{rideId}/panic")
+    public ResponseEntity<Void> panicRideByDriver(@PathVariable Long rideId,
+                                   @AuthenticationPrincipal Jwt jwt) {
+        Long driverId = jwt.getClaim("uid");
+        driverService.panicRideByDriver(rideId, driverId);
+        return ResponseEntity.noContent().build();
+    }
 }
 
 
