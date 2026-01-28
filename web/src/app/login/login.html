@@ -32,14 +32,15 @@
 
               <div class="flex flex-column gap-2">
                 <label for="password">Password</label>
-                <input
-                  pInputText
-                  id="password"
-                  type="password"
+                <p-password
+                  inputId="password"
                   [(ngModel)]="password"
                   name="password"
-                  required
-                />
+                  [toggleMask]="true"
+                  [feedback]="false"
+                  autocomplete="current-password"
+                  [inputStyle]="{ width: '100%' }">
+                </p-password>
               </div>
             </div>
 

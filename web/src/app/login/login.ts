@@ -9,13 +9,14 @@ import { CardModule } from 'primeng/card';
 import { SplitterModule } from 'primeng/splitter';
 import { InputTextModule } from 'primeng/inputtext';
 import { MessageService } from 'primeng/api';
+import { PasswordModule } from 'primeng/password';
 
 @Component({
   selector: 'app-login',
   standalone: true,
   templateUrl: './login.html',
   styleUrls: ['./login.css'],
-  imports: [FormsModule, ButtonModule, CardModule, SplitterModule, InputTextModule],
+  imports: [FormsModule, ButtonModule, CardModule, SplitterModule, InputTextModule, PasswordModule],
 })
 export class Login {
   email = '';
