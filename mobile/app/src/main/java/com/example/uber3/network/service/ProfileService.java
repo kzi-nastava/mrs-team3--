@@ -2,8 +2,7 @@ package com.example.uber3.network.service;
 
 import android.net.Uri;
 import android.content.Context;
-import android.os.Build;
-
+import com.example.uber3.network.model.DriverProfileChangeRequestDto;
 import com.example.uber3.network.ApiClient;
 import com.example.uber3.network.ApiService;
 import com.example.uber3.network.model.ProfileResponse;
@@ -20,6 +19,7 @@ import retrofit2.Callback;
 public class ProfileService {
 
     private final ApiService api;
+
 
     public ProfileService(Context context) {
         api = ApiClient
@@ -92,5 +92,12 @@ public class ProfileService {
         } catch (Exception e) {
             callback.onFailure(null, e);
         }
+    }
+
+    public void submitDriverChangeRequest(
+            DriverProfileChangeRequestDto dto,
+            Callback<Void> callback
+    ) {
+        api.submitDriverChangeRequest(dto).enqueue(callback);
     }
 }

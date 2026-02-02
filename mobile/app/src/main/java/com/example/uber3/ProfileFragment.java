@@ -3,42 +3,35 @@ package com.example.uber3;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import com.example.uber3.network.ApiClient;
-import com.example.uber3.network.ApiService;
+import com.example.uber3.network.model.DriverProfileChangeRequestDto;
 import com.example.uber3.network.model.ProfileResponse;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
-import android.content.Intent;
 import android.net.Uri;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import okhttp3.MediaType;
-import okhttp3.MultipartBody;
-import okhttp3.RequestBody;
 import com.bumptech.glide.Glide;
+import com.example.uber3.network.enums.VehicleType;
 
 
 import com.example.uber3.network.model.UpdateProfileRequest;
 import com.example.uber3.network.service.ProfileService;
 import com.google.android.material.button.MaterialButton;
-import com.google.gson.Gson;
 
 public class ProfileFragment extends Fragment {
 
@@ -62,6 +55,7 @@ public class ProfileFragment extends Fragment {
 
     private CheckBox cbBabyTransport;
     private CheckBox cbPetTransport;
+    private Spinner spVehicleType;
 
 
     private boolean editMode = false;
@@ -148,9 +142,19 @@ public class ProfileFragment extends Fragment {
         tvChangeField = view.findViewById(R.id.tvChangeField);
         tvChangeValues = view.findViewById(R.id.tvChangeValues);
         tvChangeStatus = view.findViewById(R.id.tvChangeStatus);
-
+        spVehicleType = view.findViewById(R.id.spVehicleType);
         cbBabyTransport = view.findViewById(R.id.cbBabyTransport);
         cbPetTransport = view.findViewById(R.id.cbPetTransport);
+
+        String[] vehicleTypes = {"STANDARD", "VAN", "LUXURY"};
+
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                requireContext(),
+                android.R.layout.simple_spinner_dropdown_item,
+                vehicleTypes
+        );
+
+        spVehicleType.setAdapter(adapter);
 
 
         ImageView profileImage = view.findViewById(R.id.profileImage);
@@ -315,6 +319,81 @@ public class ProfileFragment extends Fragment {
             tvChangeStatus.setText("Pending");
             changeRequestCard.setVisibility(View.VISIBLE);
         }
+
+        if (changeCount == 0) {
+            Toast.makeText(getContext(), "No changes detected", Toast.LENGTH_SHORT).show();
+            changeRequestCard.setVisibility(View.GONE);
+            return;
+        }
+
+
+
+        DriverProfileChangeRequestDto dto =
+                new DriverProfileChangeRequestDto(
+                        etFirstName.getText().toString(),
+                        etLastName.getText().toString(),
+                        etPhone.getText().toString(),
+                        etAddress.getText().toString(),
+                        null,
+                        etVehicleModel.getText().toString(),
+                        etLicensePlate.getText().toString(),
+                        Integer.parseInt(etSeats.getText().toString()),
+                        VehicleType.valueOf(spVehicleType.getSelectedItem().toString()),
+                        cbBabyTransport.isChecked(),
+                        cbPetTransport.isChecked()
+                );
+
+
+
+
+        profileService.submitDriverChangeRequest(
+                dto,
+                new Callback<Void>() {
+                    @Override
+                    public void onResponse(Call<Void> call, Response<Void> response) {
+
+                        if (response.isSuccessful()) {
+
+                            Toast.makeText(getContext(),
+                                    "Request sent to admin ✅",
+                                    Toast.LENGTH_LONG).show();
+
+                            tvChangeStatus.setText("Pending");
+                            changeRequestCard.setVisibility(View.VISIBLE);
+
+                            disableEditingWhilePending();
+
+                        } else if (response.code() == 409) {
+
+                            Toast.makeText(getContext(),
+                                    "You already have a pending request ⏳",
+                                    Toast.LENGTH_LONG).show();
+
+                            tvChangeStatus.setText("Pending");
+                            changeRequestCard.setVisibility(View.VISIBLE);
+
+                            disableEditingWhilePending();
+
+                        } else {
+
+                            Toast.makeText(getContext(),
+                                    "Error: " + response.code(),
+                                    Toast.LENGTH_SHORT).show();
+                        }
+                    }
+
+
+                    @Override
+                    public void onFailure(Call<Void> call,
+                                          Throwable t) {
+
+                        Toast.makeText(getContext(),
+                                "Network error",
+                                Toast.LENGTH_SHORT).show();
+                    }
+                }
+        );
+
     }
 
     private int addChangeIfDifferent(StringBuilder builder, String fieldName, TextView tv, EditText et) {
@@ -534,6 +613,12 @@ public class ProfileFragment extends Fragment {
                     }
                 });
     }
+
+    private void disableEditingWhilePending() {
+        btnEdit.setEnabled(false);
+        btnEdit.setAlpha(0.5f);
+    }
+
 
 
 }
