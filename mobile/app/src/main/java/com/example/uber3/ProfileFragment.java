@@ -7,14 +7,34 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import com.example.uber3.network.ApiClient;
+import com.example.uber3.network.ApiService;
+import com.example.uber3.network.model.ProfileResponse;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import android.content.Intent;
+import android.net.Uri;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.RequestBody;
+import com.bumptech.glide.Glide;
+
+
+import com.example.uber3.network.model.UpdateProfileRequest;
+import com.example.uber3.network.service.ProfileService;
 import com.google.android.material.button.MaterialButton;
 
 public class ProfileFragment extends Fragment {
@@ -33,6 +53,11 @@ public class ProfileFragment extends Fragment {
     private static final String STATE_CHANGE_FIELD = "change_field";
     private static final String STATE_CHANGE_VALUES = "change_values";
     private static final String STATE_CHANGE_STATUS = "change_status";
+    private ActivityResultLauncher<String> imagePickerLauncher;
+
+    private ProfileService profileService;
+
+
 
     private boolean editMode = false;
     private boolean isDriver = false;
@@ -67,6 +92,16 @@ public class ProfileFragment extends Fragment {
 
         initializeViews(view);
 
+        // 👇 IMAGE PICKER INIT
+        imagePickerLauncher = registerForActivityResult(
+                new ActivityResultContracts.GetContent(),
+                uri -> {
+                    if (uri != null) {
+                        uploadImage(uri);
+                    }
+                }
+        );
+
         String role = getArguments() != null ? getArguments().getString(ARG_ROLE) : "PASSENGER";
         isDriver = "DRIVER".equals(role);
 
@@ -79,7 +114,10 @@ public class ProfileFragment extends Fragment {
 
         setupEditButton();
         setupChangePasswordButton();
+
+        loadProfile();
     }
+
 
     private void initializeViews(View view) {
         btnEdit = view.findViewById(R.id.btnEdit);
@@ -107,6 +145,12 @@ public class ProfileFragment extends Fragment {
         tvChangeField = view.findViewById(R.id.tvChangeField);
         tvChangeValues = view.findViewById(R.id.tvChangeValues);
         tvChangeStatus = view.findViewById(R.id.tvChangeStatus);
+
+        ImageView profileImage = view.findViewById(R.id.profileImage);
+
+        profileImage.setOnClickListener(v ->
+                imagePickerLauncher.launch("image/*")
+        );
     }
 
     private void setupEditButton() {
@@ -195,12 +239,16 @@ public class ProfileFragment extends Fragment {
         btnEdit.setText("✏️ Edit");
 
         if (!isDriver) {
-            tvFirstName.setText(etFirstName.getText().toString());
-            tvLastName.setText(etLastName.getText().toString());
-            tvEmail.setText(etEmail.getText().toString());
-            tvPhone.setText(etPhone.getText().toString());
-            tvAddress.setText(etAddress.getText().toString());
-        } else {
+
+            UpdateProfileRequest req = new UpdateProfileRequest(
+                    etFirstName.getText().toString(),
+                    etLastName.getText().toString(),
+                    etPhone.getText().toString(),
+                    etAddress.getText().toString()
+            );
+
+            sendUpdateProfile(req);
+        }else {
             createChangeRequest();
         }
 
@@ -319,4 +367,173 @@ public class ProfileFragment extends Fragment {
             enterEditMode();
         }
     }
+
+
+    private void loadProfile() {
+
+
+        //Stavio sam privremeni token da bih testirao moram to da uklonim posle!!!
+        String token = "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJwcmxpbmNldmljMDRAZ21haWwuY29tIiwidWlkIjoyLCJyb2xlIjoiUEFTU0VOR0VSIiwiaXNzIjoic3QzLXViZXIiLCJleHAiOjE3Njk5OTIyNTcsImlhdCI6MTc2OTk4ODY1N30.m2Ew1ThzBrSqZ5AeyGH46szLImLvl95JK-QZqX3cn2GALY6dkBG0dL1uteL6yDcbScukWHBLCnc0g-aMPQImrDJP05tEgwYTI8YN8WPThG1MHpS8ObKFfAZtqO7P_l0Ul5AvJY-qXI944UiaFXjEa-7Ar-Fq--oI8-pxzhBQrklm2uAXQytioi5rCWAsMoG2O8RCzK9xtNjvMoAfc4XIrlqz_x3gsEE1tC47ZgBACyfa5XM68lZrefYsJde4A9WxGdNRAEBhIhaSk0veM4hHkdxFRSz4KpS0UhWOQfY6opEOt67Dbpx8dldtOyouas67Nw3_kEZECdP-eJamPzYzFQ";
+
+        ApiService api = ApiClient
+                .getClient(token)
+                .create(ApiService.class);
+
+        api.getMyProfile().enqueue(new Callback<ProfileResponse>() {
+            @Override
+            public void onResponse(Call<ProfileResponse> call, Response<ProfileResponse> response) {
+
+                if (!response.isSuccessful() || response.body() == null) {
+                    Toast.makeText(getContext(),
+                            "Failed to load profile",
+                            Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                ProfileResponse p = response.body();
+
+                ImageView profileImage = requireView().findViewById(R.id.profileImage);
+
+                if (p.profileImage != null && !p.profileImage.isEmpty()) {
+
+                    String imageUrl = "http://10.0.2.2:8080" + p.profileImage;
+
+                    Glide.with(requireContext())
+                            .load(imageUrl)
+                            .placeholder(R.drawable.ic_launcher_background)
+                            .error(R.drawable.ic_launcher_foreground)
+                            .into(profileImage);
+                }
+
+
+                tvFirstName.setText(p.firstName);
+                etFirstName.setText(p.firstName);
+
+                tvLastName.setText(p.lastName);
+                etLastName.setText(p.lastName);
+
+                tvEmail.setText(p.email);
+                etEmail.setText(p.email);
+
+                tvPhone.setText(p.phoneNumber);
+                etPhone.setText(p.phoneNumber);
+
+                tvAddress.setText(p.address);
+                etAddress.setText(p.address);
+
+            }
+
+            @Override
+            public void onFailure(Call<ProfileResponse> call, Throwable t) {
+                Toast.makeText(getContext(),
+                        "FAILURE: " + t.getMessage(),
+                        Toast.LENGTH_LONG).show();
+            }
+        });
+
+    }
+
+    private void sendUpdateProfile(UpdateProfileRequest req) {
+
+        String token = "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJwcmxpbmNldmljMDRAZ21haWwuY29tIiwidWlkIjoyLCJyb2xlIjoiUEFTU0VOR0VSIiwiaXNzIjoic3QzLXViZXIiLCJleHAiOjE3Njk5OTIyNTcsImlhdCI6MTc2OTk4ODY1N30.m2Ew1ThzBrSqZ5AeyGH46szLImLvl95JK-QZqX3cn2GALY6dkBG0dL1uteL6yDcbScukWHBLCnc0g-aMPQImrDJP05tEgwYTI8YN8WPThG1MHpS8ObKFfAZtqO7P_l0Ul5AvJY-qXI944UiaFXjEa-7Ar-Fq--oI8-pxzhBQrklm2uAXQytioi5rCWAsMoG2O8RCzK9xtNjvMoAfc4XIrlqz_x3gsEE1tC47ZgBACyfa5XM68lZrefYsJde4A9WxGdNRAEBhIhaSk0veM4hHkdxFRSz4KpS0UhWOQfY6opEOt67Dbpx8dldtOyouas67Nw3_kEZECdP-eJamPzYzFQ";
+
+        ApiService api = ApiClient
+                .getClient(token)
+                .create(ApiService.class);
+
+        api.updateProfile(req).enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
+
+                if (response.isSuccessful()) {
+                    Toast.makeText(getContext(),
+                            "Profile updated!",
+                            Toast.LENGTH_SHORT).show();
+
+                    loadProfile(); // refresh podataka
+                } else {
+                    Toast.makeText(getContext(),
+                            "Update failed",
+                            Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {
+                Toast.makeText(getContext(),
+                        "Network error",
+                        Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void uploadImage(Uri uri) {
+
+        try {
+
+            InputStream inputStream = requireContext()
+                    .getContentResolver()
+                    .openInputStream(uri);
+
+            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+
+            int nRead;
+            byte[] data = new byte[4096];
+
+            while ((nRead = inputStream.read(data, 0, data.length)) != -1) {
+                buffer.write(data, 0, nRead);
+            }
+
+            byte[] bytes = buffer.toByteArray();
+
+            RequestBody requestFile =
+                    RequestBody.create(bytes, MediaType.parse("image/*"));
+
+            MultipartBody.Part body =
+                    MultipartBody.Part.createFormData(
+                            "file",
+                            "profile.jpg",
+                            requestFile
+                    );
+
+            String token = "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJwcmxpbmNldmljMDRAZ21haWwuY29tIiwidWlkIjoyLCJyb2xlIjoiUEFTU0VOR0VSIiwiaXNzIjoic3QzLXViZXIiLCJleHAiOjE3Njk5OTIyNTcsImlhdCI6MTc2OTk4ODY1N30.m2Ew1ThzBrSqZ5AeyGH46szLImLvl95JK-QZqX3cn2GALY6dkBG0dL1uteL6yDcbScukWHBLCnc0g-aMPQImrDJP05tEgwYTI8YN8WPThG1MHpS8ObKFfAZtqO7P_l0Ul5AvJY-qXI944UiaFXjEa-7Ar-Fq--oI8-pxzhBQrklm2uAXQytioi5rCWAsMoG2O8RCzK9xtNjvMoAfc4XIrlqz_x3gsEE1tC47ZgBACyfa5XM68lZrefYsJde4A9WxGdNRAEBhIhaSk0veM4hHkdxFRSz4KpS0UhWOQfY6opEOt67Dbpx8dldtOyouas67Nw3_kEZECdP-eJamPzYzFQ";
+
+            ApiService api = ApiClient
+                    .getClient(token)
+                    .create(ApiService.class);
+
+            api.uploadProfileImage(body).enqueue(new Callback<String>() {
+
+                @Override
+                public void onResponse(Call<String> call, Response<String> response) {
+
+                    if (response.isSuccessful()) {
+                        Toast.makeText(getContext(),
+                                "Image uploaded!",
+                                Toast.LENGTH_SHORT).show();
+
+                        loadProfile();
+                    } else {
+                        Toast.makeText(getContext(),
+                                "Upload failed",
+                                Toast.LENGTH_SHORT).show();
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<String> call, Throwable t) {
+                    Toast.makeText(getContext(),
+                            "Network error",
+                            Toast.LENGTH_SHORT).show();
+                }
+            });
+
+        } catch (Exception e) {
+            Toast.makeText(getContext(),
+                    "Error reading file",
+                    Toast.LENGTH_SHORT).show();
+        }
+    }
+
+
+
 }
