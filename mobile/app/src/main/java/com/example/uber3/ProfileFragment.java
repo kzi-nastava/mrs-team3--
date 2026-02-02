@@ -3,9 +3,11 @@ package com.example.uber3;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -36,6 +38,7 @@ import com.bumptech.glide.Glide;
 import com.example.uber3.network.model.UpdateProfileRequest;
 import com.example.uber3.network.service.ProfileService;
 import com.google.android.material.button.MaterialButton;
+import com.google.gson.Gson;
 
 public class ProfileFragment extends Fragment {
 
@@ -57,6 +60,8 @@ public class ProfileFragment extends Fragment {
 
     private ProfileService profileService;
 
+    private CheckBox cbBabyTransport;
+    private CheckBox cbPetTransport;
 
 
     private boolean editMode = false;
@@ -90,13 +95,11 @@ public class ProfileFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        String token = "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJwcmxpbmNldmljMDRAZ21haWwuY29tIiwidWlkIjoyLCJyb2xlIjoiUEFTU0VOR0VSIiwiaXNzIjoic3QzLXViZXIiLCJleHAiOjE3NzAwMDMwNTcsImlhdCI6MTc2OTk5OTQ1N30.kDXWEnzebswX3QM8XWVC-WnB9ZjM83stFQLXJkFwSeqfI7J6q67sXXDyCTeNHTe27EwW0H2wAoloPRFSCgACtHGZH7bywsD1IMKwQUV6hoyswb4qMskRx68EnqzsIZHI90JML38hzf41UKQi2AD3elkxiQz5UjqmLTII3CmXqBl4y4dzNRjVm_JUA_dpCwnYkCTa0FGs9TKbw8cM82g6JcpX-S9gUpAxfRaVgAmx8qQypUx4HIt5zXdpG6VeVb7cFhXjC4wtCBp-5avZB5N2D35lpHlEEY8BFg73tfAjaKKnGeqAhFOEtbM-VchBuVvLzJOrrXdojJ_YJJPVkN4Rzw";
 
-        profileService = new ProfileService(token);
+        profileService = new ProfileService(requireContext());
 
         initializeViews(view);
 
-        // 👇 IMAGE PICKER INIT
         imagePickerLauncher = registerForActivityResult(
                 new ActivityResultContracts.GetContent(),
                 uri -> {
@@ -106,11 +109,7 @@ public class ProfileFragment extends Fragment {
                 }
         );
 
-        String role = getArguments() != null ? getArguments().getString(ARG_ROLE) : "PASSENGER";
-        isDriver = "DRIVER".equals(role);
 
-        LinearLayout driverSection = view.findViewById(R.id.driverSection);
-        driverSection.setVisibility(isDriver ? View.VISIBLE : View.GONE);
 
         if (savedInstanceState != null) {
             restoreState(savedInstanceState);
@@ -149,6 +148,10 @@ public class ProfileFragment extends Fragment {
         tvChangeField = view.findViewById(R.id.tvChangeField);
         tvChangeValues = view.findViewById(R.id.tvChangeValues);
         tvChangeStatus = view.findViewById(R.id.tvChangeStatus);
+
+        cbBabyTransport = view.findViewById(R.id.cbBabyTransport);
+        cbPetTransport = view.findViewById(R.id.cbPetTransport);
+
 
         ImageView profileImage = view.findViewById(R.id.profileImage);
 
@@ -233,6 +236,8 @@ public class ProfileFragment extends Fragment {
 
             tvSeats.setVisibility(View.GONE);
             etSeats.setVisibility(View.VISIBLE);
+            cbBabyTransport.setEnabled(true);
+            cbPetTransport.setEnabled(true);
         }
 
         etFirstName.requestFocus();
@@ -280,7 +285,11 @@ public class ProfileFragment extends Fragment {
 
             etSeats.setVisibility(View.GONE);
             tvSeats.setVisibility(View.VISIBLE);
+
+            cbBabyTransport.setEnabled(false);
+            cbPetTransport.setEnabled(false);
         }
+
     }
 
     @SuppressLint("SetTextI18n")
@@ -390,6 +399,14 @@ public class ProfileFragment extends Fragment {
 
                 ProfileResponse p = response.body();
 
+                isDriver = p.vehicle != null;
+
+                LinearLayout driverSection =
+                        requireView().findViewById(R.id.driverSection);
+
+                driverSection.setVisibility(
+                        isDriver ? View.VISIBLE : View.GONE);
+
                 ImageView profileImage =
                         requireView().findViewById(R.id.profileImage);
 
@@ -420,6 +437,22 @@ public class ProfileFragment extends Fragment {
 
                 tvAddress.setText(p.address);
                 etAddress.setText(p.address);
+
+                if (p.vehicle != null) {
+
+                    tvVehicleModel.setText(p.vehicle.model);
+                    etVehicleModel.setText(p.vehicle.model);
+
+                    tvLicensePlate.setText(p.vehicle.registrationNumber);
+                    etLicensePlate.setText(p.vehicle.registrationNumber);
+
+                    tvSeats.setText(String.valueOf(p.vehicle.seatingCapacity));
+                    etSeats.setText(String.valueOf(p.vehicle.seatingCapacity));
+                    cbBabyTransport.setChecked(p.vehicle.babyTransport);
+                    cbPetTransport.setChecked(p.vehicle.petTransport);
+
+                }
+
             }
 
             @Override

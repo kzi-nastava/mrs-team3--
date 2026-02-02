@@ -2,6 +2,7 @@ package com.example.uber3.network.service;
 
 import android.net.Uri;
 import android.content.Context;
+import android.os.Build;
 
 import com.example.uber3.network.ApiClient;
 import com.example.uber3.network.ApiService;
@@ -20,9 +21,9 @@ public class ProfileService {
 
     private final ApiService api;
 
-    public ProfileService(String token) {
+    public ProfileService(Context context) {
         api = ApiClient
-                .getClient(token)
+                .getClient(context)
                 .create(ApiService.class);
     }
 
@@ -40,6 +41,7 @@ public class ProfileService {
                             Callback<String> callback) {
 
         try {
+
             String mimeType =
                     context.getContentResolver().getType(uri);
 
@@ -57,18 +59,30 @@ public class ProfileService {
                 return;
             }
 
-            byte[] bytes = new byte[inputStream.available()];
-            inputStream.read(bytes);
+            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+            int nRead;
+            byte[] data = new byte[4096];
+
+            while ((nRead = inputStream.read(data, 0, data.length)) != -1) {
+                buffer.write(data, 0, nRead);
+            }
+
+            buffer.flush();
+            byte[] bytes = buffer.toByteArray();
+            buffer.close();
             inputStream.close();
 
+
             RequestBody requestFile =
-                    RequestBody.create(bytes,
-                            MediaType.parse(mimeType));
+                    RequestBody.create(
+                            bytes,
+                            MediaType.parse(mimeType)
+                    );
 
             MultipartBody.Part body =
                     MultipartBody.Part.createFormData(
                             "file",
-                            "upload.jpg",
+                            "profile_" + System.currentTimeMillis() + ".jpg",
                             requestFile
                     );
 
@@ -79,6 +93,4 @@ public class ProfileService {
             callback.onFailure(null, e);
         }
     }
-
-
 }

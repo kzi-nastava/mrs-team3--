@@ -1,24 +1,37 @@
 package com.example.uber3.network;
 
+import android.content.Context;
+
+import com.example.uber3.network.manager.TokenManager;
+
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 import retrofit2.converter.scalars.ScalarsConverterFactory;
 
-
 public class ApiClient {
 
     private static final String BASE_URL = "http://10.0.2.2:8080/";
 
-    public static Retrofit getClient(String token) {
+    public static Retrofit getClient(Context context) {
 
         OkHttpClient client = new OkHttpClient.Builder()
                 .addInterceptor(chain -> {
-                    Request request = chain.request().newBuilder()
-                            .addHeader("Authorization", "Bearer " + token)
-                            .build();
-                    return chain.proceed(request);
+
+                    String token = TokenManager.getToken(context);
+
+                    Request.Builder requestBuilder =
+                            chain.request().newBuilder();
+
+                    if (token != null) {
+                        requestBuilder.addHeader(
+                                "Authorization",
+                                "Bearer " + token
+                        );
+                    }
+
+                    return chain.proceed(requestBuilder.build());
                 })
                 .build();
 

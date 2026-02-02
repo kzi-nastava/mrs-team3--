@@ -8,10 +8,14 @@ import retrofit2.http.PUT;
 import retrofit2.http.Body;
 import com.example.uber3.network.model.UpdateProfileRequest;
 import okhttp3.MultipartBody;
-import okhttp3.RequestBody;
 import retrofit2.http.Multipart;
 import retrofit2.http.POST;
 import retrofit2.http.Part;
+import com.example.uber3.network.model.LoginRequest;
+import com.example.uber3.network.model.LoginResponse;
+
+import retrofit2.http.POST;
+import retrofit2.http.Body;
 
 
 
@@ -28,6 +32,9 @@ public interface ApiService {
     Call<String> uploadProfileImage(
             @Part MultipartBody.Part file
     );
+
+    @POST("api/auth/login")
+    Call<LoginResponse> login(@Body LoginRequest request);
 
 
 }
