@@ -14,7 +14,6 @@ import java.io.InputStream;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
-import retrofit2.Call;
 import retrofit2.Callback;
 
 public class ProfileService {
@@ -27,48 +26,49 @@ public class ProfileService {
                 .create(ApiService.class);
     }
 
-    // LOAD PROFILE
     public void loadProfile(Callback<ProfileResponse> callback) {
         api.getMyProfile().enqueue(callback);
     }
 
-    // UPDATE PROFILE
     public void updateProfile(UpdateProfileRequest req,
                               Callback<Void> callback) {
         api.updateProfile(req).enqueue(callback);
     }
 
-    // UPLOAD IMAGE
     public void uploadImage(Context context,
                             Uri uri,
                             Callback<String> callback) {
 
         try {
-            InputStream inputStream =
-                    context.getContentResolver().openInputStream(uri);
+            String mimeType =
+                    context.getContentResolver().getType(uri);
 
-            ByteArrayOutputStream buffer =
-                    new ByteArrayOutputStream();
-
-            byte[] data = new byte[4096];
-            int nRead;
-
-            while ((nRead = inputStream.read(data)) != -1) {
-                buffer.write(data, 0, nRead);
+            if (mimeType == null) {
+                mimeType = "image/jpeg";
             }
 
-            byte[] bytes = buffer.toByteArray();
+            InputStream inputStream =
+                    context.getContentResolver()
+                            .openInputStream(uri);
+
+            if (inputStream == null) {
+                callback.onFailure(null,
+                        new Exception("Cannot open stream"));
+                return;
+            }
+
+            byte[] bytes = new byte[inputStream.available()];
+            inputStream.read(bytes);
+            inputStream.close();
 
             RequestBody requestFile =
-                    RequestBody.create(
-                            bytes,
-                            MediaType.parse("image/*")
-                    );
+                    RequestBody.create(bytes,
+                            MediaType.parse(mimeType));
 
             MultipartBody.Part body =
                     MultipartBody.Part.createFormData(
                             "file",
-                            "profile.jpg",
+                            "upload.jpg",
                             requestFile
                     );
 
@@ -76,7 +76,9 @@ public class ProfileService {
                     .enqueue(callback);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            callback.onFailure(null, e);
         }
     }
+
+
 }

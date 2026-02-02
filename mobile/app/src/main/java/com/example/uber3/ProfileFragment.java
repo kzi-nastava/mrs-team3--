@@ -90,6 +90,10 @@ public class ProfileFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        String token = "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJwcmxpbmNldmljMDRAZ21haWwuY29tIiwidWlkIjoyLCJyb2xlIjoiUEFTU0VOR0VSIiwiaXNzIjoic3QzLXViZXIiLCJleHAiOjE3NzAwMDMwNTcsImlhdCI6MTc2OTk5OTQ1N30.kDXWEnzebswX3QM8XWVC-WnB9ZjM83stFQLXJkFwSeqfI7J6q67sXXDyCTeNHTe27EwW0H2wAoloPRFSCgACtHGZH7bywsD1IMKwQUV6hoyswb4qMskRx68EnqzsIZHI90JML38hzf41UKQi2AD3elkxiQz5UjqmLTII3CmXqBl4y4dzNRjVm_JUA_dpCwnYkCTa0FGs9TKbw8cM82g6JcpX-S9gUpAxfRaVgAmx8qQypUx4HIt5zXdpG6VeVb7cFhXjC4wtCBp-5avZB5N2D35lpHlEEY8BFg73tfAjaKKnGeqAhFOEtbM-VchBuVvLzJOrrXdojJ_YJJPVkN4Rzw";
+
+        profileService = new ProfileService(token);
+
         initializeViews(view);
 
         // 👇 IMAGE PICKER INIT
@@ -371,17 +375,11 @@ public class ProfileFragment extends Fragment {
 
     private void loadProfile() {
 
+        profileService.loadProfile(new Callback<ProfileResponse>() {
 
-        //Stavio sam privremeni token da bih testirao moram to da uklonim posle!!!
-        String token = "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJwcmxpbmNldmljMDRAZ21haWwuY29tIiwidWlkIjoyLCJyb2xlIjoiUEFTU0VOR0VSIiwiaXNzIjoic3QzLXViZXIiLCJleHAiOjE3Njk5OTIyNTcsImlhdCI6MTc2OTk4ODY1N30.m2Ew1ThzBrSqZ5AeyGH46szLImLvl95JK-QZqX3cn2GALY6dkBG0dL1uteL6yDcbScukWHBLCnc0g-aMPQImrDJP05tEgwYTI8YN8WPThG1MHpS8ObKFfAZtqO7P_l0Ul5AvJY-qXI944UiaFXjEa-7Ar-Fq--oI8-pxzhBQrklm2uAXQytioi5rCWAsMoG2O8RCzK9xtNjvMoAfc4XIrlqz_x3gsEE1tC47ZgBACyfa5XM68lZrefYsJde4A9WxGdNRAEBhIhaSk0veM4hHkdxFRSz4KpS0UhWOQfY6opEOt67Dbpx8dldtOyouas67Nw3_kEZECdP-eJamPzYzFQ";
-
-        ApiService api = ApiClient
-                .getClient(token)
-                .create(ApiService.class);
-
-        api.getMyProfile().enqueue(new Callback<ProfileResponse>() {
             @Override
-            public void onResponse(Call<ProfileResponse> call, Response<ProfileResponse> response) {
+            public void onResponse(Call<ProfileResponse> call,
+                                   Response<ProfileResponse> response) {
 
                 if (!response.isSuccessful() || response.body() == null) {
                     Toast.makeText(getContext(),
@@ -389,13 +387,17 @@ public class ProfileFragment extends Fragment {
                             Toast.LENGTH_SHORT).show();
                     return;
                 }
+
                 ProfileResponse p = response.body();
 
-                ImageView profileImage = requireView().findViewById(R.id.profileImage);
+                ImageView profileImage =
+                        requireView().findViewById(R.id.profileImage);
 
-                if (p.profileImage != null && !p.profileImage.isEmpty()) {
+                if (p.profileImage != null &&
+                        !p.profileImage.isEmpty()) {
 
-                    String imageUrl = "http://10.0.2.2:8080" + p.profileImage;
+                    String imageUrl =
+                            "http://10.0.2.2:8080" + p.profileImage;
 
                     Glide.with(requireContext())
                             .load(imageUrl)
@@ -403,7 +405,6 @@ public class ProfileFragment extends Fragment {
                             .error(R.drawable.ic_launcher_foreground)
                             .into(profileImage);
                 }
-
 
                 tvFirstName.setText(p.firstName);
                 etFirstName.setText(p.firstName);
@@ -419,121 +420,87 @@ public class ProfileFragment extends Fragment {
 
                 tvAddress.setText(p.address);
                 etAddress.setText(p.address);
-
             }
 
             @Override
-            public void onFailure(Call<ProfileResponse> call, Throwable t) {
+            public void onFailure(Call<ProfileResponse> call,
+                                  Throwable t) {
+
                 Toast.makeText(getContext(),
                         "FAILURE: " + t.getMessage(),
                         Toast.LENGTH_LONG).show();
             }
         });
-
     }
 
     private void sendUpdateProfile(UpdateProfileRequest req) {
+        profileService.updateProfile(req,
+                new Callback<Void>() {
 
-        String token = "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJwcmxpbmNldmljMDRAZ21haWwuY29tIiwidWlkIjoyLCJyb2xlIjoiUEFTU0VOR0VSIiwiaXNzIjoic3QzLXViZXIiLCJleHAiOjE3Njk5OTIyNTcsImlhdCI6MTc2OTk4ODY1N30.m2Ew1ThzBrSqZ5AeyGH46szLImLvl95JK-QZqX3cn2GALY6dkBG0dL1uteL6yDcbScukWHBLCnc0g-aMPQImrDJP05tEgwYTI8YN8WPThG1MHpS8ObKFfAZtqO7P_l0Ul5AvJY-qXI944UiaFXjEa-7Ar-Fq--oI8-pxzhBQrklm2uAXQytioi5rCWAsMoG2O8RCzK9xtNjvMoAfc4XIrlqz_x3gsEE1tC47ZgBACyfa5XM68lZrefYsJde4A9WxGdNRAEBhIhaSk0veM4hHkdxFRSz4KpS0UhWOQfY6opEOt67Dbpx8dldtOyouas67Nw3_kEZECdP-eJamPzYzFQ";
+                    @Override
+                    public void onResponse(Call<Void> call,
+                                           Response<Void> response) {
 
-        ApiService api = ApiClient
-                .getClient(token)
-                .create(ApiService.class);
+                        if (response.isSuccessful()) {
+                            Toast.makeText(getContext(),
+                                    "Profile updated!",
+                                    Toast.LENGTH_SHORT).show();
 
-        api.updateProfile(req).enqueue(new Callback<Void>() {
-            @Override
-            public void onResponse(Call<Void> call, Response<Void> response) {
+                            loadProfile();
 
-                if (response.isSuccessful()) {
-                    Toast.makeText(getContext(),
-                            "Profile updated!",
-                            Toast.LENGTH_SHORT).show();
 
-                    loadProfile(); // refresh podataka
-                } else {
-                    Toast.makeText(getContext(),
-                            "Update failed",
-                            Toast.LENGTH_SHORT).show();
-                }
-            }
+                        } else {
+                            Toast.makeText(getContext(),
+                                    "Update failed",
+                                    Toast.LENGTH_SHORT).show();
+                        }
+                    }
 
-            @Override
-            public void onFailure(Call<Void> call, Throwable t) {
-                Toast.makeText(getContext(),
-                        "Network error",
-                        Toast.LENGTH_SHORT).show();
-            }
-        });
+                    @Override
+                    public void onFailure(Call<Void> call,
+                                          Throwable t) {
+
+                        Toast.makeText(getContext(),
+                                "Network error",
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
     }
 
     private void uploadImage(Uri uri) {
 
-        try {
+        profileService.uploadImage(
+                requireContext(),
+                uri,
+                new Callback<String>() {
 
-            InputStream inputStream = requireContext()
-                    .getContentResolver()
-                    .openInputStream(uri);
+                    @Override
+                    public void onResponse(Call<String> call,
+                                           Response<String> response) {
 
-            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+                        if (response.isSuccessful()) {
+                            Toast.makeText(getContext(),
+                                    "Image uploaded!",
+                                    Toast.LENGTH_SHORT).show();
 
-            int nRead;
-            byte[] data = new byte[4096];
+                            loadProfile();
+                        } else {
+                            Toast.makeText(getContext(),
+                                    "Upload failed",
+                                    Toast.LENGTH_SHORT).show();
+                        }
+                    }
 
-            while ((nRead = inputStream.read(data, 0, data.length)) != -1) {
-                buffer.write(data, 0, nRead);
-            }
+                    @Override
+                    public void onFailure(Call<String> call,
+                                          Throwable t) {
 
-            byte[] bytes = buffer.toByteArray();
-
-            RequestBody requestFile =
-                    RequestBody.create(bytes, MediaType.parse("image/*"));
-
-            MultipartBody.Part body =
-                    MultipartBody.Part.createFormData(
-                            "file",
-                            "profile.jpg",
-                            requestFile
-                    );
-
-            String token = "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJwcmxpbmNldmljMDRAZ21haWwuY29tIiwidWlkIjoyLCJyb2xlIjoiUEFTU0VOR0VSIiwiaXNzIjoic3QzLXViZXIiLCJleHAiOjE3Njk5OTIyNTcsImlhdCI6MTc2OTk4ODY1N30.m2Ew1ThzBrSqZ5AeyGH46szLImLvl95JK-QZqX3cn2GALY6dkBG0dL1uteL6yDcbScukWHBLCnc0g-aMPQImrDJP05tEgwYTI8YN8WPThG1MHpS8ObKFfAZtqO7P_l0Ul5AvJY-qXI944UiaFXjEa-7Ar-Fq--oI8-pxzhBQrklm2uAXQytioi5rCWAsMoG2O8RCzK9xtNjvMoAfc4XIrlqz_x3gsEE1tC47ZgBACyfa5XM68lZrefYsJde4A9WxGdNRAEBhIhaSk0veM4hHkdxFRSz4KpS0UhWOQfY6opEOt67Dbpx8dldtOyouas67Nw3_kEZECdP-eJamPzYzFQ";
-
-            ApiService api = ApiClient
-                    .getClient(token)
-                    .create(ApiService.class);
-
-            api.uploadProfileImage(body).enqueue(new Callback<String>() {
-
-                @Override
-                public void onResponse(Call<String> call, Response<String> response) {
-
-                    if (response.isSuccessful()) {
                         Toast.makeText(getContext(),
-                                "Image uploaded!",
-                                Toast.LENGTH_SHORT).show();
-
-                        loadProfile();
-                    } else {
-                        Toast.makeText(getContext(),
-                                "Upload failed",
+                                "Network error",
                                 Toast.LENGTH_SHORT).show();
                     }
-                }
-
-                @Override
-                public void onFailure(Call<String> call, Throwable t) {
-                    Toast.makeText(getContext(),
-                            "Network error",
-                            Toast.LENGTH_SHORT).show();
-                }
-            });
-
-        } catch (Exception e) {
-            Toast.makeText(getContext(),
-                    "Error reading file",
-                    Toast.LENGTH_SHORT).show();
-        }
+                });
     }
-
 
 
 }
