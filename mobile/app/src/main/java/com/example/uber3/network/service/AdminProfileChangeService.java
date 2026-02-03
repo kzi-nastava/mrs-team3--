@@ -2,8 +2,8 @@ package com.example.uber3.network.service;
 
 import android.content.Context;
 
-import com.example.uber3.network.ApiClient;
-import com.example.uber3.network.AdminProfileChangeApi;
+import com.example.uber3.network.api.ApiClient;
+import com.example.uber3.network.api.AdminProfileChangeApi;
 import com.example.uber3.network.model.AdminDriverProfileChangeRequestDetailsDto;
 import com.example.uber3.network.model.AdminDriverProfileChangeRequestDto;
 import com.example.uber3.network.model.AdminProfileChangeDecisionDto;
@@ -26,12 +26,6 @@ public class AdminProfileChangeService {
             Callback<List<AdminDriverProfileChangeRequestDto>> cb
     ) {
         api.getAll().enqueue(cb);
-    }
-
-    public void getPending(
-            Callback<List<AdminDriverProfileChangeRequestDto>> cb
-    ) {
-        api.getPending().enqueue(cb);
     }
 
     public void decide(

@@ -1,6 +1,8 @@
 package com.example.uber3;
 
 import android.os.Bundle;
+import android.view.View;
+import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.drawerlayout.widget.DrawerLayout;
@@ -17,22 +19,26 @@ public class MainActivity extends AppCompatActivity {
     private MaterialToolbar topAppBar;
     private NavigationView navigationView;
 
-    private String currentUserRole = "PASSENGER";
+    private String currentUserRole;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        currentUserRole = TokenManager.getRole(this);
+
 
         drawerLayout = findViewById(R.id.drawerLayout);
         topAppBar = findViewById(R.id.topAppBar);
         navigationView = findViewById(R.id.navigationView);
-
+        View header = navigationView.getHeaderView(0);
+        TextView tvEmail = header.findViewById(R.id.tvEmail);
+        tvEmail.setText(TokenManager.getUserEmail(this));
         topAppBar.setNavigationIcon(R.drawable.ic_menu);
         topAppBar.setNavigationOnClickListener(v -> drawerLayout.open());
 
         updateMenuVisibility();
-
+        updateMenuByRole();
         navigationView.setNavigationItemSelectedListener(item -> {
             int id = item.getItemId();
 
@@ -116,11 +122,37 @@ public class MainActivity extends AppCompatActivity {
         loadFragment(new ForgotPasswordFragment());
     }
 
-    public String getCurrentUserRole() {
-        return currentUserRole;
+    private void updateMenuByRole() {
+
+        String role = currentUserRole;
+
+
+
+        navigationView.getMenu().findItem(R.id.nav_ride).setVisible(false);
+        navigationView.getMenu().findItem(R.id.nav_requests).setVisible(false);
+        navigationView.getMenu().findItem(R.id.nav_chat).setVisible(false);
+        navigationView.getMenu().findItem(R.id.nav_profile).setVisible(false);
+
+        if (role.equals("PASSENGER")) {
+            navigationView.getMenu().findItem(R.id.nav_chat).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_ride).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_profile).setVisible(true);
+
+        }
+
+        if (role.equals("DRIVER")) {
+            navigationView.getMenu().findItem(R.id.nav_chat).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_ride).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_profile).setVisible(true);
+
+        }
+
+        if (role.equals("ADMIN")) {
+            navigationView.getMenu().findItem(R.id.nav_requests).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_chat).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_profile).setVisible(true);
+
+        }
     }
 
-    public void setCurrentUserRole(String role) {
-        this.currentUserRole = role;
-    }
 }

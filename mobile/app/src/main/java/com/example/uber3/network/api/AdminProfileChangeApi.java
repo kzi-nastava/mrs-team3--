@@ -1,4 +1,4 @@
-package com.example.uber3.network;
+package com.example.uber3.network.api;
 
 import com.example.uber3.network.model.AdminDriverProfileChangeRequestDetailsDto;
 import com.example.uber3.network.model.AdminDriverProfileChangeRequestDto;
