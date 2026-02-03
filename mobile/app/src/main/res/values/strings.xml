@@ -84,6 +84,10 @@
     <string name="ride">Ride</string>
     <string name="profile">Profile</string>
     <string name="logout">Logout</string>
+    <string name="driver_profile_change_requests">Driver Profile Change Requests</string>
+    <string name="all">All</string>
+    <string name="approved">Approved</string>
+    <string name="rejected">Rejected</string>
     <string-array name="vehicle_types">
         <item>STANDARD</item>
         <item>VAN</item>

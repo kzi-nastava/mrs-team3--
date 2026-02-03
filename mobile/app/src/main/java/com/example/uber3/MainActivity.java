@@ -51,6 +51,9 @@ public class MainActivity extends AppCompatActivity {
                 topAppBar.setTitle("Profile");
                 loadFragment(ProfileFragment.newInstance(currentUserRole));
 
+            } else if (id == R.id.nav_requests) {
+                topAppBar.setTitle("Change Requests");
+                loadFragment(new DriverChangeRequestFragment());
             } else if (id == R.id.nav_login) {
                 topAppBar.setTitle("Login");
                 loadFragment(new LoginFragment());
