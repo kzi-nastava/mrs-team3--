@@ -26,6 +26,11 @@
             android:id="@+id/nav_requests"
             android:title="@string/change_requests"
             android:icon="@drawable/ic_person"/>
+
+        <item
+            android:id="@+id/nav_register_driver"
+            android:title="@string/register_driver"
+            android:icon="@drawable/ic_person"/>
     </group>
 
     <item android:title="">
