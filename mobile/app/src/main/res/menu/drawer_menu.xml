@@ -21,6 +21,11 @@
             android:id="@+id/nav_profile"
             android:title="@string/profile"
             android:icon="@drawable/ic_person" />
+
+        <item
+            android:id="@+id/nav_requests"
+            android:title="Change Requests"
+            android:icon="@drawable/ic_person"/>
     </group>
 
     <item android:title="">
@@ -30,6 +35,11 @@
                     android:id="@+id/nav_login"
                     android:title="@string/login"
                     android:icon="@android:drawable/ic_lock_idle_lock" />
+
+                <item
+                    android:id="@+id/nav_logout"
+                    android:title="@string/logout"
+                    android:icon="@android:drawable/ic_lock_power_off" />
             </group>
         </menu>
     </item>

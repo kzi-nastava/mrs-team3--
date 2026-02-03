@@ -27,24 +27,16 @@ import java.util.List;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    // =========================
-    // PASSWORD ENCODER
-    // =========================
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // =========================
-    // SECURITY FILTER CHAIN
-    // =========================
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // ---- CSRF ----
                 .csrf(AbstractHttpConfigurer::disable)
 
-                // ---- HEADERS (FIX ZA FIREFOX IMAGE BLOCKING) ----
                 .headers(headers -> headers
                         .crossOriginResourcePolicy(policy ->
                                 policy.policy(
@@ -54,24 +46,19 @@ public class SecurityConfig {
                         )
                 )
 
-                // ---- CORS ----
                 .cors(Customizer.withDefaults())
 
-                // ---- SESSION ----
                 .sessionManagement(sm ->
                         sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
 
-                // ---- AUTHORIZATION ----
                 .authorizeHttpRequests(auth -> auth
 
-                        // 🔓 STATIC FILES (PROFILE IMAGES)
                         .requestMatchers("/uploads/**").permitAll()
 
-                        // 🔓 AUTH & WS
+
                         .requestMatchers("/api/auth/**", "/ws/**").permitAll()
 
-                        // 🔓 PUBLIC ENDPOINTS
                         .requestMatchers("/api/vehicles/**").permitAll()
                         .requestMatchers("/simple-routes/**").permitAll()
                         .requestMatchers(
@@ -79,14 +66,11 @@ public class SecurityConfig {
                                 "/api/ride-tracking/token/**"
                         ).permitAll()
 
-                        // 🔓 PREFLIGHT
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // 🔒 EVERYTHING ELSE
                         .anyRequest().authenticated()
                 )
 
-                // ---- JWT ----
                 .oauth2ResourceServer(oauth -> oauth
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
                 );
@@ -94,9 +78,6 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // =========================
-    // JWT ROLE CONVERTER
-    // =========================
     @Bean
     public Converter<Jwt, ? extends AbstractAuthenticationToken> jwtAuthenticationConverter() {
         return jwt -> {
@@ -110,9 +91,7 @@ public class SecurityConfig {
         };
     }
 
-    // =========================
-    // CORS CONFIG
-    // =========================
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();

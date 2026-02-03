@@ -391,6 +391,35 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:text="Vehicle type"
+                        android:textSize="12sp"
+                        android:textColor="#666666"/>
+
+                    <Spinner
+                        android:id="@+id/spVehicleType"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"/>
+
+                    <CheckBox
+                        android:id="@+id/cbBabyTransport"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Baby friendly"
+                        android:enabled="false"
+                        android:layout_marginTop="8dp"/>
+
+                    <CheckBox
+                        android:id="@+id/cbPetTransport"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Pet friendly"
+                        android:enabled="false"
+                        android:layout_marginBottom="12dp"/>
+
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
                         android:text="@string/change_requests"
                         android:textSize="18sp"
                         android:textStyle="bold"
