@@ -14,6 +14,8 @@ import retrofit2.http.POST;
 import retrofit2.http.Part;
 import com.example.uber3.network.model.LoginRequest;
 import com.example.uber3.network.model.LoginResponse;
+import com.example.uber3.network.model.mails.ForgotPasswordRequest;
+import com.example.uber3.network.model.mails.ResetPasswordRequest;
 
 public interface ApiService {
 
@@ -36,6 +38,20 @@ public interface ApiService {
     Call<Void> submitDriverChangeRequest(
             @Body DriverProfileChangeRequestDto dto
     );
+
+
+    @POST("api/auth/forgot-password")
+    Call<Void> forgotPassword(
+            @Body ForgotPasswordRequest request
+    );
+
+    @POST("api/auth/reset-password")
+    Call<Void> resetPassword(
+            @Body ResetPasswordRequest request
+    );
+
+
+
 
 
 

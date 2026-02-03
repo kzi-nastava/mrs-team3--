@@ -88,6 +88,17 @@
     <string name="all">All</string>
     <string name="approved">Approved</string>
     <string name="rejected">Rejected</string>
+    <string name="register_driver">Register Driver</string>
+    <string name="name">Name</string>
+    <string name="surname">Surname</string>
+    <string name="phone">Phone</string>
+    <string name="baby_transport">Baby transport</string>
+    <string name="pet_friendly">Pet friendly</string>
+    <string name="register">Register</string>
+    <string name="enter_email_message">Enter your email and we\'ll send you reset instructions.</string>
+    <string name="reset_password">Reset Password</string>
+    <string name="send_reset_link">Send Reset Link</string>
+    <string name="confirm_pass">Confirm password</string>
     <string-array name="vehicle_types">
         <item>STANDARD</item>
         <item>VAN</item>

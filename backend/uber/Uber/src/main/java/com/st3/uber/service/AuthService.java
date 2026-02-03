@@ -47,7 +47,12 @@ public class AuthService {
   @Value("${app.frontend.url}")
   private String frontendUrl;
 
-  @Value("${jwt.ttl-seconds:3600}")
+    @Value("${app.reset-mobile-url}")
+    private String resetMobileUrl;
+
+
+
+    @Value("${jwt.ttl-seconds:3600}")
   private long jwtTtlSeconds;
   private final RideRepository rideRepository;
 
@@ -210,7 +215,7 @@ public class AuthService {
     verificationToken.setTokenType(VerificationTokenType.PASSWORD_RESET);
     tokenRepository.save(verificationToken);
 
-    String link = backendUrl + "/api/auth/reset-password/verify?token=" + token;
+    String link = frontendUrl + "/reset-password?token=" + token;
     String subject = "Reset your password";
     String body = "Click the link below to reset your password.";
     mailService.sendText(

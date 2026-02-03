@@ -1,5 +1,7 @@
 package com.example.uber3;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
@@ -67,6 +69,9 @@ public class MainActivity extends AppCompatActivity {
             } else if (id == R.id.nav_logout) {
                 LogoutHelper.logout(this);
                 return true;
+            } else if (id == R.id.nav_register_driver) {
+                topAppBar.setTitle("Register Driver");
+                loadFragment(new RegisterDriverFragment());
             }
 
             drawerLayout.close();
@@ -83,7 +88,32 @@ public class MainActivity extends AppCompatActivity {
                 loadFragment(new LoginFragment());
             }
         }
+
+        handleDeepLink(getIntent());
+
     }
+
+    private void handleDeepLink(Intent intent) {
+
+        if (intent == null || intent.getData() == null) return;
+
+        Uri data = intent.getData();
+
+        String token = data.getQueryParameter("token");
+        String mode = data.getQueryParameter("mode");
+
+
+        if (token != null) {
+            loadFragment(
+                    ResetPasswordFragment.newInstance(
+                            token,
+                            mode != null ? mode : "RESET"
+                    )
+            );
+                topAppBar.setTitle("Set Password");
+        }
+    }
+
 
     private void updateMenuVisibility() {
         boolean loggedIn =
@@ -132,6 +162,7 @@ public class MainActivity extends AppCompatActivity {
         navigationView.getMenu().findItem(R.id.nav_requests).setVisible(false);
         navigationView.getMenu().findItem(R.id.nav_chat).setVisible(false);
         navigationView.getMenu().findItem(R.id.nav_profile).setVisible(false);
+        navigationView.getMenu().findItem(R.id.nav_register_driver).setVisible(false);
 
         if (role.equals("PASSENGER")) {
             navigationView.getMenu().findItem(R.id.nav_chat).setVisible(true);
@@ -151,6 +182,7 @@ public class MainActivity extends AppCompatActivity {
             navigationView.getMenu().findItem(R.id.nav_requests).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_chat).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_profile).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_register_driver).setVisible(true);
 
         }
     }
