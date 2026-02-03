@@ -3,8 +3,8 @@ package com.example.uber3.network.service;
 import android.net.Uri;
 import android.content.Context;
 import com.example.uber3.network.model.DriverProfileChangeRequestDto;
-import com.example.uber3.network.ApiClient;
-import com.example.uber3.network.ApiService;
+import com.example.uber3.network.api.ApiClient;
+import com.example.uber3.network.api.ApiService;
 import com.example.uber3.network.model.ProfileResponse;
 import com.example.uber3.network.model.UpdateProfileRequest;
 

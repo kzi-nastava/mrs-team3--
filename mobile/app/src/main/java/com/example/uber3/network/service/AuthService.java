@@ -1,7 +1,9 @@
-package com.example.uber3.network;
+package com.example.uber3.network.service;
 
 import android.content.Context;
 
+import com.example.uber3.network.api.ApiClient;
+import com.example.uber3.network.api.ApiService;
 import com.example.uber3.network.manager.TokenManager;
 import com.example.uber3.network.model.LoginRequest;
 import com.example.uber3.network.model.LoginResponse;
@@ -35,9 +37,11 @@ public class AuthService {
 
                 if (response.isSuccessful() && response.body() != null) {
 
-                    // 👉 САЧУВАЈ TOKEN ОВДЕ
                     String token = response.body().token;
                     TokenManager.saveToken(context, token);
+                    TokenManager.saveRole(context, response.body().role);
+                    TokenManager.saveUserEmail(context, response.body().email);
+
 
                     callback.onSuccess(response.body());
 

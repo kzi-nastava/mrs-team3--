@@ -15,7 +15,7 @@ import com.example.uber3.network.manager.TokenManager;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 import java.util.Objects;
-import com.example.uber3.network.AuthService;
+import com.example.uber3.network.service.AuthService;
 import com.example.uber3.network.model.LoginResponse;
 
 
