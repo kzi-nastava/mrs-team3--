@@ -1,96 +1,218 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Remove the HorizontalScrollView wrapper since parent handles scrolling -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="wrap_content"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cardRide"
+    android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:padding="16dp"
-    android:background="?attr/selectableItemBackground">
+    android:layout_marginBottom="16dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="2dp"
+    app:cardBackgroundColor="#FFFFFF"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?android:attr/selectableItemBackground">
 
-    <TextView
-        android:id="@+id/tvId"
-        android:layout_width="60dp"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="1"
-        android:textSize="14sp"
-        android:textColor="#333333"/>
+        android:orientation="vertical"
+        android:padding="24dp">
 
-    <TextView
-        android:id="@+id/tvStart"
-        android:layout_width="80dp"
-        android:layout_height="wrap_content"
-        android:text="10:00"
-        android:textSize="14sp"
-        android:textColor="#333333"
-        android:layout_marginStart="16dp"/>
+        <!-- Header: Date and Status -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
 
-    <TextView
-        android:id="@+id/tvEnd"
-        android:layout_width="80dp"
-        android:layout_height="wrap_content"
-        android:text="10:25"
-        android:textSize="14sp"
-        android:textColor="#333333"
-        android:layout_marginStart="16dp"/>
+            <TextView
+                android:id="@+id/tvRideDate"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/jan_15_2024_10_30"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="#6B7280"/>
 
-    <TextView
-        android:id="@+id/tvFrom"
-        android:layout_width="140dp"
-        android:layout_height="wrap_content"
-        android:text="Main Street"
-        android:textSize="14sp"
-        android:textColor="#333333"
-        android:layout_marginStart="16dp"
-        android:ellipsize="end"
-        android:maxLines="1"/>
+            <TextView
+                android:id="@+id/tvStatusBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/completed"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="6dp"
+                android:background="@drawable/rounded_badge"
+                android:textAllCaps="true"
+                android:letterSpacing="0.05"/>
 
-    <TextView
-        android:id="@+id/tvTo"
-        android:layout_width="140dp"
-        android:layout_height="wrap_content"
-        android:text="University"
-        android:textSize="14sp"
-        android:textColor="#333333"
-        android:layout_marginStart="16dp"
-        android:ellipsize="end"
-        android:maxLines="1"/>
+        </LinearLayout>
 
-    <TextView
-        android:id="@+id/tvPassengers"
-        android:layout_width="160dp"
-        android:layout_height="wrap_content"
-        android:text="prle, Andjela"
-        android:textSize="14sp"
-        android:textColor="#333333"
-        android:layout_marginStart="16dp"
-        android:ellipsize="end"
-        android:maxLines="1"/>
+        <!-- Route Information -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="16dp">
 
-    <TextView
-        android:id="@+id/tvPrice"
-        android:layout_width="100dp"
-        android:layout_height="wrap_content"
-        android:text="85"
-        android:textSize="14sp"
-        android:textColor="#333333"
-        android:layout_marginStart="16dp"/>
+            <!-- Start Location -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="8dp">
 
-    <TextView
-        android:id="@+id/tvCancelled"
-        android:layout_width="120dp"
-        android:layout_height="wrap_content"
-        android:text="No"
-        android:textSize="14sp"
-        android:textColor="#333333"
-        android:layout_marginStart="16dp"/>
+                <View
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_marginTop="2dp"
+                    android:layout_marginEnd="12dp"
+                    android:background="@drawable/circle_start"/>
 
-    <TextView
-        android:id="@+id/tvPanic"
-        android:layout_width="80dp"
-        android:layout_height="wrap_content"
-        android:text="No"
-        android:textSize="14sp"
-        android:textColor="#333333"
-        android:layout_marginStart="16dp"/>
+                <TextView
+                    android:id="@+id/tvStartAddress"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/_123_main_street_downtown"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="#111827"
+                    android:maxLines="2"
+                    android:ellipsize="end"/>
 
-</LinearLayout>
+            </LinearLayout>
+
+            <!-- End Location -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <View
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_marginTop="2dp"
+                    android:layout_marginEnd="12dp"
+                    android:background="@drawable/circle_end"/>
+
+                <TextView
+                    android:id="@+id/tvEndAddress"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/_456_university_ave_campus"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="#111827"
+                    android:maxLines="2"
+                    android:ellipsize="end"/>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Divider -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#F3F4F6"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- Ride Info -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <!-- Earned -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/earned"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:textColor="#6B7280"
+                    android:letterSpacing="0.05"
+                    android:layout_marginBottom="4dp"/>
+
+                <TextView
+                    android:id="@+id/tvPrice"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/_1250_din"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="#059669"/>
+
+            </LinearLayout>
+
+            <!-- Distance -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/distance"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:textColor="#6B7280"
+                    android:letterSpacing="0.05"
+                    android:layout_marginBottom="4dp"/>
+
+                <TextView
+                    android:id="@+id/tvDistance"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/_12_5_km"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="#111827"/>
+
+            </LinearLayout>
+
+            <!-- Duration -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/duration"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:textColor="#6B7280"
+                    android:letterSpacing="0.05"
+                    android:layout_marginBottom="4dp"/>
+
+                <TextView
+                    android:id="@+id/tvDuration"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/_25_min"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="#111827"/>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>
