@@ -18,6 +18,9 @@ import { RideTrackingComponent } from './ride-tracking/ride-tracking';
 import { DriverDashboardComponent } from './driver-dashboard/driver-dashboard';
 import {IncomingRides} from './incoming-rides/incoming-rides';
 
+
+import { PricingManagementComponent } from './pricing/pricing-managment/pricing-management';
+
 export const routes: Routes = [
 
   { path: '', component: LandingPageComponent },
@@ -59,5 +62,8 @@ export const routes: Routes = [
   {path: 'ride-review/:id', component: RideReviewComponent, canActivate: [passengerGuard]},
   { path: 'driver-dashboard', component: DriverDashboardComponent, canActivate: [driverGuard] },
   {path: 'incoming-rides', component: IncomingRides, canActivate: [passengerGuard]},
+    {path: 'pricing-management', component: PricingManagementComponent, canActivate: [adminGuard]},
+
   { path: '**', component: ErrorComponent }
+
 ];

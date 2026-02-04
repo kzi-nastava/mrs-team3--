@@ -6,13 +6,15 @@
     🚗
   </button>
   <button class="icon-btn notification-btn" (click)="goNotifications()" title="Notifications">
-    <span class="bell-icon">🔔</span>
-    <span class="bell-icon">🔔</span>
+    🔔
     @if (unreadCount > 0) {
     <span class="notification-badge">{{unreadCount}}</span>
     } </button>
   <button class="icon-btn" (click)="goProfileChangeRequests()" title="Profile Change Requests">
     📝
+  </button>
+  <button class="icon-btn" (click)="goPricing()" title="Pricing Management">
+    📊
   </button>
   <div class="spacer"></div>
   <button class="icon-btn" (click)="goProfile()" title="Profile">
