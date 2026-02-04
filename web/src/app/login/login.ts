@@ -61,9 +61,9 @@ export class Login {
         // Navigate based on role
         const role = this.authService.getUserRole();
 
-        if (role === 'PASSENGER'|| role === 'ADMIN') {
+        if (role === 'PASSENGER') {
           this.router.navigate(['/']);
-        } else if (role === 'DRIVER') {
+        } else if (role === 'DRIVER' || role === 'ADMIN') {
           this.router.navigate(['/profile']);
         }
 
