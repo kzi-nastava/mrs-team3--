@@ -1,0 +1,220 @@
+<div class="pricing-management-container">
+  <div class="page-header">
+    <button class="btn-back" (click)="goBack()" title="Go back">
+      <span class="back-icon">←</span> Back
+    </button>
+    <h1>💰 Ride Pricing Management</h1>
+    <p class="subtitle">Configure base prices and per-kilometer rates for different vehicle types</p>
+  </div>
+
+  <div *ngIf="isLoading" class="loading-container">
+    <div class="spinner"></div>
+    <p>Loading pricing configuration...</p>
+  </div>
+
+  <div *ngIf="!isLoading && currentPricing && constraints" class="content-wrapper">
+    
+    <div *ngIf="validationErrors.length > 0" class="validation-errors">
+      <div class="error-header">
+        <span class="error-icon">⚠️</span>
+        <strong>Validation Errors</strong>
+      </div>
+      <ul>
+        <li *ngFor="let error of validationErrors">{{ error }}</li>
+      </ul>
+    </div>
+
+    <div class="pricing-form">
+      
+      <div class="form-section">
+        <div class="section-header">
+          <span class="vehicle-icon">🚗</span>
+          <h2>Standard Vehicle</h2>
+        </div>
+        <div class="form-group">
+          <label for="standardPrice">Base Price (RSD)</label>
+          <div class="input-wrapper">
+            <input 
+              type="number" 
+              id="standardPrice"
+              [(ngModel)]="formData.standardBasePrice"
+              [min]="constraints.minBasePrice"
+              [max]="constraints.maxBasePrice"
+              step="10"
+              class="form-input"
+              [class.changed]="formData.standardBasePrice !== currentPricing.standardBasePrice">
+            <span class="input-hint">
+              Range: {{ constraints.minBasePrice }} - {{ constraints.maxBasePrice }} RSD
+            </span>
+          </div>
+          <div *ngIf="formData.standardBasePrice !== currentPricing.standardBasePrice" class="change-indicator">
+            <span class="change-badge" 
+                  [class.increase]="formData.standardBasePrice > currentPricing.standardBasePrice"
+                  [class.decrease]="formData.standardBasePrice < currentPricing.standardBasePrice">
+              {{ formData.standardBasePrice > currentPricing.standardBasePrice ? '↑' : '↓' }}
+              {{ formatCurrency(Math.abs(formData.standardBasePrice - currentPricing.standardBasePrice)) }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="section-header">
+          <span class="vehicle-icon">🚙</span>
+          <h2>Luxury Vehicle</h2>
+        </div>
+        <div class="form-group">
+          <label for="luxuryPrice">Base Price (RSD)</label>
+          <div class="input-wrapper">
+            <input 
+              type="number" 
+              id="luxuryPrice"
+              [(ngModel)]="formData.luxuryBasePrice"
+              [min]="constraints.minBasePrice"
+              [max]="constraints.maxBasePrice"
+              step="10"
+              class="form-input"
+              [class.changed]="formData.luxuryBasePrice !== currentPricing.luxuryBasePrice">
+            <span class="input-hint">
+              Range: {{ constraints.minBasePrice }} - {{ constraints.maxBasePrice }} RSD
+            </span>
+          </div>
+          <div *ngIf="formData.luxuryBasePrice !== currentPricing.luxuryBasePrice" class="change-indicator">
+            <span class="change-badge"
+                  [class.increase]="formData.luxuryBasePrice > currentPricing.luxuryBasePrice"
+                  [class.decrease]="formData.luxuryBasePrice < currentPricing.luxuryBasePrice">
+              {{ formData.luxuryBasePrice > currentPricing.luxuryBasePrice ? '↑' : '↓' }}
+              {{ formatCurrency(Math.abs(formData.luxuryBasePrice - currentPricing.luxuryBasePrice)) }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="section-header">
+          <span class="vehicle-icon">🚐</span>
+          <h2>Van</h2>
+        </div>
+        <div class="form-group">
+          <label for="vanPrice">Base Price (RSD)</label>
+          <div class="input-wrapper">
+            <input 
+              type="number" 
+              id="vanPrice"
+              [(ngModel)]="formData.vanBasePrice"
+              [min]="constraints.minBasePrice"
+              [max]="constraints.maxBasePrice"
+              step="10"
+              class="form-input"
+              [class.changed]="formData.vanBasePrice !== currentPricing.vanBasePrice">
+            <span class="input-hint">
+              Range: {{ constraints.minBasePrice }} - {{ constraints.maxBasePrice }} RSD
+            </span>
+          </div>
+          <div *ngIf="formData.vanBasePrice !== currentPricing.vanBasePrice" class="change-indicator">
+            <span class="change-badge"
+                  [class.increase]="formData.vanBasePrice > currentPricing.vanBasePrice"
+                  [class.decrease]="formData.vanBasePrice < currentPricing.vanBasePrice">
+              {{ formData.vanBasePrice > currentPricing.vanBasePrice ? '↑' : '↓' }}
+              {{ formatCurrency(Math.abs(formData.vanBasePrice - currentPricing.vanBasePrice)) }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section highlight-section">
+        <div class="section-header">
+          <span class="vehicle-icon">📏</span>
+          <h2>Price Per Kilometer</h2>
+        </div>
+        <div class="form-group">
+          <label for="pricePerKm">Rate (RSD/km)</label>
+          <div class="input-wrapper">
+            <input 
+              type="number" 
+              id="pricePerKm"
+              [(ngModel)]="formData.pricePerKm"
+              [min]="constraints.minPricePerKm"
+              [max]="constraints.maxPricePerKm"
+              step="1"
+              class="form-input"
+              [class.changed]="formData.pricePerKm !== currentPricing.pricePerKm">
+            <span class="input-hint">
+              Range: {{ constraints.minPricePerKm }} - {{ constraints.maxPricePerKm }} RSD/km
+            </span>
+          </div>
+          <div *ngIf="formData.pricePerKm !== currentPricing.pricePerKm" class="change-indicator">
+            <span class="change-badge"
+                  [class.increase]="formData.pricePerKm > currentPricing.pricePerKm"
+                  [class.decrease]="formData.pricePerKm < currentPricing.pricePerKm">
+              {{ formData.pricePerKm > currentPricing.pricePerKm ? '↑' : '↓' }}
+              {{ formatCurrency(Math.abs(formData.pricePerKm - currentPricing.pricePerKm)) }}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="action-buttons">
+        <button 
+          class="btn btn-reset" 
+          (click)="resetForm()"
+          [disabled]="!hasChanges() || isSaving">
+          <span class="btn-icon">↺</span>
+          Reset
+        </button>
+        <button 
+          class="btn btn-save" 
+          (click)="onSaveClick()"
+          [disabled]="!hasChanges() || isSaving">
+          <span class="btn-icon" *ngIf="!isSaving">💾</span>
+          <span class="spinner-small" *ngIf="isSaving"></span>
+          {{ isSaving ? 'Saving...' : 'Save Changes' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="summary-panel">
+      <h3>📊 Current Pricing Summary</h3>
+      <div class="summary-grid">
+        <div class="summary-item">
+          <span class="summary-label">Standard Base:</span>
+          <span class="summary-value">{{ formatCurrency(currentPricing.standardBasePrice) }}</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Luxury Base:</span>
+          <span class="summary-value">{{ formatCurrency(currentPricing.luxuryBasePrice) }}</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Van Base:</span>
+          <span class="summary-value">{{ formatCurrency(currentPricing.vanBasePrice) }}</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Per Kilometer:</span>
+          <span class="summary-value">{{ formatCurrency(currentPricing.pricePerKm) }}</span>
+        </div>
+      </div>
+      
+      <div class="example-calculation">
+        <h4>💡 Example: 10km ride</h4>
+        <div class="calc-row">
+          <span>Standard:</span>
+          <span>{{ formatCurrency(currentPricing.standardBasePrice + (10 * currentPricing.pricePerKm)) }}</span>
+        </div>
+        <div class="calc-row">
+          <span>Luxury:</span>
+          <span>{{ formatCurrency(currentPricing.luxuryBasePrice + (10 * currentPricing.pricePerKm)) }}</span>
+        </div>
+        <div class="calc-row">
+          <span>Van:</span>
+          <span>{{ formatCurrency(currentPricing.vanBasePrice + (10 * currentPricing.pricePerKm)) }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <app-pricing-confirmation
+    *ngIf="showConfirmationModal"
+    [changes]="pendingChanges"
+    (confirm)="onConfirmChanges()"
+    (cancel)="onCancelChanges()">
+  </app-pricing-confirmation>
+</div>
