@@ -1,5 +1,6 @@
 package com.example.uber3;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -12,12 +13,16 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.example.uber3.helpers.GeocodingHelper;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
-public class RideBookingFragment extends Fragment {
+import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 
+import org.osmdroid.util.GeoPoint;
+
+public class RideBookingFragment extends BottomSheetDialogFragment {
     private LinearLayout stopsContainer;
     private LinearLayout priceInfoLayout;
     private TextInputEditText pickupInput;
@@ -53,8 +58,104 @@ public class RideBookingFragment extends Fragment {
         bookRideButton.setOnClickListener(v -> bookRide());
         resetButton.setOnClickListener(v -> resetForm());
 
+        fillFromMapPoints();
+
         return view;
     }
+
+    @SuppressLint("SetTextI18n")
+    private void fillFromMapPoints() {
+
+        if (MapFragment.selectedPoints.isEmpty()) return;
+
+        // ---------- PICKUP ----------
+        GeoPoint first = MapFragment.selectedPoints.get(0);
+
+        new Thread(() -> {
+
+            String addr = GeocodingHelper.getAddress(
+                    requireContext(),
+                    first.getLatitude(),
+                    first.getLongitude()
+            );
+
+            if (isAdded()) {
+                requireActivity().runOnUiThread(() -> {
+                    if (pickupInput != null) {
+                        pickupInput.setText(addr);
+                    }
+                });
+            }
+
+
+        }).start();
+
+
+        // ---------- DESTINATION ----------
+        if (MapFragment.selectedPoints.size() > 1) {
+
+            GeoPoint last = MapFragment.selectedPoints.get(
+                    MapFragment.selectedPoints.size() - 1
+            );
+
+            new Thread(() -> {
+
+                String addr = GeocodingHelper.getAddress(
+                        requireContext(),
+                        last.getLatitude(),
+                        last.getLongitude()
+                );
+
+                if (isAdded()) {
+                    requireActivity().runOnUiThread(() -> {
+                        if (destinationInput != null) {
+                            destinationInput.setText(addr);
+                        }
+                    });
+                }
+
+
+            }).start();
+        }
+
+
+        // ---------- STOPS ----------
+        for (int i = 1; i < MapFragment.selectedPoints.size() - 1; i++) {
+
+            GeoPoint p = MapFragment.selectedPoints.get(i);
+
+            addStop();
+
+            LinearLayout row =
+                    (LinearLayout) stopsContainer.getChildAt(
+                            stopsContainer.getChildCount() - 1
+                    );
+
+            TextInputLayout til = (TextInputLayout) row.getChildAt(0);
+            TextInputEditText et =
+                    (TextInputEditText) til.getEditText();
+
+            if (et == null) continue;
+
+            new Thread(() -> {
+
+                String addr = GeocodingHelper.getAddress(
+                        requireContext(),
+                        p.getLatitude(),
+                        p.getLongitude()
+                );
+
+                if (isAdded()) {
+                    requireActivity().runOnUiThread(() -> {
+                        et.setText(addr);
+                    });
+                }
+
+
+            }).start();
+        }
+    }
+
 
     private void addStop() {
         stopCount++;
@@ -137,18 +238,100 @@ public class RideBookingFragment extends Fragment {
     }
 
     private void resetForm() {
-        if (pickupInput != null) {
-            pickupInput.setText("");
-        }
-        if (destinationInput != null) {
-            destinationInput.setText("");
-        }
+
+        pickupInput.setText("");
+        destinationInput.setText("");
 
         stopsContainer.removeAllViews();
         stopCount = 0;
 
         priceInfoLayout.setVisibility(View.GONE);
 
-        Toast.makeText(requireContext(), "Form reset", Toast.LENGTH_SHORT).show();
+        if (MapFragment.instance != null) {
+            MapFragment.instance.clearMap();
+        }
+
+        Toast.makeText(requireContext(),
+                "Form reset",
+                Toast.LENGTH_SHORT).show();
     }
+
+
+
+    @Override
+    public void onStart() {
+        super.onStart();
+
+        View view = getView();
+        if (view == null) return;
+
+        View parent = (View) view.getParent();
+
+        com.google.android.material.bottomsheet.BottomSheetBehavior<View> behavior =
+                com.google.android.material.bottomsheet.BottomSheetBehavior.from(parent);
+
+        behavior.setPeekHeight(600);
+
+        // OMOGUĆAVA full expand
+        behavior.setFitToContents(true);
+
+        // DOZVOLJAVA više stanja
+        behavior.setSkipCollapsed(false);
+
+        // početno stanje
+        behavior.setState(com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_COLLAPSED);
+    }
+
+
+    private Runnable onDismissCallback;
+
+    public void setOnDismissCallback(Runnable callback) {
+        this.onDismissCallback = callback;
+    }
+
+    @Override
+    public void onDismiss(@NonNull android.content.DialogInterface dialog) {
+        super.onDismiss(dialog);
+
+        if (onDismissCallback != null) {
+            onDismissCallback.run();
+        }
+    }
+
+    @SuppressLint("SetTextI18n")
+    public void setPickupFromMap(double lat, double lng) {
+
+        if (!isAdded() || pickupInput == null) return;
+
+        pickupInput.setText("Loading address...");
+
+        // uzmi context dok je fragment živ
+        final android.content.Context ctx = getContext();
+
+        new Thread(() -> {
+
+            if (ctx == null) return;
+
+            String address =
+                    GeocodingHelper.getAddress(
+                            ctx,
+                            lat,
+                            lng
+                    );
+
+            if (!isAdded()) return;
+
+            requireActivity().runOnUiThread(() -> {
+                if (pickupInput != null) {
+                    pickupInput.setText(address);
+                }
+            });
+
+        }).start();
+    }
+
+
+
+
+
 }

@@ -1,32 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:fillViewport="true">
+    android:layout_height="match_parent">
 
-    <LinearLayout
+    <!-- MAP -->
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/homeMapContainer"
+        android:name="com.example.uber3.MapFragment"
         android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- FLOATING BUTTON -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/bookRideFab"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:layout_gravity="bottom|start"
+        android:layout_marginStart="16dp"
+        android:layout_marginBottom="24dp"
+        android:contentDescription="@string/book_ride"
+        android:src="@android:drawable/ic_input_add"
+        app:backgroundTint="#9B7FC9"
+        app:tint="@android:color/white"/>
 
-        <androidx.fragment.app.FragmentContainerView
-            android:id="@+id/homeMapContainer"
-            android:name="com.example.uber3.MapFragment"
-            android:layout_width="match_parent"
-            android:layout_height="300dp"
-            android:layout_margin="16dp"
-            android:layout_marginBottom="8dp"/>
 
-        <androidx.fragment.app.FragmentContainerView
-            android:id="@+id/homeBookingContainer"
-            android:name="com.example.uber3.RideBookingFragment"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="16dp"/>
-
-    </LinearLayout>
-</androidx.core.widget.NestedScrollView>
+</FrameLayout>
