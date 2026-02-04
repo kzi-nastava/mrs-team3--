@@ -99,6 +99,36 @@
     <string name="reset_password">Reset Password</string>
     <string name="send_reset_link">Send Reset Link</string>
     <string name="confirm_pass">Confirm password</string>
+    <string name="ride_details">Ride Details</string>
+    <string name="jan_15_2024_10_30">Jan 15, 2024 10:30</string>
+    <string name="completed">Completed</string>
+    <string name="_123_main_street_downtown">123 Main Street, Downtown</string>
+    <string name="TO">TO</string>
+    <string name="_456_university_ave_campus">456 University Ave, Campus</string>
+    <string name="earned">EARNED</string>
+    <string name="_1250_din">1250 din</string>
+    <string name="distance">DISTANCE</string>
+    <string name="_12_5_km">12.5 km</string>
+    <string name="duration">DURATION</string>
+    <string name="_25_min">25 min</string>
+    <string name="vehicle">VEHICLE</string>
+    <string name="standard">Standard</string>
+    <string name="planned_stops">PLANNED STOPS</string>
+    <string name="actual_stops">ACTUAL STOPS</string>
+    <string name="PASSENGERS">PASSENGERS</string>
+    <string name="reviews">REVIEWS</string>
+    <string name="inconsistency_reports">INCONSISTENCY REPORTS</string>
+    <string name="cancellation_info">CANCELLATION INFO</string>
+    <string name="close">Close</string>
+    <string name="my_drive_history">My Drive History</string>
+    <string name="View_report">📊 View Report</string>
+    <string name="car_emoji">🚗</string>
+    <string name="no_rides_found">No rides found</string>
+    <string name="you_haven_t_completed_any_drives_yet_or_no_rides_match_your_filters">You haven\'t completed any drives yet, or no rides match your filters.</string>
+    <string name="route_deviation_reported_by_passenger">Route deviation reported by passenger</string>
+    <string name="driver_rating">Driver: ★★★★★</string>
+    <string name="vehicle_rating">Vehicle: ★★★★☆</string>
+    <string name="great_ride_professional_driver">Great ride, professional driver!</string>
     <string-array name="vehicle_types">
         <item>STANDARD</item>
         <item>VAN</item>
