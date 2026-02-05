@@ -8,12 +8,16 @@ import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.Toast;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
+import android.text.TextWatcher;
+import android.text.Editable;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
 
 import com.example.uber3.helpers.GeocodingHelper;
+import com.example.uber3.repository.ORSRepository;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
@@ -25,8 +29,9 @@ import org.osmdroid.util.GeoPoint;
 public class RideBookingFragment extends BottomSheetDialogFragment {
     private LinearLayout stopsContainer;
     private LinearLayout priceInfoLayout;
-    private TextInputEditText pickupInput;
-    private TextInputEditText destinationInput;
+    private AutoCompleteTextView pickupInput;
+    private AutoCompleteTextView destinationInput;
+
     private MaterialButton bookRideButton;
     private MaterialButton resetButton;
     private int stopCount = 0;
@@ -57,6 +62,17 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
 
         bookRideButton.setOnClickListener(v -> bookRide());
         resetButton.setOnClickListener(v -> resetForm());
+
+        setupLiveAutocomplete(
+                pickupInput,
+                MapFragment.PointType.PICKUP
+        );
+
+        setupLiveAutocomplete(
+                destinationInput,
+                MapFragment.PointType.DESTINATION
+        );
+
 
         fillFromMapPoints();
 
@@ -119,7 +135,6 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
         }
 
 
-        // ---------- STOPS ----------
         for (int i = 1; i < MapFragment.selectedPoints.size() - 1; i++) {
 
             GeoPoint p = MapFragment.selectedPoints.get(i);
@@ -179,8 +194,15 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
         inputLayout.setBoxBackgroundMode(TextInputLayout.BOX_BACKGROUND_OUTLINE);
         inputLayout.setBoxCornerRadii(12, 12, 12, 12);
 
-        TextInputEditText editText = new TextInputEditText(requireContext());
+        AutoCompleteTextView editText =
+                new AutoCompleteTextView(requireContext());
+
         inputLayout.addView(editText);
+
+        setupLiveAutocomplete(
+                editText,
+                MapFragment.PointType.STOP
+        );
 
         ImageButton removeBtn = new ImageButton(requireContext());
         LinearLayout.LayoutParams btnParams = new LinearLayout.LayoutParams(
@@ -193,9 +215,18 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
         removeBtn.setBackground(null);
 
         removeBtn.setOnClickListener(v -> {
+
+            int index =
+                    stopsContainer.indexOfChild(row);
+
             stopsContainer.removeView(row);
             stopCount--;
+
+            if (MapFragment.instance != null) {
+                MapFragment.instance.removeStopAt(index);
+            }
         });
+
 
         row.addView(inputLayout);
         row.addView(removeBtn);
@@ -330,6 +361,89 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
         }).start();
     }
 
+
+    private void setupLiveAutocomplete(
+            AutoCompleteTextView field,
+            MapFragment.PointType type
+    ) {
+
+        field.addTextChangedListener(new TextWatcher() {
+
+            @Override
+            public void beforeTextChanged(
+                    CharSequence s,
+                    int start,
+                    int count,
+                    int after
+            ) {}
+
+            @Override
+            public void onTextChanged(
+                    CharSequence s,
+                    int start,
+                    int before,
+                    int count
+            ) {
+
+                String query = s.toString();
+
+                if (query.length() < 3) return;
+
+                ORSRepository.searchPlaces(
+                        query,
+                        places -> {
+
+                            if (!isAdded()) return;
+
+                            requireActivity()
+                                    .runOnUiThread(() -> {
+
+                                        ArrayAdapter<String> adapter =
+                                                new ArrayAdapter<>(
+                                                        requireContext(),
+                                                        android.R.layout.simple_dropdown_item_1line,
+                                                        places
+                                                );
+
+                                        field.setAdapter(adapter);
+                                        field.showDropDown();
+                                    });
+                        }
+                );
+            }
+
+            @Override
+            public void afterTextChanged(
+                    Editable s
+            ) {}
+        });
+
+        field.setOnItemClickListener((parent, view, position, id) -> {
+
+            String item =
+                    (String) parent.getItemAtPosition(position);
+
+            String[] parts = item.split("\\|");
+
+            if (parts.length < 3) return;
+
+            String label = parts[0];
+            double lat = Double.parseDouble(parts[1]);
+            double lon = Double.parseDouble(parts[2]);
+
+            field.setText(label);
+            field.setSelection(label.length());
+
+            if (MapFragment.instance != null) {
+
+                GeoPoint point =
+                        new GeoPoint(lat, lon);
+
+                MapFragment.instance.addTypedPoint(point, type);
+            }
+
+        });
+    }
 
 
 

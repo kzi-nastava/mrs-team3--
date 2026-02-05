@@ -33,6 +33,11 @@ import androidx.core.content.ContextCompat;
 
 public class MapFragment extends Fragment {
 
+    public enum PointType {
+        PICKUP,
+        STOP,
+        DESTINATION
+    }
 
 
     private MapView mapView;
@@ -253,6 +258,145 @@ public class MapFragment extends Fragment {
 
         mapView.invalidate();
     }
+
+    public MapView getMapView() {
+        return mapView;
+    }
+
+    public void addPointFromSearch(GeoPoint p) {
+
+        selectedPoints.add(p);
+
+        Marker marker = new Marker(mapView);
+        marker.setPosition(p);
+        marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+
+        mapView.getOverlays().add(marker);
+        markers.add(marker);
+
+            for (int i = 0; i < markers.size(); i++) {
+
+            Drawable icon = ContextCompat.getDrawable(
+                    requireContext(),
+                    org.osmdroid.library.R.drawable.marker_default
+            );
+
+            if (icon == null) continue;
+
+            if (i == 0) {
+                icon.setTint(android.graphics.Color.GREEN);
+            } else if (i == markers.size() - 1) {
+                icon.setTint(android.graphics.Color.RED);
+            } else {
+                icon.setTint(android.graphics.Color.BLUE);
+            }
+
+            markers.get(i).setIcon(icon);
+        }
+
+        requestRoute();
+        zoomToPoints();
+        mapView.invalidate();
+    }
+
+    public void addTypedPoint(
+            GeoPoint p,
+            PointType type
+    ) {
+
+        if (type == PointType.PICKUP) {
+
+            if (selectedPoints.isEmpty())
+                selectedPoints.add(p);
+            else
+                selectedPoints.set(0, p);
+
+        } else if (type == PointType.DESTINATION) {
+
+            if (selectedPoints.size() < 2)
+                selectedPoints.add(p);
+            else
+                selectedPoints.set(
+                        selectedPoints.size() - 1,
+                        p
+                );
+
+        } else {
+
+            if (selectedPoints.size() < 2) {
+                selectedPoints.add(p);
+            } else {
+                selectedPoints.add(
+                        selectedPoints.size() - 1,
+                        p
+                );
+            }
+        }
+
+        redrawMarkers();
+    }
+
+
+    private void redrawMarkers() {
+
+        for (Marker m : markers) {
+            mapView.getOverlays().remove(m);
+        }
+        markers.clear();
+
+        for (int i = 0; i < selectedPoints.size(); i++) {
+
+            GeoPoint p = selectedPoints.get(i);
+
+            Marker marker = new Marker(mapView);
+            marker.setPosition(p);
+            marker.setAnchor(
+                    Marker.ANCHOR_CENTER,
+                    Marker.ANCHOR_BOTTOM
+            );
+
+            Drawable icon = ContextCompat.getDrawable(
+                    requireContext(),
+                    org.osmdroid.library.R.drawable.marker_default
+            );
+
+            if (icon != null) {
+
+                if (i == 0)
+                    icon.setTint(Color.GREEN);
+                else if (i == selectedPoints.size() - 1)
+                    icon.setTint(Color.RED);
+                else
+                    icon.setTint(Color.BLUE);
+
+                marker.setIcon(icon);
+            }
+
+            markers.add(marker);
+            mapView.getOverlays().add(marker);
+        }
+
+        requestRoute();
+        zoomToPoints();
+        mapView.invalidate();
+    }
+
+
+    public void removeStopAt(int stopIndex) {
+
+        int realIndex = stopIndex + 1;
+
+        if (selectedPoints.size() <= realIndex + 1)
+            return;
+
+        selectedPoints.remove(realIndex);
+
+        redrawMarkers();
+    }
+
+
+
+
 
 
 }

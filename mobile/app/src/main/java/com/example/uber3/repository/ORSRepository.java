@@ -1,5 +1,7 @@
 package com.example.uber3.repository;
 
+import androidx.annotation.NonNull;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.osmdroid.util.GeoPoint;
@@ -112,5 +114,81 @@ public class ORSRepository {
             e.printStackTrace();
         }
     }
+
+    public interface PlacesCallback {
+        void onResult(List<String> places);
+    }
+
+    public static void searchPlaces(
+            String query,
+            PlacesCallback callback
+    ) {
+
+        ORSService service =
+                ORSRetrofitClient
+                        .getInstance()
+                        .create(ORSService.class);
+
+        service.autocomplete(API_KEY, query, "RS")
+                .enqueue(new Callback<String>() {
+
+                    @Override
+                    public void onResponse(
+                            @NonNull Call<String> call,
+                            @NonNull Response<String> response
+                    ) {
+
+                        List<String> results =
+                                new ArrayList<>();
+
+                        try {
+
+                            JSONObject json =
+                                    new JSONObject(
+                                            response.body()
+                                    );
+
+                            JSONArray features =
+                                    json.getJSONArray("features");
+
+                            for (int i = 0; i < features.length(); i++) {
+
+                                JSONObject props =
+                                        features.getJSONObject(i)
+                                                .getJSONObject("properties");
+
+                                String label = props.getString("label");
+
+                                JSONArray coords =
+                                        features.getJSONObject(i)
+                                                .getJSONObject("geometry")
+                                                .getJSONArray("coordinates");
+
+                                double lon = coords.getDouble(0);
+                                double lat = coords.getDouble(1);
+
+                                results.add(label + "|" + lat + "|" + lon);
+
+                            }
+
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+
+                        callback.onResult(results);
+                    }
+
+                    @Override
+                    public void onFailure(
+                            @NonNull Call<String> call,
+                            Throwable t
+                    ) {
+                        callback.onResult(
+                                new ArrayList<>()
+                        );
+                    }
+                });
+    }
+
 
 }
