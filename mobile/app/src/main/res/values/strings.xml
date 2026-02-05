@@ -134,6 +134,9 @@
     <string name="choose_vehicle_type">Choose vehicle type</string>
     <string name="additional_options">Additional options</string>
     <string name="baby_seat">👶 Baby seat</string>
+    <string name="hello">Hello</string>
+    <string name="other_message">Other message</string>
+    <string name="my_message">My message</string>
     <string-array name="vehicle_types">
         <item>STANDARD</item>
         <item>VAN</item>

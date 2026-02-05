@@ -1,6 +1,7 @@
 [versions]
 agp = "8.13.2"
 converterScalars = "3.0.0"
+javaWebsocket = "1.6.0"
 json = "20251224"
 junit = "4.13.2"
 junitVersion = "1.1.5"
@@ -13,9 +14,14 @@ osmdroidAndroid = "6.1.20"
 retrofit = "2.11.0"
 okhttp = "4.12.0"
 glide = "4.16.0"
+stompprotocolandroid = "1.6.6"
+rxjava = "2.2.21"
+rxandroid = "2.1.1"
+
 
 [libraries]
 converter-scalars = { module = "com.squareup.retrofit2:converter-scalars", version.ref = "converterScalars" }
+java-websocket = { module = "org.java-websocket:Java-WebSocket", version.ref = "javaWebsocket" }
 json = { module = "org.json:json", version.ref = "json" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
@@ -30,6 +36,9 @@ retrofit-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref 
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 glide = { group = "com.github.bumptech.glide", name = "glide", version.ref = "glide" }
 glide-compiler = { group = "com.github.bumptech.glide", name = "compiler", version.ref = "glide" }
+stompprotocolandroid = { module = "com.github.NaikSoftware:StompProtocolAndroid", version.ref = "stompprotocolandroid" }
+rxjava = { group = "io.reactivex.rxjava2", name = "rxjava", version.ref = "rxjava" }
+rxandroid = { group = "io.reactivex.rxjava2", name = "rxandroid", version.ref = "rxandroid" }
 
 
 [plugins]
