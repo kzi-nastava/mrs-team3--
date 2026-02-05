@@ -16,6 +16,10 @@ import com.example.uber3.network.model.LoginRequest;
 import com.example.uber3.network.model.LoginResponse;
 import com.example.uber3.network.model.mails.ForgotPasswordRequest;
 import com.example.uber3.network.model.mails.ResetPasswordRequest;
+import com.example.uber3.network.model.ride.CreateRideRequest;
+import com.example.uber3.network.model.ride.RideResponse;
+import com.example.uber3.network.model.ride.RouteEstimateRequest;
+import com.example.uber3.network.model.ride.RouteEstimateResponse;
 
 public interface ApiService {
 
@@ -50,6 +54,14 @@ public interface ApiService {
             @Body ResetPasswordRequest request
     );
 
+    @POST("api/rides/estimate-route")
+    Call<RouteEstimateResponse> estimateRoute(
+            @Body RouteEstimateRequest request
+    );
+
+
+    @POST("api/rides")
+    Call<RideResponse> createRide(@Body CreateRideRequest request);
 
 
 

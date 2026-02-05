@@ -129,6 +129,11 @@
     <string name="driver_rating">Driver: ★★★★★</string>
     <string name="vehicle_rating">Vehicle: ★★★★☆</string>
     <string name="great_ride_professional_driver">Great ride, professional driver!</string>
+    <string name="van">Van</string>
+    <string name="luxury">Luxury</string>
+    <string name="choose_vehicle_type">Choose vehicle type</string>
+    <string name="additional_options">Additional options</string>
+    <string name="baby_seat">👶 Baby seat</string>
     <string-array name="vehicle_types">
         <item>STANDARD</item>
         <item>VAN</item>

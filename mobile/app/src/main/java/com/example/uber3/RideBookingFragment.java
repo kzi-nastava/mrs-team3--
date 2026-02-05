@@ -5,8 +5,11 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
@@ -17,6 +20,13 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.example.uber3.helpers.GeocodingHelper;
+import com.example.uber3.network.api.ApiClient;
+import com.example.uber3.network.api.ApiService;
+import com.example.uber3.network.model.location.LocationRequest;
+import com.example.uber3.network.model.ride.CreateRideRequest;
+import com.example.uber3.network.model.ride.RideResponse;
+import com.example.uber3.network.model.ride.RouteEstimateRequest;
+import com.example.uber3.network.model.ride.RouteEstimateResponse;
 import com.example.uber3.repository.ORSRepository;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
@@ -25,6 +35,13 @@ import com.google.android.material.textfield.TextInputLayout;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 
 import org.osmdroid.util.GeoPoint;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class RideBookingFragment extends BottomSheetDialogFragment {
     private LinearLayout stopsContainer;
@@ -35,6 +52,13 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
     private MaterialButton bookRideButton;
     private MaterialButton resetButton;
     private int stopCount = 0;
+
+    private ApiService apiService;
+
+
+    private EditText etPassengerEmail;
+    private LinearLayout passengerContainer;
+
 
     public RideBookingFragment() {}
 
@@ -48,7 +72,17 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
 
-        View view = inflater.inflate(R.layout.fragment_ride_booking, container, false);
+        View view = inflater.inflate(
+                R.layout.fragment_ride_booking,
+                container,
+                false
+        );
+
+        apiService =
+                ApiClient
+                        .getClient(requireContext())
+                        .create(ApiService.class);
+
 
         stopsContainer = view.findViewById(R.id.stopsContainer);
         pickupInput = view.findViewById(R.id.pickupInput);
@@ -57,11 +91,33 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
         bookRideButton = view.findViewById(R.id.bookRideButton);
         resetButton = view.findViewById(R.id.resetButton);
 
-        MaterialButton addStopButton = view.findViewById(R.id.addStopButton);
-        addStopButton.setOnClickListener(v -> addStop());
+        etPassengerEmail =
+                view.findViewById(R.id.etPassengerEmail);
 
-        bookRideButton.setOnClickListener(v -> bookRide());
-        resetButton.setOnClickListener(v -> resetForm());
+        passengerContainer =
+                view.findViewById(R.id.passengerContainer);
+
+        ImageButton btnAddPassenger =
+                view.findViewById(R.id.btnAddPassenger);
+
+        btnAddPassenger.setOnClickListener(
+                v -> addPassenger()
+        );
+
+        MaterialButton addStopButton =
+                view.findViewById(R.id.addStopButton);
+
+        addStopButton.setOnClickListener(
+                v -> addStop()
+        );
+
+        bookRideButton.setOnClickListener(
+                v -> bookRide()
+        );
+
+        resetButton.setOnClickListener(
+                v -> resetForm()
+        );
 
         setupLiveAutocomplete(
                 pickupInput,
@@ -78,6 +134,64 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
 
         return view;
     }
+
+
+    private void addPassenger() {
+
+        String email =
+                etPassengerEmail.getText()
+                        .toString()
+                        .trim();
+
+        if (email.isEmpty()) {
+            Toast.makeText(
+                    requireContext(),
+                    "Enter email",
+                    Toast.LENGTH_SHORT
+            ).show();
+            return;
+        }
+
+        LinearLayout row =
+                new LinearLayout(requireContext());
+
+        row.setOrientation(
+                LinearLayout.HORIZONTAL
+        );
+
+        TextView tv =
+                new TextView(requireContext());
+
+        tv.setText(email);
+        tv.setLayoutParams(
+                new LinearLayout.LayoutParams(
+                        0,
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                        1f
+                )
+        );
+
+        ImageButton btnRemove =
+                new ImageButton(requireContext());
+
+        btnRemove.setImageResource(
+                android.R.drawable.ic_menu_close_clear_cancel
+        );
+
+        btnRemove.setBackground(null);
+
+        btnRemove.setOnClickListener(
+                v -> passengerContainer.removeView(row)
+        );
+
+        row.addView(tv);
+        row.addView(btnRemove);
+
+        passengerContainer.addView(row);
+
+        etPassengerEmail.setText("");
+    }
+
 
     @SuppressLint("SetTextI18n")
     private void fillFromMapPoints() {
@@ -147,8 +261,9 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
                     );
 
             TextInputLayout til = (TextInputLayout) row.getChildAt(0);
-            TextInputEditText et =
-                    (TextInputEditText) til.getEditText();
+            AutoCompleteTextView et =
+                    (AutoCompleteTextView) til.getEditText();
+
 
             if (et == null) continue;
 
@@ -253,7 +368,9 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
             if (child instanceof LinearLayout) {
                 LinearLayout row = (LinearLayout) child;
                 TextInputLayout inputLayout = (TextInputLayout) row.getChildAt(0);
-                TextInputEditText editText = (TextInputEditText) inputLayout.getEditText();
+                AutoCompleteTextView editText =
+                        (AutoCompleteTextView) inputLayout.getEditText();
+
                 if (editText != null) {
                     String stopText = editText.getText() != null ? editText.getText().toString().trim() : "";
                     if (stopText.isEmpty()) {
@@ -264,8 +381,9 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
             }
         }
 
-        priceInfoLayout.setVisibility(View.VISIBLE);
-        Toast.makeText(requireContext(), "Ride booked successfully!", Toast.LENGTH_SHORT).show();
+        List<String> passengers =
+                getPassengerEmails();
+        estimateRide();
     }
 
     private void resetForm() {
@@ -276,16 +394,22 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
         stopsContainer.removeAllViews();
         stopCount = 0;
 
+        passengerContainer.removeAllViews();
+        etPassengerEmail.setText("");
+
         priceInfoLayout.setVisibility(View.GONE);
 
         if (MapFragment.instance != null) {
             MapFragment.instance.clearMap();
         }
 
-        Toast.makeText(requireContext(),
+        Toast.makeText(
+                requireContext(),
                 "Form reset",
-                Toast.LENGTH_SHORT).show();
+                Toast.LENGTH_SHORT
+        ).show();
     }
+
 
 
 
@@ -444,6 +568,285 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
 
         });
     }
+
+    private List<String> getPassengerEmails() {
+
+        List<String> emails =
+                new ArrayList<>();
+
+        for (int i = 0;
+             i < passengerContainer.getChildCount();
+             i++) {
+
+            LinearLayout row =
+                    (LinearLayout)
+                            passengerContainer.getChildAt(i);
+
+            TextView tv =
+                    (TextView) row.getChildAt(0);
+
+            emails.add(
+                    tv.getText().toString()
+            );
+        }
+
+        return emails;
+    }
+
+
+    private LocationRequest toLocationRequest(
+            GeoPoint p,
+            String address
+    ) {
+        return new LocationRequest(
+                p.getLatitude(),
+                p.getLongitude(),
+                address
+        );
+    }
+
+    private void estimateRide() {
+
+        if (MapFragment.selectedPoints.size() < 2) {
+            Toast.makeText(
+                    requireContext(),
+                    "Select route first",
+                    Toast.LENGTH_SHORT
+            ).show();
+            return;
+        }
+
+        GeoPoint start =
+                MapFragment.selectedPoints.get(0);
+
+        GeoPoint end =
+                MapFragment.selectedPoints.get(
+                        MapFragment.selectedPoints.size() - 1
+                );
+
+        LocationRequest startReq =
+                toLocationRequest(
+                        start,
+                        pickupInput.getText().toString()
+                );
+
+        LocationRequest endReq =
+                toLocationRequest(
+                        end,
+                        destinationInput.getText().toString()
+                );
+
+        List<LocationRequest> stops =
+                new ArrayList<>();
+
+        for (int i = 1;
+             i < MapFragment.selectedPoints.size() - 1;
+             i++) {
+
+            GeoPoint s =
+                    MapFragment.selectedPoints.get(i);
+
+            stops.add(
+                    new LocationRequest(
+                            s.getLatitude(),
+                            s.getLongitude(),
+                            "Stop"
+                    )
+            );
+        }
+
+        String vehicleType =
+                ((Spinner)
+                        getView().findViewById(R.id.spVehicleType))
+                        .getSelectedItem()
+                        .toString();
+
+        RouteEstimateRequest req =
+                new RouteEstimateRequest(
+                        startReq,
+                        endReq,
+                        stops,
+                        vehicleType
+                );
+
+        apiService
+                .estimateRoute(req)
+                .enqueue(new Callback<RouteEstimateResponse>() {
+
+                    @Override
+                    public void onResponse(
+                            @NonNull Call<RouteEstimateResponse> call,
+                            @NonNull Response<RouteEstimateResponse> response
+                    ) {
+
+                        if (!response.isSuccessful()
+                                || response.body() == null)
+                            return;
+
+                        RouteEstimateResponse res = response.body();
+
+                        showEstimateDialog(res);
+                    }
+
+
+                    @Override
+                    public void onFailure(
+                            @NonNull Call<RouteEstimateResponse> call,
+                            @NonNull Throwable t
+                    ) {
+                        Toast.makeText(
+                                requireContext(),
+                                "Estimate failed",
+                                Toast.LENGTH_SHORT
+                        ).show();
+                    }
+                });
+    }
+
+
+    private void showEstimateDialog(
+            RouteEstimateResponse res
+    ) {
+
+        @SuppressLint("DefaultLocale") String price =
+                String.format("%.2f", res.estimatedPrice);
+
+        new androidx.appcompat.app.AlertDialog.Builder(
+                requireContext()
+        )
+                .setTitle("Confirm ride")
+
+                .setMessage(
+                        "Estimated time: "
+                                + res.estimatedTimeMinutes
+                                + " min\n\n"
+                                + "Estimated price: "
+                                + price
+                                + " RSD"
+                )
+
+                .setNegativeButton(
+                        "Cancel",
+                        (d, w) -> d.dismiss()
+                )
+
+                .setPositiveButton(
+                        "Confirm ride",
+                        (d, w) -> createRide()
+                )
+
+                .show();
+    }
+
+
+    private void createRide() {
+
+        GeoPoint start =
+                MapFragment.selectedPoints.get(0);
+
+        GeoPoint end =
+                MapFragment.selectedPoints.get(
+                        MapFragment.selectedPoints.size() - 1
+                );
+
+        LocationRequest startReq =
+                toLocationRequest(
+                        start,
+                        pickupInput.getText().toString()
+                );
+
+        LocationRequest endReq =
+                toLocationRequest(
+                        end,
+                        destinationInput.getText().toString()
+                );
+
+        List<LocationRequest> stops =
+                new ArrayList<>();
+
+        for (int i = 1;
+             i < MapFragment.selectedPoints.size() - 1;
+             i++) {
+
+            GeoPoint s =
+                    MapFragment.selectedPoints.get(i);
+
+            stops.add(
+                    new LocationRequest(
+                            s.getLatitude(),
+                            s.getLongitude(),
+                            "Stop"
+                    )
+            );
+        }
+
+        List<String> passengers =
+                getPassengerEmails();
+
+        assert getView() != null;
+        String vehicleType =
+                ((Spinner)getView()
+                        .findViewById(R.id.spVehicleType))
+                        .getSelectedItem()
+                        .toString();
+
+        CreateRideRequest req =
+                new CreateRideRequest(
+                        startReq,
+                        endReq,
+                        stops,
+                        passengers,
+                        vehicleType,
+                        false,
+                        false
+                );
+
+        apiService
+                .createRide(req)
+                .enqueue(new Callback<RideResponse>() {
+
+                    @Override
+                    public void onResponse(
+                            @NonNull Call<RideResponse> call,
+                            @NonNull Response<RideResponse> response
+                    ) {
+
+                        if (response.isSuccessful()) {
+
+                            Toast.makeText(
+                                    requireContext(),
+                                    "Ride created!",
+                                    Toast.LENGTH_LONG
+                            ).show();
+
+                            resetForm();
+                        }
+                        else {
+                            Toast.makeText(
+                                    requireContext(),
+                                    "Error: " + response.code(),
+                                    Toast.LENGTH_LONG
+                            ).show();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(
+                            @NonNull Call<RideResponse> call,
+                            @NonNull Throwable t
+                    ) {
+                        Toast.makeText(
+                                requireContext(),
+                                "Fail: " + t.getMessage(),
+                                Toast.LENGTH_LONG
+                        ).show();
+                    }
+                });
+
+    }
+
+
+
 
 
 
