@@ -14,6 +14,8 @@ import retrofit2.http.POST;
 import retrofit2.http.Part;
 import com.example.uber3.network.model.LoginRequest;
 import com.example.uber3.network.model.LoginResponse;
+import com.example.uber3.network.model.auth.RegisterRequest;
+import com.example.uber3.network.model.auth.RegisterResponse;
 import com.example.uber3.network.model.mails.ForgotPasswordRequest;
 import com.example.uber3.network.model.mails.ResetPasswordRequest;
 
@@ -50,9 +52,6 @@ public interface ApiService {
             @Body ResetPasswordRequest request
     );
 
-
-
-
-
-
+    @POST("api/auth/register")
+    Call<RegisterResponse> registerPassenger(@Body RegisterRequest request);
 }
