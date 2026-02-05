@@ -21,6 +21,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.example.uber3.network.model.auth.RegisterResponse;
+import com.example.uber3.network.service.AuthService;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 
@@ -168,15 +170,67 @@ public class RegisterFragment extends Fragment {
 
     private void performRegistration(String email, String firstName, String lastName,
                                      String address, String phone, String password) {
-        Toast.makeText(requireContext(), "Registering...", Toast.LENGTH_SHORT).show();
-
-        Toast.makeText(requireContext(),
-                "Registration successful! Please check your email to activate your account.",
-                Toast.LENGTH_LONG).show();
-
-        if (getActivity() != null) {
-            ((MainActivity) getActivity()).loadLoginFragment();
+        if (TextUtils.isEmpty(email) || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            etEmail.setError("Enter a valid email");
+            etEmail.requestFocus();
+            return;
         }
+
+        if (TextUtils.isEmpty(firstName)) {
+            etFirstName.setError("First name required");
+            etFirstName.requestFocus();
+            return;
+        }
+
+        if (TextUtils.isEmpty(lastName)) {
+            etLastName.setError("Last name required");
+            etLastName.requestFocus();
+            return;
+        }
+
+        if (TextUtils.isEmpty(address)) {
+            etAddress.setError("Address required");
+            etAddress.requestFocus();
+            return;
+        }
+
+        if (TextUtils.isEmpty(phone) || !phone.matches("\\d+")) {
+            etPhone.setError("Phone must contain only numbers");
+            etPhone.requestFocus();
+            return;
+        }
+
+        String extension = null;
+        if (base64Image != null) {
+            extension = "jpg";
+        }
+
+        btnRegister.setEnabled(false);
+
+        AuthService.register(requireContext(), email, password, firstName, lastName, phone, address,
+                base64Image,
+                extension,
+                new AuthService.RegisterCallback() {
+                    @Override
+                    public void onSuccess(RegisterResponse response) {
+                        btnRegister.setEnabled(true);
+
+                        Toast.makeText(requireContext(),
+                                "Registration successful! Please check your email to activate your account.",
+                                Toast.LENGTH_LONG).show();
+
+                        if (getActivity() != null) {
+                            ((MainActivity) getActivity()).loadLoginFragment();
+                        }
+                    }
+
+                    @Override
+                    public void onError(String message) {
+                        btnRegister.setEnabled(true);
+                        Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show();
+                    }
+                }
+        );
     }
 
     @Override
