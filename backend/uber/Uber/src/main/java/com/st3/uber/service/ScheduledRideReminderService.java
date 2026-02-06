@@ -55,7 +55,6 @@ public class ScheduledRideReminderService {
      */
 
     @Scheduled(fixedRate = 60000) // Every 60 seconds
-    @Transactional(readOnly = true)
     public void sendUpcomingRideReminders() {
         LocalDateTime now = LocalDateTime.now();
 
