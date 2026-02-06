@@ -46,5 +46,11 @@ dependencies {
     implementation libs.json
     implementation libs.glide
     annotationProcessor libs.glide.compiler
+    implementation libs.stompprotocolandroid
+    implementation libs.java.websocket
+    implementation libs.rxjava
+    implementation libs.rxandroid
+
+
 
 }

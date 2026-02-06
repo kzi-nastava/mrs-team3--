@@ -64,6 +64,26 @@ public class TokenManager {
                 .apply();
     }
 
+    public static Long getUserId(Context context) {
+        String token = getToken(context);
+        if (token == null) return null;
+
+        try {
+            String[] parts = token.split("\\.");
+            String payload = new String(
+                    android.util.Base64.decode(parts[1], android.util.Base64.URL_SAFE)
+            );
+
+            org.json.JSONObject json = new org.json.JSONObject(payload);
+
+            return json.getLong("uid");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+
 
 
 }

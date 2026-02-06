@@ -136,6 +136,9 @@
     <string name="baby_seat">👶 Baby seat</string>
     <string name="pick_date_amp_time"><![CDATA[Pick date & time]]></string>
     <string name="schedule_optional">Schedule (optional)</string>
+    <string name="hello">Hello</string>
+    <string name="other_message">Other message</string>
+    <string name="my_message">My message</string>
     <string-array name="vehicle_types">
         <item>STANDARD</item>
         <item>VAN</item>
