@@ -1,5 +1,6 @@
 package com.example.uber3;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,11 +16,14 @@ import androidx.recyclerview.widget.RecyclerView;
 
 
 import com.example.uber3.adapter.ChatAdapter;
+import com.example.uber3.network.api.ApiClient;
+import com.example.uber3.network.api.ChatApiService;
 import com.example.uber3.network.manager.TokenManager;
 import com.example.uber3.network.model.chat.ChatMessage;
 import com.example.uber3.network.websocket.ChatWebSocketManager;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -29,9 +33,12 @@ public class ChatFragment extends Fragment {
     private EditText inputMessage;
     private ImageButton btnSend;
 
+    private Long targetUserId;
+
     private Long myUserId;
     private ChatAdapter adapter;
-    private List<ChatMessage> messages = new ArrayList<>();
+    private final List<ChatMessage> messages =
+            Collections.synchronizedList(new ArrayList<>());
     public ChatFragment() {}
 
     @Nullable
@@ -39,6 +46,17 @@ public class ChatFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater,
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
+
+        if(getArguments()!=null){
+            targetUserId =
+                    getArguments().getLong("targetUserId");
+        }
+
+
+        if(targetUserId == null){
+            targetUserId = 3L;
+        }
+
 
         View view = inflater.inflate(R.layout.fragment_chat, container, false);
 
@@ -54,19 +72,30 @@ public class ChatFragment extends Fragment {
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         recyclerView.setAdapter(adapter);
 
-        // receive messages
-        ChatWebSocketManager.getInstance().subscribeToMessages(msg -> {
+        loadHistory();
+
+
+        ChatWebSocketManager.getInstance().setUiListener(cm -> {
+
+            if(!isAdded()) return;
+
             requireActivity().runOnUiThread(() -> {
-                ChatMessage cm = new ChatMessage();
-                cm.content = msg;
-                cm.fromUserId = 0L;
 
-
+                if(cm.fromUserId.equals(myUserId)) return;
                 messages.add(cm);
                 adapter.notifyItemInserted(messages.size()-1);
-                recyclerView.scrollToPosition(messages.size()-1);
+
+                if(!messages.isEmpty()){
+                    recyclerView.scrollToPosition(messages.size()-1);
+                }
+
             });
         });
+
+
+        ChatWebSocketManager.getInstance().subscribeToMessages();
+
+
 
         btnSend.setOnClickListener(v -> {
 
@@ -77,14 +106,15 @@ public class ChatFragment extends Fragment {
             local.content = text;
             local.fromUserId = myUserId;
 
-            messages.add(local);
+            requireActivity().runOnUiThread(() -> {
+                messages.add(local);
+                adapter.notifyItemInserted(messages.size()-1);
+                recyclerView.scrollToPosition(messages.size()-1);
+            });
 
-
-            messages.add(local);
-            adapter.notifyItemInserted(messages.size()-1);
-            recyclerView.scrollToPosition(messages.size()-1);
-
-            ChatMessage msg = new ChatMessage(1L, text);
+            ChatMessage msg = new ChatMessage();
+            msg.toUserId = targetUserId;
+            msg.content = text;
             ChatWebSocketManager.getInstance().sendMessage(msg);
 
             inputMessage.setText("");
@@ -93,4 +123,63 @@ public class ChatFragment extends Fragment {
 
         return view;
     }
+
+    public static ChatFragment forUser(Long userId){
+        ChatFragment f = new ChatFragment();
+        Bundle b = new Bundle();
+        b.putLong("targetUserId", userId);
+        f.setArguments(b);
+        return f;
+    }
+
+    private void loadHistory(){
+
+        ChatApiService api =
+                ApiClient.getClient(requireContext())
+                        .create(ChatApiService.class);
+
+        Long myId =
+                TokenManager.getUserId(requireContext());
+
+        api.getHistory(myId,targetUserId)
+                .enqueue(new retrofit2.Callback<List<ChatMessage>>() {
+
+                    @SuppressLint("NotifyDataSetChanged")
+                    @Override
+                    public void onResponse(
+                            retrofit2.Call<List<ChatMessage>> call,
+                            retrofit2.Response<List<ChatMessage>> res){
+
+                        if(res.isSuccessful() && res.body()!=null){
+
+                            messages.clear();
+                            messages.addAll(res.body());
+
+                            adapter.notifyDataSetChanged();
+
+                            recyclerView.scrollToPosition(
+                                    messages.size()-1
+                            );
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(
+                            @NonNull retrofit2.Call<List<ChatMessage>> call,
+                            @NonNull Throwable t){
+                        t.printStackTrace();
+                    }
+                });
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        ChatWebSocketManager.getInstance().setUiListener(null);
+    }
+
+
+
+
+
 }

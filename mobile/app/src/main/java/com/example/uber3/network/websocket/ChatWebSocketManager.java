@@ -3,13 +3,12 @@ package com.example.uber3.network.websocket;
 import android.annotation.SuppressLint;
 import android.util.Log;
 
-import com.example.uber3.network.manager.TokenManager;
+import com.example.uber3.network.model.chat.ChatMessage;
 import com.google.gson.Gson;
 
 import ua.naiksoftware.stomp.Stomp;
 import ua.naiksoftware.stomp.StompClient;
 import ua.naiksoftware.stomp.dto.StompHeader;
-import java.util.Arrays;
 import java.util.List;
 
 public class ChatWebSocketManager {
@@ -19,6 +18,8 @@ public class ChatWebSocketManager {
     private StompClient stompClient;
     private final Gson gson = new Gson();
 
+    private UiMessageListener uiListener;
+
     private static ChatWebSocketManager instance;
 
     public static ChatWebSocketManager getInstance() {
@@ -27,6 +28,15 @@ public class ChatWebSocketManager {
         }
         return instance;
     }
+
+    public interface UiMessageListener {
+        void onMessage(ChatMessage message);
+    }
+
+    public void setUiListener(UiMessageListener listener){
+        this.uiListener = listener;
+    }
+
 
     @SuppressLint("CheckResult")
     public void connect(String jwtToken) {
@@ -50,12 +60,26 @@ public class ChatWebSocketManager {
     }
 
     @SuppressLint("CheckResult")
-    public void subscribeToMessages(MessageListener listener) {
-        stompClient.topic("/user/queue/messages").subscribe(topicMessage -> {
-            String payload = topicMessage.getPayload();
-            listener.onMessage(payload);
-        });
+    public void subscribeToMessages() {
+
+        stompClient.topic("/user/queue/messages")
+                .subscribe(topicMessage -> {
+
+                    String payload = topicMessage.getPayload();
+
+                    ChatMessage cm =
+                            gson.fromJson(payload, ChatMessage.class);
+
+                    if(uiListener != null){
+                        uiListener.onMessage(cm);
+                    }
+
+
+                }, throwable -> {
+                    Log.e(TAG, "Subscribe error", throwable);
+                });
     }
+
 
     @SuppressLint("CheckResult")
     public void sendMessage(Object message) {
@@ -67,7 +91,4 @@ public class ChatWebSocketManager {
         );
     }
 
-    public interface MessageListener {
-        void onMessage(String message);
-    }
 }

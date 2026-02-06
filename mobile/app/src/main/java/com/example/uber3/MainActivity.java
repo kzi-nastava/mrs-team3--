@@ -35,14 +35,9 @@ public class MainActivity extends AppCompatActivity {
         if (token != null) {
             ChatWebSocketManager.getInstance().connect(token);
 
-            ChatWebSocketManager.getInstance().subscribeToMessages(message -> {
-                runOnUiThread(() -> {
-                    android.util.Log.d("CHAT", "Received: " + message);
-                });
-            });
-
-
+            ChatWebSocketManager.getInstance().subscribeToMessages();
         }
+
 
 
 
@@ -64,11 +59,16 @@ public class MainActivity extends AppCompatActivity {
                 topAppBar.setTitle("Home");
                 loadFragment(HomeFragment.newInstance(currentUserRole));
 
-            } else if (id == R.id.nav_chat) {
+            }else if (id == R.id.nav_chat) {
                 topAppBar.setTitle("Chat");
-                loadFragment(new ChatFragment());
 
-            } else if (id == R.id.nav_ride) {
+                if(currentUserRole.equals("ADMIN")){
+                    loadFragment(new AdminChatListFragment());
+                } else {
+                    loadFragment(new ChatFragment());
+                }
+            }
+            else if (id == R.id.nav_ride) {
                 topAppBar.setTitle("Ride History");
                 loadFragment(DriverHistoryFragment.newInstance());
 
