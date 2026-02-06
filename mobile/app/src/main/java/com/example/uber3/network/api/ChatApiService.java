@@ -22,5 +22,4 @@ public interface ChatApiService {
             @Query("user1") Long u1,
             @Query("user2") Long u2
     );
-
 }

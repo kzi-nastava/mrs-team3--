@@ -26,7 +26,7 @@ public class AdminChatListFragment extends Fragment {
 
         View v = inflater.inflate(
                 R.layout.fragment_admin_chat_list,
-                container,false);
+                container, false);
 
         recycler = v.findViewById(R.id.recyclerRooms);
         recycler.setLayoutManager(
@@ -47,18 +47,23 @@ public class AdminChatListFragment extends Fragment {
                             retrofit2.Call<java.util.List<ChatRoomDto>> call,
                             retrofit2.Response<java.util.List<ChatRoomDto>> res){
 
-                        if(res.isSuccessful() && res.body()!=null){
+                        if(res.isSuccessful() && res.body() != null){
+
+                            rooms.clear();
 
                             for(ChatRoomDto dto : res.body()){
+                                // Build full name from firstName and lastName
+                                String userName = dto.user.firstName + " " + dto.user.lastName;
+
                                 rooms.add(
-                                        new AdminChatRoom(dto.user.id)
+                                        new AdminChatRoom(dto.user.id, userName)
                                 );
                             }
 
                             recycler.setAdapter(
                                     new AdminChatAdapter(
                                             rooms,
-                                            room -> openChat(room.userId)
+                                            room -> openChat(room.userId, room.userName)
                                     )
                             );
                         }
@@ -72,33 +77,18 @@ public class AdminChatListFragment extends Fragment {
                     }
                 });
 
-
-        recycler.setAdapter(
-                new AdminChatAdapter(rooms, room -> {
-                    ChatFragment f =
-                            ChatFragment.forUser(room.userId);
-
-                    requireActivity()
-                            .getSupportFragmentManager()
-                            .beginTransaction()
-                            .replace(R.id.fragmentContainer,f)
-                            .commit();
-                })
-        );
-
         return v;
     }
 
-    private void openChat(Long userId){
+    private void openChat(Long userId, String userName){
         ChatFragment f =
-                ChatFragment.forUser(userId);
+                ChatFragment.forUser(userId, userName);
 
         requireActivity()
                 .getSupportFragmentManager()
                 .beginTransaction()
-                .replace(R.id.fragmentContainer,f)
+                .replace(R.id.fragmentContainer, f)
                 .addToBackStack(null)
                 .commit();
-
     }
 }
