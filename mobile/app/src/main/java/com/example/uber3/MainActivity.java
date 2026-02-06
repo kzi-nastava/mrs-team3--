@@ -12,6 +12,7 @@ import androidx.fragment.app.Fragment;
 
 import com.example.uber3.network.manager.LogoutHelper;
 import com.example.uber3.network.manager.TokenManager;
+import com.example.uber3.network.websocket.ChatWebSocketManager;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.navigation.NavigationView;
 
@@ -28,6 +29,16 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         currentUserRole = TokenManager.getRole(this);
+
+        String token = TokenManager.getToken(this);
+
+        if (token != null) {
+            ChatWebSocketManager.getInstance().connect(token);
+
+            ChatWebSocketManager.getInstance().subscribeToMessages();
+        }
+
+
 
 
         drawerLayout = findViewById(R.id.drawerLayout);
@@ -48,10 +59,16 @@ public class MainActivity extends AppCompatActivity {
                 topAppBar.setTitle("Home");
                 loadFragment(HomeFragment.newInstance(currentUserRole));
 
-            } else if (id == R.id.nav_chat) {
+            }else if (id == R.id.nav_chat) {
                 topAppBar.setTitle("Chat");
 
-            } else if (id == R.id.nav_ride) {
+                if(currentUserRole.equals("ADMIN")){
+                    loadFragment(new AdminChatListFragment());
+                } else {
+                    loadFragment(new ChatFragment());
+                }
+            }
+            else if (id == R.id.nav_ride) {
                 topAppBar.setTitle("Ride History");
                 loadFragment(DriverHistoryFragment.newInstance());
 
