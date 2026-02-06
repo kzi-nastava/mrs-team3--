@@ -1,4 +1,4 @@
-package com.st3.uber.dto.ride;
+package com.st3.uber.dto.rideHistory;
 
 import com.st3.uber.domain.Location;
 import com.st3.uber.enums.RideStatus;
