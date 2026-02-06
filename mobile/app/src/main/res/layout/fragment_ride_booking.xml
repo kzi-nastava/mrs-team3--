@@ -178,6 +178,36 @@
                     android:layout_marginTop="8dp"/>
 
 
+                <TextView
+                    android:text="@string/schedule_optional"
+                    android:textStyle="bold"
+                    android:layout_marginTop="12dp"
+                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"/>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/pick_date_amp_time"
+                    app:startIconDrawable="@android:drawable/ic_menu_today"
+                    app:endIconDrawable="@android:drawable/ic_menu_close_clear_cancel"
+                    app:boxBackgroundMode="outline"
+                    app:boxCornerRadiusTopStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusBottomEnd="12dp"
+                    android:layout_marginTop="6dp">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etScheduledAt"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:focusable="false"/>
+                </com.google.android.material.textfield.TextInputLayout>
+
+
+
+
 
 
                 <LinearLayout

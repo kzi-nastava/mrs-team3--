@@ -25,7 +25,8 @@ public class CreateRideRequest {
             List<String> passengers,
             String vehicleType,
             boolean baby,
-            boolean pet
+            boolean pet,
+            String scheduledAt
     ) {
         this.startLocation = start;
         this.endLocation = end;
@@ -34,6 +35,6 @@ public class CreateRideRequest {
         this.vehicleType = vehicleType;
         this.babyTransport = baby;
         this.petTransport = pet;
-        this.scheduledAt = null;
+        this.scheduledAt = scheduledAt;
     }
 }

@@ -2,6 +2,7 @@ import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { RideApiService } from '../services/ride-api.service';
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { CreateRideRequest } from '../services/ride-api.service';
 import {
   FormBuilder,
   FormGroup,
@@ -143,7 +144,7 @@ export class RideBookingComponent implements OnInit, OnDestroy {
   refreshDriverLocations(): void {
     this.driverLocationService.refreshVehicles();
   }
-      
+
   private initForm(): void {
     this.rideForm = this.fb.group({
       pickupLocation: ['', Validators.required],
@@ -154,8 +155,13 @@ export class RideBookingComponent implements OnInit, OnDestroy {
       petTransport: [false],
       passengers: [1, [Validators.required, Validators.min(1), Validators.max(8)]],
 
-      passengerEmails: this.fb.array([])
+      passengerEmails: this.fb.array([]),
+      scheduledAt: [null]
     });
+  }
+
+  clearScheduledAt(): void {
+    this.rideForm.patchValue({ scheduledAt: null });
   }
 
   get passengerEmails(): FormArray {
@@ -478,7 +484,7 @@ export class RideBookingComponent implements OnInit, OnDestroy {
 
     const data = this.rideBookingService.getRideBookingData();
 
-    const payload = {
+    const payload: CreateRideRequest = {
       startLocation: {
         latitude: data.pickup!.lat,
         longitude: data.pickup!.lng,
@@ -497,7 +503,8 @@ export class RideBookingComponent implements OnInit, OnDestroy {
       passengerEmails: this.passengerEmails.value,
       vehicleType: data.vehicleType,
       babyTransport: data.babyTransport,
-      petTransport: data.petTransport
+      petTransport: data.petTransport,
+      scheduledAt: this.toIsoIfPresent(this.rideForm.value.scheduledAt)
     };
 
     this.rideApiService.createRide(payload).subscribe({
@@ -507,22 +514,26 @@ export class RideBookingComponent implements OnInit, OnDestroy {
           summary: 'Ride created',
           detail: 'Your ride has been successfully created.'
         });
-
         this.clearRoute();
       },
       error: err => {
         console.error(err);
-
         const reason =
           err?.error?.reason ||
           err?.error?.message ||
           'UNKNOWN';
-
         this.showRideError(reason);
       }
     });
-
   }
+
+
+  private toIsoIfPresent(value: string | null): string | undefined {
+    if (!value) return undefined;
+    return value;
+  }
+
+
 
 
 

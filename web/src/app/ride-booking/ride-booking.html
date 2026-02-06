@@ -127,6 +127,22 @@
       </div>
     </div>
 
+    <div class="extras-section">
+      <h3>Schedule (optional)</h3>
+
+      <div class="input-group">
+        <input type="datetime-local" class="location-input" formControlName="scheduledAt">
+        <button type="button" class="remove-stop-btn" (click)="clearScheduledAt()">
+          ✕
+        </button>
+      </div>
+
+      <small style="opacity: 0.8;">
+        You can schedule up to 5 hours in advance.
+      </small>
+    </div>
+
+
     <div class="button-group">
       <button type="button" class="book-ride-btn" (click)="onBookRide()" [disabled]="rideForm.invalid || isCalculating">
         {{ isCalculating ? 'Calculating...' : 'Book a Ride' }}
@@ -141,10 +157,6 @@
     </div>
 
     <div class="secondary-button-group">
-      <button type="button" class="schedule-btn" (click)="onSchedule()">
-        🕒 Schedule
-      </button>
-
       <button type="button" class="favorites-btn" (click)="toggleFavorites()">
         ❤️ Favorites
       </button>

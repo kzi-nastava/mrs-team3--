@@ -9,6 +9,7 @@ import com.st3.uber.enums.RideStatus;
 import com.st3.uber.repository.PassengerRepository;
 import com.st3.uber.repository.RideInviteRepository;
 import com.st3.uber.repository.RideRepository;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import com.st3.uber.dto.route.RouteEstimateRequest;
 import com.st3.uber.dto.route.RouteEstimateResponse;
@@ -82,6 +83,19 @@ public class RideService {
         Passenger creator = passengerRepository.findById(passengerId)
                 .orElseThrow(() -> new IllegalArgumentException("Passenger not found"));
 
+        LocalDateTime now = LocalDateTime.now();
+
+        if (request.scheduledAt() != null) {
+
+            if (request.scheduledAt().isBefore(now)) {
+                throw new IllegalStateException("Scheduled time cannot be in the past");
+            }
+
+            if (request.scheduledAt().isAfter(now.plusHours(5))) {
+                throw new IllegalStateException("Ride can be scheduled at most 5 hours ahead");
+            }
+        }
+
         if (rideRepository.existsByCreatorAndStatusIn(
                 creator,
                 List.of(RideStatus.PENDING, RideStatus.IN_PROGRESS, RideStatus.ACCEPTED)
@@ -146,12 +160,39 @@ public class RideService {
         ride.setBabyTransport(request.babyTransport());
         ride.setPetTransport(request.petTransport());
 
-        Driver driver = driverService.findDriverForRide(ride);
+        Driver driver = null;
 
-        ride.setDriver(driver);
-        driver.setCurrentRide(ride);
-        driver.setFree(false);
-        driver.setAvailable(false);
+        if (request.scheduledAt() == null) {
+
+            // ✅ PRIORITY CHECK ZA SCHEDULED RIDES
+            boolean scheduledSoon = rideRepository
+                    .existsByStatusAndScheduledAtBetween(
+                            RideStatus.PENDING,
+                            LocalDateTime.now(),
+                            LocalDateTime.now().plusMinutes(30)
+                    );
+
+            if (scheduledSoon) {
+                throw new IllegalStateException(
+                        "Drivers reserved for scheduled rides. Try again shortly."
+                );
+            }
+
+            // instant ride → assign driver now
+            driver = driverService.findDriverForRide(ride);
+
+            ride.setDriver(driver);
+            driver.setCurrentRide(ride);
+            driver.setFree(false);
+            driver.setAvailable(false);
+
+            ride.setStatus(RideStatus.ACCEPTED);
+        }
+        else {
+            // scheduled ride
+            ride.setStatus(RideStatus.PENDING);
+        }
+
 
         RouteInfo routeInfo = routeCalculationService.calculateRoute(
                 ride.getStartLocation(),
@@ -170,72 +211,46 @@ public class RideService {
 
         ride.setBasePrice(basePrice);
         ride.setCalculatedPrice(calculatedPrice);
-        ride.setStatus(RideStatus.ACCEPTED);
         ride.setCreatedAt(LocalDateTime.now());
-
+        ride.setScheduledAt(request.scheduledAt());
         Ride savedRide = rideRepository.save(ride);
 
         for (RideInvite invite : savedRide.getInvites()) {
             rideInviteMailService.sendInvite(invite, creator, savedRide);
         }
 
-        notificationService.createNotification(
-                creator.getId(),
-                String.format("Your ride request has been created. Driver %s %s will pick you up soon!",
-                        driver.getName(), driver.getSurname()),
-                NotificationType.ACCEPTED_RIDE,
-                savedRide.getId()
-        );
+        if (driver != null) {
+            notificationService.createNotification(
+                    creator.getId(),
+                    String.format("Your ride request has been created. Driver %s %s will pick you up soon!",
+                            driver.getName(), driver.getSurname()),
+                    NotificationType.ACCEPTED_RIDE,
+                    savedRide.getId()
+            );
+        } else {
+            notificationService.createNotification(
+                    creator.getId(),
+                    "Your ride has been scheduled successfully.",
+                    NotificationType.RIDE_REMINDER,
+                    savedRide.getId()
+            );
+        }
 
-        notificationService.createNotification(
-                driver.getId(),
-                String.format("New ride assigned! Pickup at %s",
-                        savedRide.getStartLocation().getAddress()),
-                NotificationType.RIDE_REMINDER,
-                savedRide.getId()
-        );
 
+        if(driver != null) {
+            notificationService.createNotification(
+                    driver.getId(),
+                    String.format("New ride assigned! Pickup at %s",
+                            savedRide.getStartLocation().getAddress()),
+                    NotificationType.RIDE_REMINDER,
+                    savedRide.getId()
+            );
+
+        }
         return savedRide;
     }
 
 
-
-    // Method to cancel a ride
-//    public Ride cancelRide(Long rideId, Rid cancelledBy, String reason) {
-//        Ride ride = rideRepository.findById(rideId)
-//                .orElseThrow(() -> new IllegalArgumentException("Ride not found"));
-//
-//        ride.setStatus(RideStatus.CANCELLED);
-//        ride.setCancelledBy(cancelledBy);
-//        ride.setCancelledAt(LocalDateTime.now());
-//        ride.setTerminationReason(reason);
-//
-//        Ride savedRide = rideRepository.save(ride);
-//
-//        // Notify all passengers
-//        for (Passenger passenger : savedRide.getPassengers()) {
-//            notificationService.createNotification(
-//                    passenger.getId(),
-//                    String.format("Your ride has been canceled by %s. Reason: %s",
-//                            cancelledBy, reason != null ? reason : "Not specified"),
-//                    NotificationType.RIDE_CANCELED,
-//                    savedRide.getId()
-//            );
-//        }
-//
-//        // Notify driver if exists
-//        if (savedRide.getDriver() != null) {
-//            notificationService.createNotification(
-//                    savedRide.getDriver().getId(),
-//                    String.format("Ride canceled by %s. Reason: %s",
-//                            cancelledBy, reason != null ? reason : "Not specified"),
-//                    NotificationType.RIDE_CANCELED,
-//                    savedRide.getId()
-//            );
-//        }
-//
-//        return savedRide;
-//    }
 
     public RouteEstimateResponse estimateRoute(RouteEstimateRequest request) {
         Location start = new Location(
@@ -507,4 +522,52 @@ public class RideService {
         ride.setCancelledBy(CancelledBy.PASSENGER);
         rideRepository.save(ride);
     }
+
+    @Scheduled(fixedRate = 60000) // сваки минут
+    @Transactional
+    public void assignScheduledRides() {
+
+        LocalDateTime now = LocalDateTime.now();
+
+        List<Ride> rides = rideRepository
+                .findByStatusAndScheduledAtBefore(
+                        RideStatus.PENDING,
+                        now.plusMinutes(10) // 10 минута пре старта
+                );
+
+        for (Ride ride : rides) {
+            if (ride.getDriver() != null) continue;
+
+            try {
+
+                Driver driver = driverService.findDriverForRide(ride);
+
+                ride.setDriver(driver);
+                driver.setCurrentRide(ride);
+                driver.setFree(false);
+                driver.setAvailable(false);
+                ride.setStatus(RideStatus.ACCEPTED);
+
+                ride.setStatus(RideStatus.ACCEPTED);
+
+                rideRepository.save(ride);
+
+                // notifications
+                for (Passenger p : ride.getPassengers()) {
+                    notificationService.createNotification(
+                            p.getId(),
+                            "Driver assigned for your scheduled ride!",
+                            NotificationType.ACCEPTED_RIDE,
+                            ride.getId()
+                    );
+                }
+
+            } catch (Exception ignored) {
+                // нема возача тренутно — покушаће следећи минут
+            }
+        }
+    }
+
+
+
 }

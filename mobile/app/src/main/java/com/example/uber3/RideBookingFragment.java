@@ -1,6 +1,8 @@
 package com.example.uber3;
 
 import android.annotation.SuppressLint;
+import android.app.DatePickerDialog;
+import android.app.TimePickerDialog;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -29,14 +31,19 @@ import com.example.uber3.network.model.ride.RouteEstimateRequest;
 import com.example.uber3.network.model.ride.RouteEstimateResponse;
 import com.example.uber3.repository.ORSRepository;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
+import com.google.android.material.timepicker.MaterialTimePicker;
+import com.google.android.material.timepicker.TimeFormat;
 
 import org.osmdroid.util.GeoPoint;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 
 import retrofit2.Call;
@@ -48,6 +55,10 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
     private LinearLayout priceInfoLayout;
     private AutoCompleteTextView pickupInput;
     private AutoCompleteTextView destinationInput;
+
+    private EditText etScheduledAt;
+    private String scheduledIso = null;
+
 
     private MaterialButton bookRideButton;
     private MaterialButton resetButton;
@@ -90,6 +101,16 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
         priceInfoLayout = view.findViewById(R.id.priceInfoLayout);
         bookRideButton = view.findViewById(R.id.bookRideButton);
         resetButton = view.findViewById(R.id.resetButton);
+        etScheduledAt = view.findViewById(R.id.etScheduledAt);
+
+        etScheduledAt.setOnLongClickListener(v -> {
+            scheduledIso = null;
+            etScheduledAt.setText("");
+            return true;
+        });
+
+
+        etScheduledAt.setOnClickListener(v -> openDateTimePicker());
 
         etPassengerEmail =
                 view.findViewById(R.id.etPassengerEmail);
@@ -134,6 +155,8 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
 
         return view;
     }
+
+
 
 
     private void addPassenger() {
@@ -798,7 +821,8 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
                         passengers,
                         vehicleType,
                         false,
-                        false
+                        false,
+                        scheduledIso
                 );
 
         apiService
@@ -819,6 +843,8 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
                                     Toast.LENGTH_LONG
                             ).show();
 
+                            scheduledIso = null;
+                            etScheduledAt.setText("");
                             resetForm();
                         }
                         else {
@@ -843,6 +869,84 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
                     }
                 });
 
+    }
+
+
+    @SuppressLint({"SetTextI18n", "DefaultLocale"})
+    private void openDateTimePicker() {
+
+        // DATE PICKER
+        MaterialDatePicker<Long> datePicker =
+                MaterialDatePicker.Builder.datePicker()
+                        .setTitleText("Select date")
+                        .setSelection(
+                                System.currentTimeMillis() + 15 * 60 * 1000
+                        ).build();
+
+        datePicker.show(getParentFragmentManager(), "DATE_PICKER");
+
+        datePicker.addOnPositiveButtonClickListener(date -> {
+
+            Calendar cal = Calendar.getInstance();
+            cal.setTimeInMillis(date);
+
+            int year = cal.get(Calendar.YEAR);
+            int month = cal.get(Calendar.MONTH);
+            int day = cal.get(Calendar.DAY_OF_MONTH);
+
+            // TIME PICKER
+            MaterialTimePicker timePicker =
+                    new MaterialTimePicker.Builder()
+                            .setTimeFormat(TimeFormat.CLOCK_24H)
+                            .setHour(cal.get(Calendar.HOUR_OF_DAY))
+                            .setMinute(cal.get(Calendar.MINUTE))
+                            .setTitleText("Select time")
+                            .build();
+
+            timePicker.show(getParentFragmentManager(), "TIME_PICKER");
+
+            timePicker.addOnPositiveButtonClickListener(v -> {
+
+                int hour = timePicker.getHour();
+                int minute = timePicker.getMinute();
+
+                LocalDateTime ldt =
+                        LocalDateTime.of(
+                                year,
+                                month + 1,
+                                day,
+                                hour,
+                                minute
+                        );
+
+                if (ldt.isBefore(LocalDateTime.now().plusMinutes(1))) {
+                    Toast.makeText(
+                            requireContext(),
+                            "Time must be in the future",
+                            Toast.LENGTH_SHORT
+                    ).show();
+                    return;
+                }
+
+
+                if (ldt.isAfter(LocalDateTime.now().plusHours(5))) {
+                    Toast.makeText(
+                            requireContext(),
+                            "Max 5 hours ahead",
+                            Toast.LENGTH_SHORT
+                    ).show();
+                    return;
+                }
+
+                scheduledIso = ldt.toString();
+
+                etScheduledAt.setText(
+                        day + "/" + (month+1) +
+                                " " + hour + ":" +
+                                String.format("%02d", minute)
+                );
+            });
+        });
     }
 
 
