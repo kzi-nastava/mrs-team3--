@@ -108,4 +108,18 @@ public interface RideRepository extends JpaRepository<Ride, Long> {
         LocalDateTime dateTime,
         List<RideStatus> statuses
     );
+
+    List<Ride> findByStatusAndScheduledAtBefore(
+            RideStatus status,
+            LocalDateTime time
+    );
+
+    boolean existsByStatusAndScheduledAtBetween(
+            RideStatus status,
+            LocalDateTime from,
+            LocalDateTime to
+    );
+
+
+
 }
