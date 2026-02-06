@@ -423,7 +423,7 @@ public class DriverService {
         if (ride.getDriver() != driver || !ride.getDriver().getId().equals(driverId))
             return;
 
-        ride.setStatus(RideStatus.PANIC);
+//        ride.setStatus(RideStatus.PANIC);
         ride.setPanic(true);
         rideRepository.save(ride);
     }

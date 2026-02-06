@@ -2,6 +2,9 @@ package com.st3.uber.service;
 
 import com.st3.uber.domain.*;
 import com.st3.uber.dto.ride.*;
+import com.st3.uber.dto.rideHistory.AdminRideHistoryResponse;
+import com.st3.uber.dto.rideHistory.PassengerRideSummaryExtendedResponse;
+import com.st3.uber.dto.rideHistory.PassengerRideSummaryResponse;
 import com.st3.uber.dto.route.RouteInfo;
 import com.st3.uber.enums.CancelledBy;
 import com.st3.uber.enums.NotificationType;
@@ -523,7 +526,7 @@ public class RideService {
         rideRepository.save(ride);
     }
 
-    @Scheduled(fixedRate = 60000) // сваки минут
+    @Scheduled(fixedRate = 60000)
     @Transactional
     public void assignScheduledRides() {
 
@@ -569,5 +572,22 @@ public class RideService {
     }
 
 
+    @Transactional
+    public List<AdminRideHistoryResponse> adminRideHistory() {
+        List<RideStatus> statuses = List.of(RideStatus.COMPLETED, RideStatus.CANCELLED_BY_DRIVER,
+                                            RideStatus.CANCELLED_BY_PASSENGER, RideStatus.FINISHED_EARLY);
+
+        List<Ride> rides = rideRepository.getAllByStatusIn(statuses);
+        return rides.stream().map(r -> {
+
+            AdminRideHistoryResponse res = new AdminRideHistoryResponse(r.getId(), r.getStatus(), r.getCalculatedPrice());
+
+            res.setStartLocation(r.getStartLocation());
+            res.setEndLocation(r.getActualEndLocation());
+            res.setStartTime(r.getStartedAt());
+            res.setEndTime(r.getFinishedAt());
+            return res;
+        }).toList();
+    }
 
 }
