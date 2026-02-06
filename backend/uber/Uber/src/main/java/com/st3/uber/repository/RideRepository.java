@@ -120,6 +120,5 @@ public interface RideRepository extends JpaRepository<Ride, Long> {
             LocalDateTime to
     );
 
-
-
+    List<Ride> getAllByStatusIn(List<RideStatus> statuses);
 }

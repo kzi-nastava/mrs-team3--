@@ -3,12 +3,18 @@ package com.st3.uber.controller;
 import com.st3.uber.domain.Location;
 import com.st3.uber.domain.Ride;
 import com.st3.uber.domain.RideInvite;
+import com.st3.uber.domain.User;
 import com.st3.uber.dto.ride.*;
+import com.st3.uber.dto.rideHistory.AdminRideHistoryResponse;
+import com.st3.uber.dto.rideHistory.PassengerRideSummaryExtendedResponse;
+import com.st3.uber.dto.rideHistory.PassengerRideSummaryResponse;
 import com.st3.uber.enums.CancelledBy;
 import com.st3.uber.enums.RideStatus;
 import com.st3.uber.dto.route.RouteEstimateRequest;
 import com.st3.uber.dto.route.RouteEstimateResponse;
+import com.st3.uber.enums.UserRole;
 import com.st3.uber.repository.RideInviteRepository;
+import com.st3.uber.repository.UserRepository;
 import com.st3.uber.service.RideService;
 import com.st3.uber.service.ReviewService;
 import com.st3.uber.util.ComparatorUtils;
@@ -31,12 +37,14 @@ public class RideController {
     private final RideService rideService;
     private final RideInviteRepository rideInviteRepository;
     private final ReviewService reviewService;
+    private final UserRepository userRepository;
 
 
-    public RideController(RideService rideService, RideInviteRepository rideInviteRepository, ReviewService reviewService) {
+    public RideController(RideService rideService, RideInviteRepository rideInviteRepository, ReviewService reviewService, UserRepository userRepository) {
         this.rideService = rideService;
         this.rideInviteRepository = rideInviteRepository;
         this.reviewService = reviewService;
+        this.userRepository = userRepository;
     }
 
 
@@ -398,6 +406,20 @@ public class RideController {
         Long id = jwt.getClaim("uid");
         rideService.cancelRideByPassenger(rideId, id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/history/admin")
+    @RolesAllowed("ADMIN")
+    public ResponseEntity<List<AdminRideHistoryResponse>> getRideHistoryForAdmin(
+        @AuthenticationPrincipal Jwt jwt
+    ){
+        Long id = jwt.getClaim("uid");
+        User admin = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+        if (!admin.getRole().equals(UserRole.ADMIN)) {
+            throw new RuntimeException("Unauthorized");
+        }
+        List<AdminRideHistoryResponse> res = rideService.adminRideHistory();
+        return ResponseEntity.ok(res);
     }
 
 }
