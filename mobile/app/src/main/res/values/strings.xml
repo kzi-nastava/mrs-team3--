@@ -139,6 +139,21 @@
     <string name="hello">Hello</string>
     <string name="other_message">Other message</string>
     <string name="my_message">My message</string>
+    <string name="report_screen">Report Screen</string>
+    <string name="reports">Reports</string>
+    <string name="user">User</string>
+    <string name="select_date">Select date</string>
+    <string name="load_report">Load report</string>
+    <string name="total_rides">Total Rides</string>
+    <string name="_0">0</string>
+    <string name="avg_rides_day">Avg Rides/Day</string>
+    <string name="total_distance_km">Total Distance (km)</string>
+    <string name="_0_00_km">0.00 km</string>
+    <string name="total_money_rsd">Total Money (RSD)</string>
+    <string name="_0_rsd">0 RSD</string>
+    <string name="rides_per_day">Rides per day</string>
+    <string name="distance_per_day_km">Distance per day (km)</string>
+    <string name="revenue_per_day_rsd">Revenue per day (RSD)</string>
     <string-array name="vehicle_types">
         <item>STANDARD</item>
         <item>VAN</item>

@@ -12,6 +12,8 @@ import okhttp3.MultipartBody;
 import retrofit2.http.Multipart;
 import retrofit2.http.POST;
 import retrofit2.http.Part;
+import retrofit2.http.Query;
+
 import com.example.uber3.network.model.LoginRequest;
 import com.example.uber3.network.model.LoginResponse;
 import com.example.uber3.network.model.auth.RegisterRequest;
@@ -22,6 +24,10 @@ import com.example.uber3.network.model.ride.CreateRideRequest;
 import com.example.uber3.network.model.ride.RideResponse;
 import com.example.uber3.network.model.ride.RouteEstimateRequest;
 import com.example.uber3.network.model.ride.RouteEstimateResponse;
+import com.example.uber3.network.model.report.RideReportResponse;
+import com.example.uber3.network.model.user.UserDto;
+
+import java.util.List;
 
 public interface ApiService {
 
@@ -66,6 +72,17 @@ public interface ApiService {
 
     @POST("api/rides")
     Call<RideResponse> createRide(@Body CreateRideRequest request);
+
+    @GET("api/rides/reports")
+    Call<RideReportResponse> getReport(
+            @Query("from") String from,
+            @Query("to") String to,
+            @Query("userId") Long userId
+    );
+
+    @GET("api/admin/users")
+    Call<List<UserDto>> getAllUsers();
+
 
 
 

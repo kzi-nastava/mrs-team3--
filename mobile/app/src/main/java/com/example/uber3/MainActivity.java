@@ -9,7 +9,7 @@ import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
-
+import com.example.uber3.ReportFragment;
 import com.example.uber3.network.manager.LogoutHelper;
 import com.example.uber3.network.manager.TokenManager;
 import com.example.uber3.network.websocket.ChatWebSocketManager;
@@ -89,7 +89,11 @@ public class MainActivity extends AppCompatActivity {
             } else if (id == R.id.nav_register_driver) {
                 topAppBar.setTitle("Register Driver");
                 loadFragment(new RegisterDriverFragment());
+            } else if (id == R.id.nav_report) {
+                topAppBar.setTitle("Reports");
+                loadFragment(new ReportFragment());
             }
+
 
             drawerLayout.close();
             return true;
