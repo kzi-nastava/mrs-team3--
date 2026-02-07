@@ -2,6 +2,7 @@ package com.example.uber3.network.api;
 
 
 import com.example.uber3.network.model.ChatRoomDto;
+import com.example.uber3.network.model.chat.AdminDto;
 import com.example.uber3.network.model.chat.ChatMessage;
 
 import java.util.List;
@@ -22,4 +23,7 @@ public interface ChatApiService {
             @Query("user1") Long u1,
             @Query("user2") Long u2
     );
+
+    @GET("/api/chat/admin")
+    Call<AdminDto> getFirstAdmin();
 }

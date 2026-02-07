@@ -32,14 +32,11 @@ public class MainActivity extends AppCompatActivity {
 
         String token = TokenManager.getToken(this);
 
+        // FIXED: Only connect WebSocket, don't subscribe here
+        // Let fragments handle their own subscriptions
         if (token != null) {
             ChatWebSocketManager.getInstance().connect(token);
-
-            ChatWebSocketManager.getInstance().subscribeToMessages();
         }
-
-
-
 
         drawerLayout = findViewById(R.id.drawerLayout);
         topAppBar = findViewById(R.id.topAppBar);
@@ -65,7 +62,7 @@ public class MainActivity extends AppCompatActivity {
                 if(currentUserRole.equals("ADMIN")){
                     loadFragment(new AdminChatListFragment());
                 } else {
-                    loadFragment(new ChatFragment());
+                    loadFragment(ChatFragment.forAdmin());
                 }
             }
             else if (id == R.id.nav_ride) {
@@ -127,7 +124,7 @@ public class MainActivity extends AppCompatActivity {
                             mode != null ? mode : "RESET"
                     )
             );
-                topAppBar.setTitle("Set Password");
+            topAppBar.setTitle("Set Password");
         }
     }
 
