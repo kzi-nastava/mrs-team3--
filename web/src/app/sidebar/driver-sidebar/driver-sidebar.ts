@@ -81,6 +81,11 @@ export class DriverSidebarComponent implements OnInit, OnDestroy {
     this.showLogoutModal = false;
   }
 
+  goReport() {
+  this.router.navigate(['/report']);
+}
+
+
   isActive = true;
 
   toggleActiveStatus(): void {

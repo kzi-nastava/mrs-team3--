@@ -5,8 +5,8 @@ import { Login } from './login/login';
 import { RegisterComponent } from './register/register';
 import { ResetPasswordComponent } from './reset-password/reset-password';
 import { ForgotPassword } from './forgot-password/forgot-password';
-import {VerificationResultComponent} from './verification-result/verification-result';
-import {adminGuard, authGuard, driverGuard, guestGuard, passengerGuard} from './guard/auth.guard';
+import { VerificationResultComponent } from './verification-result/verification-result';
+import { adminGuard, authGuard, driverGuard, guestGuard, passengerGuard } from './guard/auth.guard';
 import { ErrorComponent } from './error/error';
 import { DriverHistoryComponent } from './ride-history/driver/driver-history';
 import { PassengerHistoryComponent } from './ride-history/passenger/passenger-history';
@@ -16,7 +16,9 @@ import { PassengerNotificationsComponent } from './notifications/passenger-notif
 import { RideReviewComponent } from './ride-review/ride-review';
 import { RideTrackingComponent } from './ride-tracking/ride-tracking';
 import { DriverDashboardComponent } from './driver-dashboard/driver-dashboard';
-import {IncomingRides} from './incoming-rides/incoming-rides';
+import { IncomingRides } from './incoming-rides/incoming-rides';
+import { Report } from './report/report';
+
 
 
 import { PricingManagementComponent } from './pricing/pricing-managment/pricing-management';
@@ -52,17 +54,22 @@ export const routes: Routes = [
     data: { role: 'ADMIN' }
   },
   { path: 'ride-tracking', component: RideTrackingComponent, canActivate: [passengerGuard] },
-  {path: 'ride-tracking/:token', component: RideTrackingComponent},
+  { path: 'ride-tracking/:token', component: RideTrackingComponent },
   { path: 'reset-password', component: ResetPasswordComponent },
   { path: 'forgot-password', component: ForgotPassword },
-  {path: 'verification-result', component: VerificationResultComponent},
-  { path: 'admin-notifications', component: AdminNotificationsComponent, canActivate: [adminGuard]},
-  { path: 'driver-notifications', component: DriverNotificationsComponent, canActivate: [driverGuard]},
-  { path: 'passenger-notifications', component: PassengerNotificationsComponent, canActivate: [passengerGuard]},
-  {path: 'ride-review/:id', component: RideReviewComponent, canActivate: [passengerGuard]},
+  { path: 'verification-result', component: VerificationResultComponent },
+  { path: 'admin-notifications', component: AdminNotificationsComponent, canActivate: [adminGuard] },
+  { path: 'driver-notifications', component: DriverNotificationsComponent, canActivate: [driverGuard] },
+  { path: 'passenger-notifications', component: PassengerNotificationsComponent, canActivate: [passengerGuard] },
+  { path: 'ride-review/:id', component: RideReviewComponent, canActivate: [passengerGuard] },
   { path: 'driver-dashboard', component: DriverDashboardComponent, canActivate: [driverGuard] },
-  {path: 'incoming-rides', component: IncomingRides, canActivate: [passengerGuard]},
-    {path: 'pricing-management', component: PricingManagementComponent, canActivate: [adminGuard]},
+  { path: 'incoming-rides', component: IncomingRides, canActivate: [passengerGuard] },
+  { path: 'pricing-management', component: PricingManagementComponent, canActivate: [adminGuard] },
+  {
+    path: 'report',
+    component: Report,
+    canActivate: [authGuard] // opcionalno ali preporučeno
+  },
 
   { path: '**', component: ErrorComponent }
 

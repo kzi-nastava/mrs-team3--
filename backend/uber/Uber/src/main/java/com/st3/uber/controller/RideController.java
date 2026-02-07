@@ -3,6 +3,7 @@ package com.st3.uber.controller;
 import com.st3.uber.domain.Location;
 import com.st3.uber.domain.Ride;
 import com.st3.uber.domain.RideInvite;
+import com.st3.uber.dto.report.RideReportResponse;
 import com.st3.uber.dto.ride.*;
 import com.st3.uber.enums.CancelledBy;
 import com.st3.uber.enums.RideStatus;
@@ -399,5 +400,23 @@ public class RideController {
         rideService.cancelRideByPassenger(rideId, id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/reports")
+    public ResponseEntity<RideReportResponse> getReport(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            LocalDateTime from,
+
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            LocalDateTime to,
+
+            @RequestParam(required = false)
+            Long userId
+    ) {
+        return ResponseEntity.ok(
+                rideService.generateReport(from, to, userId)
+        );
+    }
+
+
 
 }

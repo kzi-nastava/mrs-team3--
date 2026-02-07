@@ -1,0 +1,123 @@
+<div class="report-wrapper">
+  <div class="report-card">
+    <h2>📊 Ride Analytics Dashboard</h2>
+
+    <div class="filters">
+
+      @if (isAdmin) {
+      <p-select class="user-select" [options]="userOptions" [(ngModel)]="selectedUserId" (onChange)="loadReport()"
+        optionLabel="label" optionValue="value" placeholder="Select user">
+      </p-select>
+      }
+
+      <p-datepicker [(ngModel)]="fromDate" (ngModelChange)="onDateChange()" placeholder="From date"
+        dateFormat="yy-mm-dd" [showIcon]="true" [showButtonBar]="true">
+      </p-datepicker>
+
+      <p-datepicker [(ngModel)]="toDate" (ngModelChange)="onDateChange()" placeholder="To date" dateFormat="yy-mm-dd"
+        [showIcon]="true" [showButtonBar]="true">
+      </p-datepicker>
+
+    </div>
+
+
+    <div class="summary-grid">
+      <div class="summary-card blue">
+        <h4>Total Rides</h4>
+        <p>{{ totalRides }}</p>
+      </div>
+
+      <div class="summary-card green">
+        <h4>Total Distance</h4>
+        <p>{{ totalDistance | number:'1.1-2' }} km</p>
+      </div>
+
+      <div class="summary-card purple">
+        <h4>Total Money</h4>
+        <p>{{ totalMoney | number:'1.0-0' }} RSD</p>
+      </div>
+
+      <div class="summary-card orange">
+        <h4>Avg Rides/Day</h4>
+        <p>{{ avgRides | number:'1.1-2' }}</p>
+      </div>
+    </div>
+
+    <p-tabs [(value)]="activeTabIndex" (valueChange)="onTabChange($event)" class="charts-tabs">
+
+      <p-tablist>
+        <p-tab [value]="0">All</p-tab>
+        <p-tab [value]="1">Rides</p-tab>
+        <p-tab [value]="2">Distance</p-tab>
+        <p-tab [value]="3">Revenue</p-tab>
+      </p-tablist>
+
+      <p-tabpanels>
+
+        <p-tabpanel [value]="0">
+          <div class="charts-grid">
+
+            <div class="chart-box">
+              <h3>🚗 Rides Trend</h3>
+              <div class="chart-canvas-wrap">
+                <canvas #ridesChartAll baseChart [data]="lineChartData" [options]="lineChartOptions" type="bar">
+                </canvas>
+              </div>
+            </div>
+
+            <div class="chart-box">
+              <h3>📍 Distance Covered</h3>
+              <div class="chart-canvas-wrap">
+                <canvas #distanceChartAll baseChart [data]="distanceChartData" [options]="distanceChartOptions"
+                  type="bar">
+                </canvas>
+              </div>
+            </div>
+
+            <div class="chart-box full">
+              <h3>💰 Revenue Overview</h3>
+              <div class="chart-canvas-wrap">
+                <canvas #moneyChartAll baseChart [data]="moneyChartData" [options]="moneyChartOptions" type="bar">
+                </canvas>
+              </div>
+            </div>
+
+          </div>
+        </p-tabpanel>
+
+        <p-tabpanel [value]="1">
+          <div class="chart-box single">
+            <h3>🚗 Rides Trend</h3>
+            <div class="chart-canvas-wrap">
+              <canvas #ridesChartSingle baseChart [data]="lineChartData" [options]="lineChartOptions" type="bar">
+              </canvas>
+            </div>
+          </div>
+        </p-tabpanel>
+
+        <p-tabpanel [value]="2">
+          <div class="chart-box single">
+            <h3>📍 Distance Covered</h3>
+            <div class="chart-canvas-wrap">
+              <canvas #distanceChartSingle baseChart [data]="distanceChartData" [options]="distanceChartOptions"
+                type="bar">
+              </canvas>
+            </div>
+          </div>
+        </p-tabpanel>
+
+        <p-tabpanel [value]="3">
+          <div class="chart-box single">
+            <h3>💰 Revenue Overview</h3>
+            <div class="chart-canvas-wrap">
+              <canvas #moneyChartSingle baseChart [data]="moneyChartData" [options]="moneyChartOptions" type="bar">
+              </canvas>
+            </div>
+          </div>
+        </p-tabpanel>
+
+      </p-tabpanels>
+    </p-tabs>
+
+  </div>
+</div>
