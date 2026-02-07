@@ -1,6 +1,9 @@
 package com.st3.uber.controller;
 
+import com.st3.uber.domain.User;
 import com.st3.uber.dto.chat.ChatMessage;
+import com.st3.uber.enums.UserRole;
+import com.st3.uber.repository.UserRepository;
 import com.st3.uber.service.ChatService;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -14,13 +17,16 @@ public class ChatWebSocketController {
 
     private final SimpMessagingTemplate messagingTemplate;
     private final ChatService chatService;
+    private final UserRepository userRepository;
 
     public ChatWebSocketController(
             SimpMessagingTemplate messagingTemplate,
-            ChatService chatService
+            ChatService chatService,
+            UserRepository userRepository
     ) {
         this.messagingTemplate = messagingTemplate;
         this.chatService = chatService;
+        this.userRepository = userRepository;
     }
 
     @MessageMapping("/chat.send")
@@ -37,21 +43,20 @@ public class ChatWebSocketController {
                 message.getContent()
         );
 
-        Long adminId = 3L;
+        User fromUser = userRepository.findById(fromUserId).orElseThrow();
+        boolean senderIsAdmin = fromUser.getRole() == UserRole.ADMIN;
 
-// ako sender NIJE admin → šalji adminu
-        if(!fromUserId.equals(adminId)){
-            message.setToUserId(adminId);
+        Long targetId;
+
+        if(senderIsAdmin) {
+            targetId = message.getToUserId();
+        } else {
+            targetId = message.getToUserId();
         }
-
-        Long targetId = message.getToUserId();
-
         messagingTemplate.convertAndSendToUser(
                 targetId.toString(),
                 "/queue/messages",
                 message
         );
-
     }
-
 }

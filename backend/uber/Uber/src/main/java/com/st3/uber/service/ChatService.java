@@ -29,8 +29,8 @@ public class ChatService {
     }
 
     public void saveMessage(Long fromId,
-                               Long toId,
-                               String content) {
+                            Long toId,
+                            String content) {
 
         User from = userRepository.findById(fromId).orElseThrow();
         User to = userRepository.findById(toId).orElseThrow();
@@ -41,11 +41,16 @@ public class ChatService {
         if(from.getRole() == UserRole.ADMIN){
             admin = from;
             user = to;
-        } else {
+        } else if(to.getRole() == UserRole.ADMIN) {
             admin = to;
+            user = from;
+        } else {
+            admin = userRepository.findFirstByRole(UserRole.ADMIN)
+                    .orElseThrow(() -> new RuntimeException("No admin found in system"));
             user = from;
         }
 
+        // Find or create chat room
         ChatRoom room = chatRoomRepository
                 .findByUserAndAdmin(user, admin)
                 .orElseGet(() -> {
@@ -55,6 +60,7 @@ public class ChatService {
                     return chatRoomRepository.save(r);
                 });
 
+        // Create and save message
         Message msg = new Message();
         msg.setChatRoom(room);
         msg.setContent(content);
@@ -74,6 +80,7 @@ public class ChatService {
         User u1 = userRepository.findById(userId1).orElseThrow();
         User u2 = userRepository.findById(userId2).orElseThrow();
 
+        // Try both combinations to find the room
         ChatRoom room = chatRoomRepository
                 .findByUserAndAdmin(u1, u2)
                 .orElseGet(() -> chatRoomRepository
@@ -96,18 +103,15 @@ public class ChatService {
     ){
 
         List<Message> msgs =
-                getChatHistory(userId1,userId2);
+                getChatHistory(userId1, userId2);
 
         return msgs.stream()
                 .map(m -> new ChatMessage(
                         m.getSenderId(),
-                        null, // toUserId nije bitan za history
+                        null, // toUserId isn't needed for history
                         m.getContent(),
                         m.getSentAt().toString()
                 ))
                 .toList();
     }
-
-
-
 }
