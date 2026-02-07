@@ -76,7 +76,19 @@ public class TokenManager {
 
             org.json.JSONObject json = new org.json.JSONObject(payload);
 
-            return json.getLong("uid");
+            // pokušaj više mogućih claimova
+            if (json.has("uid")) return json.getLong("uid");
+            if (json.has("id")) return json.getLong("id");
+            if (json.has("userId")) return json.getLong("userId");
+
+            // sub je često string
+            if (json.has("sub")) {
+                String sub = json.getString("sub");
+                return Long.parseLong(sub);
+            }
+
+            return null;
+
         } catch (Exception e) {
             e.printStackTrace();
             return null;

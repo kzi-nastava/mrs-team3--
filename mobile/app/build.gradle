@@ -50,6 +50,7 @@ dependencies {
     implementation libs.java.websocket
     implementation libs.rxjava
     implementation libs.rxandroid
+    implementation libs.mpandroidchart
 
 
 
