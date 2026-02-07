@@ -139,6 +139,9 @@
     <string name="hello">Hello</string>
     <string name="other_message">Other message</string>
     <string name="my_message">My message</string>
+    <string name="type_message">Type message...</string>
+    <string name="send_message">Send message</string>
+    <string name="back">Back</string>
     <string-array name="vehicle_types">
         <item>STANDARD</item>
         <item>VAN</item>

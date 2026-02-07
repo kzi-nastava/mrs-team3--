@@ -7,6 +7,7 @@ import { Router } from '@angular/router';
 import { env } from '../../env/env';
 import { MessageService } from 'primeng/api';
 import { NotificationService } from './notification.service';
+import { ChatService } from './chat.service';
 
 interface LoginResponse {
   id: number;
@@ -41,7 +42,8 @@ export class AuthService {
     private http: HttpClient,
     private router: Router,
     private messageService: MessageService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private chatService: ChatService
   ) {}
 
   login(email: string, password: string): Observable<LoginResponse> {
@@ -55,6 +57,7 @@ export class AuthService {
         // Update current user observable
         this.currentUserSubject.next(this.getDecodedToken());
         this.notificationService.initialize(response.token);
+        this.chatService.initialize();
       })
     );
   }
@@ -96,6 +99,7 @@ export class AuthService {
   clearSession(): void {
     sessionStorage.removeItem(this.tokenKey);
     this.notificationService.disconnect();
+    this.chatService.disconnect();
     this.currentUserSubject.next(null);
     this.router.navigate(['/login'], { replaceUrl: true }).then(() => window.location.reload());
   }

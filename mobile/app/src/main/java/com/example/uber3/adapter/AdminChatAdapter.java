@@ -40,9 +40,9 @@ public class AdminChatAdapter
 
     @SuppressLint("SetTextI18n")
     @Override
-    public void onBindViewHolder(@NonNull VH h,int pos){
+    public void onBindViewHolder(@NonNull VH h, int pos){
         AdminChatRoom r = rooms.get(pos);
-        h.txt.setText("User " + r.userId);
+        h.txt.setText(r.userName);
         h.itemView.setOnClickListener(v -> listener.onClick(r));
     }
 
