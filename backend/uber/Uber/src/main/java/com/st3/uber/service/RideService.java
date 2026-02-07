@@ -580,10 +580,15 @@ public class RideService {
         List<Ride> rides = rideRepository.getAllByStatusIn(statuses);
         return rides.stream().map(r -> {
 
-            AdminRideHistoryResponse res = new AdminRideHistoryResponse(r.getId(), r.getStatus(), r.getCalculatedPrice());
-
+            AdminRideHistoryResponse res = new AdminRideHistoryResponse(r.getId(), r.getCalculatedPrice(), r.isPanic());
+            res.setStatus(r.getStatus());
             res.setStartLocation(r.getStartLocation());
-            res.setEndLocation(r.getActualEndLocation());
+            
+            if(r.getActualEndLocation() == null)
+                res.setEndLocation(r.getEndLocation());
+            else
+                res.setEndLocation(r.getActualEndLocation());
+
             res.setStartTime(r.getStartedAt());
             res.setEndTime(r.getFinishedAt());
             return res;

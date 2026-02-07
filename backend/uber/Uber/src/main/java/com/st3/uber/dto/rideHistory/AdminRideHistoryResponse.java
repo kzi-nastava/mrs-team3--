@@ -7,14 +7,14 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class AdminRideHistoryResponse extends PassengerRideSummaryResponse{
-  private RideStatus status;
   private double price;
+  private boolean panic;
 
-  public AdminRideHistoryResponse(Long id, RideStatus status, double price) {
+  public AdminRideHistoryResponse(Long id, double price, boolean panic) {
     super();
     this.setId(id);
-    this.status = status;
     this.price = price;
+    this.panic = panic;
   }
 
   public AdminRideHistoryResponse() {
