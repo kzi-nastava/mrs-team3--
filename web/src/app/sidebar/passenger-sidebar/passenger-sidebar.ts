@@ -84,4 +84,9 @@ export class PassengerSidebarComponent implements OnInit, OnDestroy {
   incomingRides() {
     this.router.navigate(['/incoming-rides']);
   }
+
+  goReport() {
+    this.router.navigate(['/report']);
+  }
+
 }

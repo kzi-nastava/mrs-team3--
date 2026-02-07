@@ -6,6 +6,7 @@ import com.st3.uber.dto.auth.ForgotPasswordRequest;
 import com.st3.uber.dto.auth.LoginRequest;
 import com.st3.uber.dto.auth.LoginResponse;
 import com.st3.uber.dto.auth.RegisterPassengerRequest;
+import com.st3.uber.dto.user.UserDto;
 import com.st3.uber.repository.UserRepository;
 import lombok.SneakyThrows;
 import org.springframework.http.HttpStatus;
@@ -18,6 +19,7 @@ import org.springframework.web.servlet.function.EntityResponse;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.UUID;
 
 import static java.util.Base64.getDecoder;
@@ -25,8 +27,24 @@ import static java.util.Base64.getDecoder;
 @Service
 public class UserService {
 
+    UserRepository userRepository;
+
     public UserService(UserRepository userRepository) {
+        this.userRepository = userRepository;
     }
+
+    public List<UserDto> getAllUsers() {
+        return userRepository.findAll()
+                .stream()
+                .map(u -> new UserDto(
+                        u.getId(),
+                        u.getName(),
+                        u.getSurname()
+                ))
+                .toList();
+    }
+
+
 
 
 }
