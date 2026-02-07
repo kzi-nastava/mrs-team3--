@@ -1,19 +1,25 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import { NotificationService } from '../../services/notification.service';
 import { LogoutModalComponent } from '../../logout-modal/logout-modal';
 import { Subject, takeUntil } from 'rxjs';
+import { ChatService } from '../../services/chat.service';
+import { ChatPopupComponent } from '../../chat/chat';
+
+
 
 @Component({
   selector: 'app-admin-sidebar',
   standalone: true,
-  imports: [LogoutModalComponent],
+  imports: [LogoutModalComponent, ChatPopupComponent],
   templateUrl: './admin-sidebar.html',
   styleUrls: ['./admin-sidebar.css']
 })
 export class AdminSidebarComponent implements OnInit, OnDestroy {
+
+  @ViewChild(ChatPopupComponent) chatPopup!: ChatPopupComponent;
   unreadCount = 0;
   showLogoutModal = false;
   private destroy$ = new Subject<void>();
@@ -23,9 +29,12 @@ export class AdminSidebarComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private notificationService: NotificationService,
     private cdr: ChangeDetectorRef
+
   ) { }
 
   ngOnInit(): void {
+
+
     setTimeout(() => {
       this.notificationService.unreadCount$
         .pipe(takeUntil(this.destroy$))
@@ -58,6 +67,9 @@ export class AdminSidebarComponent implements OnInit, OnDestroy {
   }
   goPricing() {
     this.router.navigate(['/pricing-management']);
+  }
+  goMessages() {
+    this.chatPopup.toggle();
   }
 
   logout() {

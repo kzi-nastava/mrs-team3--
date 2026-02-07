@@ -3,6 +3,7 @@ package com.st3.uber.service;
 import com.st3.uber.domain.ChatRoom;
 import com.st3.uber.domain.Message;
 import com.st3.uber.domain.User;
+import com.st3.uber.dto.chat.AdminDto;
 import com.st3.uber.dto.chat.ChatMessage;
 import com.st3.uber.enums.SenderType;
 import com.st3.uber.enums.UserRole;
@@ -28,9 +29,20 @@ public class ChatService {
         this.userRepository = userRepository;
     }
 
+    public AdminDto getAdmin(){
+        User admin = userRepository.findFirstByRole(UserRole.ADMIN)
+                .orElseThrow(() -> new RuntimeException("No admin found in system"));
+
+        return new AdminDto(
+                admin.getId(),
+                admin.getName() + " " + admin.getSurname(),
+                "ADMIN"
+        );
+    }
+
     public void saveMessage(Long fromId,
-                               Long toId,
-                               String content) {
+                            Long toId,
+                            String content) {
 
         User from = userRepository.findById(fromId).orElseThrow();
         User to = userRepository.findById(toId).orElseThrow();
@@ -41,8 +53,12 @@ public class ChatService {
         if(from.getRole() == UserRole.ADMIN){
             admin = from;
             user = to;
-        } else {
+        } else if(to.getRole() == UserRole.ADMIN) {
             admin = to;
+            user = from;
+        } else {
+            admin = userRepository.findFirstByRole(UserRole.ADMIN)
+                    .orElseThrow(() -> new RuntimeException("No admin found in system"));
             user = from;
         }
 
@@ -96,18 +112,15 @@ public class ChatService {
     ){
 
         List<Message> msgs =
-                getChatHistory(userId1,userId2);
+                getChatHistory(userId1, userId2);
 
         return msgs.stream()
                 .map(m -> new ChatMessage(
                         m.getSenderId(),
-                        null, // toUserId nije bitan za history
+                        null, // toUserId isn't needed for history
                         m.getContent(),
                         m.getSentAt().toString()
                 ))
                 .toList();
     }
-
-
-
 }

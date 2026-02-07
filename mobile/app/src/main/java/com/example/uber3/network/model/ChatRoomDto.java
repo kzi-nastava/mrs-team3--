@@ -8,5 +8,7 @@ public class ChatRoomDto {
     public static class UserDto{
         public Long id;
         public String email;
+        public String firstName;
+        public String lastName;
     }
 }
