@@ -5,6 +5,7 @@ import com.st3.uber.domain.Ride;
 import com.st3.uber.domain.RideInvite;
 import com.st3.uber.domain.User;
 import com.st3.uber.dto.ride.*;
+import com.st3.uber.dto.rideHistory.AdminRideHistoryExtendedResponse;
 import com.st3.uber.dto.rideHistory.AdminRideHistoryResponse;
 import com.st3.uber.dto.rideHistory.PassengerRideSummaryExtendedResponse;
 import com.st3.uber.dto.rideHistory.PassengerRideSummaryResponse;
@@ -17,6 +18,7 @@ import com.st3.uber.repository.RideInviteRepository;
 import com.st3.uber.repository.UserRepository;
 import com.st3.uber.service.RideService;
 import com.st3.uber.service.ReviewService;
+import com.st3.uber.service.RideTimelineService;
 import com.st3.uber.util.ComparatorUtils;
 import jakarta.annotation.security.RolesAllowed;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -38,13 +40,17 @@ public class RideController {
     private final RideInviteRepository rideInviteRepository;
     private final ReviewService reviewService;
     private final UserRepository userRepository;
+    private final RideTimelineService rideTimelineService;
 
 
-    public RideController(RideService rideService, RideInviteRepository rideInviteRepository, ReviewService reviewService, UserRepository userRepository) {
+    public RideController(RideService rideService, RideInviteRepository rideInviteRepository,
+                          ReviewService reviewService, UserRepository userRepository,
+                          RideTimelineService rideTimelineService) {
         this.rideService = rideService;
         this.rideInviteRepository = rideInviteRepository;
         this.reviewService = reviewService;
         this.userRepository = userRepository;
+        this.rideTimelineService = rideTimelineService;
     }
 
 
@@ -73,8 +79,6 @@ public class RideController {
 
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
-
-
 
     @GetMapping(
             value = "/track/{token}",
@@ -117,7 +121,7 @@ public class RideController {
         @AuthenticationPrincipal Jwt jwt
     ){
         Long id = jwt.getClaim("uid");
-        List<PassengerRideSummaryResponse> rides = rideService.getPastPassengerRides(id);
+        List<PassengerRideSummaryResponse> rides = rideTimelineService.getPastPassengerRides(id);
         return ResponseEntity.ok(rides);
     }
 
@@ -127,7 +131,7 @@ public class RideController {
         (@AuthenticationPrincipal Jwt jwt,
          @PathVariable Long rideId){
         Long id = jwt.getClaim("uid");
-        PassengerRideSummaryExtendedResponse ride = rideService.getPastRideDetails(id, rideId);
+        PassengerRideSummaryExtendedResponse ride = rideTimelineService.getPastRideDetails(id, rideId);
         return ResponseEntity.ok(ride);
 
     }
@@ -393,7 +397,7 @@ public class RideController {
         @AuthenticationPrincipal Jwt jwt
     ){
         Long id = jwt.getClaim("uid");
-        List<IncomingRideResponse> res = rideService.getAllIncomingRidesForPassenger(id);
+        List<IncomingRideResponse> res = rideTimelineService.getAllIncomingRidesForPassenger(id);
         return ResponseEntity.ok(res);
     }
 
@@ -418,7 +422,22 @@ public class RideController {
         if (!admin.getRole().equals(UserRole.ADMIN)) {
             throw new RuntimeException("Unauthorized");
         }
-        List<AdminRideHistoryResponse> res = rideService.adminRideHistory();
+        List<AdminRideHistoryResponse> res = rideTimelineService.adminRideHistory();
+        return ResponseEntity.ok(res);
+    }
+
+    @GetMapping("/history/admin/{rideId}")
+    @RolesAllowed("ADMIN")
+    public ResponseEntity<AdminRideHistoryExtendedResponse> getRideHistoryDetailsForAdmin(
+        @AuthenticationPrincipal Jwt jwt,
+        @PathVariable Long rideId
+    ){
+        Long id = jwt.getClaim("uid");
+        User admin = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+        if (!admin.getRole().equals(UserRole.ADMIN)) {
+            throw new RuntimeException("Unauthorized");
+        }
+        AdminRideHistoryExtendedResponse res = rideTimelineService.adminRideHistoryDetails(rideId);
         return ResponseEntity.ok(res);
     }
 
