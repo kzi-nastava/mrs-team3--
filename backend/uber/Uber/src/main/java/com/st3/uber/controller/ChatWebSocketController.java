@@ -37,26 +37,26 @@ public class ChatWebSocketController {
         message.setFromUserId(fromUserId);
         message.setTimestamp(Instant.now().toString());
 
+        // Save message to database
         chatService.saveMessage(
                 fromUserId,
                 message.getToUserId(),
                 message.getContent()
         );
 
-        User fromUser = userRepository.findById(fromUserId).orElseThrow();
-        boolean senderIsAdmin = fromUser.getRole() == UserRole.ADMIN;
+       Long recipientId = message.getToUserId();
 
-        Long targetId;
+        System.out.println("📨 Sending WebSocket message:");
+        System.out.println("   From: " + fromUserId);
+        System.out.println("   To: " + recipientId);
+        System.out.println("   Content: " + message.getContent());
 
-        if(senderIsAdmin) {
-            targetId = message.getToUserId();
-        } else {
-            targetId = message.getToUserId();
-        }
         messagingTemplate.convertAndSendToUser(
-                targetId.toString(),
+                recipientId.toString(),
                 "/queue/messages",
                 message
         );
+
+        System.out.println("✅ Message sent to user " + recipientId + " via WebSocket");
     }
 }

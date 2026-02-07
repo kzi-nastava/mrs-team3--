@@ -3,6 +3,7 @@ package com.st3.uber.service;
 import com.st3.uber.domain.ChatRoom;
 import com.st3.uber.domain.Message;
 import com.st3.uber.domain.User;
+import com.st3.uber.dto.chat.AdminDto;
 import com.st3.uber.dto.chat.ChatMessage;
 import com.st3.uber.enums.SenderType;
 import com.st3.uber.enums.UserRole;
@@ -28,6 +29,17 @@ public class ChatService {
         this.userRepository = userRepository;
     }
 
+    public AdminDto getAdmin(){
+        User admin = userRepository.findFirstByRole(UserRole.ADMIN)
+                .orElseThrow(() -> new RuntimeException("No admin found in system"));
+
+        return new AdminDto(
+                admin.getId(),
+                admin.getName() + " " + admin.getSurname(),
+                "ADMIN"
+        );
+    }
+
     public void saveMessage(Long fromId,
                             Long toId,
                             String content) {
@@ -50,7 +62,6 @@ public class ChatService {
             user = from;
         }
 
-        // Find or create chat room
         ChatRoom room = chatRoomRepository
                 .findByUserAndAdmin(user, admin)
                 .orElseGet(() -> {
@@ -60,7 +71,6 @@ public class ChatService {
                     return chatRoomRepository.save(r);
                 });
 
-        // Create and save message
         Message msg = new Message();
         msg.setChatRoom(room);
         msg.setContent(content);
@@ -80,7 +90,6 @@ public class ChatService {
         User u1 = userRepository.findById(userId1).orElseThrow();
         User u2 = userRepository.findById(userId2).orElseThrow();
 
-        // Try both combinations to find the room
         ChatRoom room = chatRoomRepository
                 .findByUserAndAdmin(u1, u2)
                 .orElseGet(() -> chatRoomRepository
