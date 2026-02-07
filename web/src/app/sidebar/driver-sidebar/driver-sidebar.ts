@@ -1,22 +1,29 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { DriverService } from '../../services/driver.service';
 import { MessageService } from 'primeng/api';
 import { NotificationService } from '../../services/notification.service';
+import { ChatService } from '../../services/chat.service';
 import { LogoutModalComponent } from '../../logout-modal/logout-modal';
+import { ChatPopupComponent } from '../../chat/chat';
 import { Subject, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-driver-sidebar',
   standalone: true,
-  imports: [LogoutModalComponent],
+  imports: [LogoutModalComponent, ChatPopupComponent],
   templateUrl: './driver-sidebar.html',
   styleUrls: ['./driver-sidebar.css']
 })
 export class DriverSidebarComponent implements OnInit, OnDestroy {
+  
+  @ViewChild(ChatPopupComponent) chatPopup!: ChatPopupComponent;
+
   unreadCount = 0;
   showLogoutModal = false;
+  isActive = true;
+  
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -29,6 +36,7 @@ export class DriverSidebarComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit(): void {
+    // Subscribe to notification count
     setTimeout(() => {
       this.notificationService.unreadCount$
         .pipe(takeUntil(this.destroy$))
@@ -61,7 +69,7 @@ export class DriverSidebarComponent implements OnInit, OnDestroy {
   }
 
   goMessages() {
-    alert('Messages - to be implemented');
+    this.chatPopup.toggle();
   }
 
   goProfile() {
@@ -80,8 +88,6 @@ export class DriverSidebarComponent implements OnInit, OnDestroy {
   onLogoutCancel() {
     this.showLogoutModal = false;
   }
-
-  isActive = true;
 
   toggleActiveStatus(): void {
     const prev = this.isActive;
