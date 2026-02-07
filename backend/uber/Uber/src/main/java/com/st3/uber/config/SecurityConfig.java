@@ -65,6 +65,7 @@ public class SecurityConfig {
                                 "/api/ride-tracking/validate/**",
                                 "/api/ride-tracking/token/**"
                         ).permitAll()
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 

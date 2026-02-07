@@ -9,7 +9,7 @@
     💬
   </button>
 
-  <button class="icon-btn" (click)="goDriverDashboard()" title="Dashboard"> 
+  <button class="icon-btn" (click)="goDriverDashboard()" title="Dashboard">
     🚗
   </button>
 
@@ -19,7 +19,12 @@
     <span class="notification-badge">{{unreadCount}}</span>
     }
   </button>
-  
+
+  <button class="icon-btn" (click)="goReport()" title="Analytics">
+    📈
+  </button>
+
+
   <div class="spacer"></div>
   
   <button class="icon-btn" (click)="toggleActiveStatus()" [title]="isActive ? 'Go Inactive' : 'Go Active'">

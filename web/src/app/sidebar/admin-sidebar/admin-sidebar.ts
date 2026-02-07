@@ -88,4 +88,9 @@ export class AdminSidebarComponent implements OnInit, OnDestroy {
   goProfileChangeRequests() {
     this.router.navigate(['/admin/profile-change-requests']);
   }
+
+  goReport() {
+    this.router.navigate(['/report']);
+  }
+
 }
