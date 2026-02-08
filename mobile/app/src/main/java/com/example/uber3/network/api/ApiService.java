@@ -83,6 +83,8 @@ public interface ApiService {
     @GET("api/admin/users")
     Call<List<UserDto>> getAllUsers();
 
+    @GET("api/auth/verify")
+    Call<Void> verifyEmail(@Query("token") String token);
 
 
 

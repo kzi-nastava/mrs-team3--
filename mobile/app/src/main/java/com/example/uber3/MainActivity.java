@@ -5,16 +5,23 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import com.example.uber3.ReportFragment;
+import com.example.uber3.network.api.ApiClient;
+import com.example.uber3.network.api.ApiService;
 import com.example.uber3.network.manager.LogoutHelper;
 import com.example.uber3.network.manager.TokenManager;
 import com.example.uber3.network.websocket.ChatWebSocketManager;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.navigation.NavigationView;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -32,8 +39,6 @@ public class MainActivity extends AppCompatActivity {
 
         String token = TokenManager.getToken(this);
 
-        // FIXED: Only connect WebSocket, don't subscribe here
-        // Let fragments handle their own subscriptions
         if (token != null) {
             ChatWebSocketManager.getInstance().connect(token);
         }
@@ -112,24 +117,67 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void handleDeepLink(Intent intent) {
-
         if (intent == null || intent.getData() == null) return;
 
         Uri data = intent.getData();
-
+        String path = data.getPath();
         String token = data.getQueryParameter("token");
-        String mode = data.getQueryParameter("mode");
 
+        if (path == null) return;
 
-        if (token != null) {
-            loadFragment(
-                    ResetPasswordFragment.newInstance(
-                            token,
-                            mode != null ? mode : "RESET"
-                    )
-            );
-            topAppBar.setTitle("Set Password");
+        if (path.startsWith("/reset-password")) {
+            String mode = data.getQueryParameter("mode");
+            if (token != null) {
+                loadFragment(
+                        ResetPasswordFragment.newInstance(
+                                token,
+                                mode != null ? mode : "RESET"
+                        )
+                );
+                topAppBar.setTitle("Set Password");
+            }
         }
+        else if (path.contains("/verify")) {
+            handleEmailVerification(token);
+        }
+    }
+
+    private void handleEmailVerification(String token) {
+        if (token == null || token.isEmpty()) {
+            showVerificationResult("invalid");
+            return;
+        }
+
+        ApiService apiService = ApiClient.getClient(this).create(ApiService.class);
+
+        apiService.verifyEmail(token).enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                if (response.code() == 302 || response.isSuccessful()) {
+                    showVerificationResult("success");
+                } else {
+                    String status = "invalid";
+                    if (response.code() == 410) {
+                        status = "expired";
+                    } else if (response.code() == 409) {
+                        status = "used";
+                    }
+                    showVerificationResult(status);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {
+                Toast.makeText(MainActivity.this,
+                        "Network error: " + t.getMessage(),
+                        Toast.LENGTH_LONG).show();
+                showVerificationResult("invalid");
+            }
+        });
+    }
+    private void showVerificationResult(String status) {
+        topAppBar.setTitle("Verification");
+        loadFragment(VerificationResultFragment.newInstance(status));
     }
 
 
@@ -203,6 +251,14 @@ public class MainActivity extends AppCompatActivity {
             navigationView.getMenu().findItem(R.id.nav_register_driver).setVisible(true);
 
         }
+    }
+
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleDeepLink(intent);
     }
 
 }
