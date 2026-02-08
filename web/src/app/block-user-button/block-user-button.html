@@ -1,0 +1,40 @@
+<button
+  pButton
+  [label]="isBlocked ? 'Unblock user' : 'Block user'"
+  [severity]="isBlocked ? 'success' : 'danger'"
+  (click)="openDialog()"
+  [loading]="loading">
+</button>
+
+<p-dialog
+  header="Block user"
+  [(visible)]="showDialog"
+  [modal]="true"
+  [style]="{width:'400px'}"
+  [draggable]="false"
+  [resizable]="false">
+
+  <textarea
+    [(ngModel)]="reason"
+    rows="4"
+    placeholder="Enter reason..."
+    style="width:100%; margin-top:1rem;">
+  </textarea>
+
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      label="Cancel"
+      severity="secondary"
+      (click)="showDialog=false">
+    </button>
+
+    <button
+      pButton
+      label="Confirm"
+      severity="danger"
+      (click)="confirmBlock()">
+    </button>
+  </ng-template>
+
+</p-dialog>

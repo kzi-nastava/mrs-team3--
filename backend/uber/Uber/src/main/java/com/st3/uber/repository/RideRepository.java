@@ -146,6 +146,8 @@ public interface RideRepository extends JpaRepository<Ride, Long> {
             Long userId
     );
 
+    List<Ride> findByStatus(RideStatus status);
+
 
 
 

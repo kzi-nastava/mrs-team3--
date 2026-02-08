@@ -71,9 +71,9 @@ public class AuthService {
     User u = userRepository.findByEmail(req.email())
         .orElseThrow(() -> new RuntimeException("Invalid credentials"));
 
-    if (u.isBlocked()) {
+  /*  if (u.isBlocked()) {
       throw new RuntimeException("User is blocked");
-    }
+    }*/
 
     boolean ok = passwordEncoder.matches(req.password(), u.getPassword());
     if (!ok) throw new RuntimeException("Bad credentials");

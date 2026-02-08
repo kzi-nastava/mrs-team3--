@@ -518,12 +518,43 @@ export class RideBookingComponent implements OnInit, OnDestroy {
       },
       error: err => {
         console.error(err);
-        const reason =
-          err?.error?.reason ||
-          err?.error?.message ||
-          'UNKNOWN';
-        this.showRideError(reason);
+
+        const msg =
+          typeof err.error === 'string'
+            ? err.error
+            : err.error?.message ||
+            'Ride creation failed';
+
+        if (err.status === 403) {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Account blocked',
+            detail: msg,
+            life: 4000
+          });
+          return;
+        }
+
+        if (err.status === 409) {
+          this.messageService.add({
+            severity: 'warn',
+            summary: 'Ride rejected',
+            detail: msg,
+            life: 4000
+          });
+          return;
+        }
+
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: msg,
+          life: 4000
+        });
       }
+
+
+
     });
   }
 

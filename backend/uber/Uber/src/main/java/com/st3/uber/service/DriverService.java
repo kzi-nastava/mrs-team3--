@@ -52,6 +52,7 @@ public class DriverService {
         }
 
         List<Driver> eligibleDrivers = drivers.stream()
+                .filter(d -> !d.isBlocked())
                 .filter(d -> d.getVehicle().getType() == ride.getVehicleType())
                 .filter(d -> !ride.isBabyTransport() || d.getVehicle().isBabyTransport())
                 .filter(d -> !ride.isPetTransport() || d.getVehicle().isPetTransport())
