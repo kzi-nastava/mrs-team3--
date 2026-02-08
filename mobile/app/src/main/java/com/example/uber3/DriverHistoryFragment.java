@@ -30,6 +30,7 @@ import com.example.uber3.network.model.location.LocationDto;
 import com.example.uber3.network.model.ride.InconsistencyReportDto;
 import com.example.uber3.network.model.ride.ReviewDto;
 import com.example.uber3.network.service.DriverHistoryService;
+import com.example.uber3.repository.ORSRepository;
 import com.google.android.material.textfield.TextInputEditText;
 
 import org.osmdroid.api.IMapController;
@@ -411,13 +412,21 @@ public class DriverHistoryFragment extends Fragment implements RideHistoryAdapte
             mapView.getOverlays().add(endMarker);
         }
 
-        // Draw route line connecting all points
+        // Draw route line connecting all points using ORS routing
         if (allRoutePoints.size() >= 2) {
-            Polyline routeLine = new Polyline(mapView);
-            routeLine.setPoints(allRoutePoints);
-            routeLine.setColor(Color.parseColor("#6366F1"));
-            routeLine.setWidth(8f);
-            mapView.getOverlays().add(routeLine);
+            // Request the actual route from ORS
+            ORSRepository.getRoute(allRoutePoints, routePoints -> {
+                if (!routePoints.isEmpty()) {
+                    requireActivity().runOnUiThread(() -> {
+                        Polyline routeLine = new Polyline(mapView);
+                        routeLine.setPoints(routePoints);
+                        routeLine.setColor(Color.parseColor("#6366F1"));
+                        routeLine.setWidth(8f);
+                        mapView.getOverlays().add(routeLine);
+                        mapView.invalidate();
+                    });
+                }
+            });
         }
 
         // Center map to show all points
