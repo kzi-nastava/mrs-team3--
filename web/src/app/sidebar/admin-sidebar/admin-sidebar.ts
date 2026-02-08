@@ -93,4 +93,8 @@ export class AdminSidebarComponent implements OnInit, OnDestroy {
     this.router.navigate(['/report']);
   }
 
+  goUserManagement() {
+    this.router.navigate(['/admin/users']);
+  }
+
 }

@@ -1,6 +1,8 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { DialogModule } from 'primeng/dialog';
+import { ButtonModule } from 'primeng/button';
 import { MessageService } from 'primeng/api';
 
 import { UserService } from '../services/user.service';
@@ -8,9 +10,13 @@ import { UserService } from '../services/user.service';
 @Component({
   selector: 'app-block-user-button',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    DialogModule,
+    ButtonModule
+  ],
   templateUrl: './block-user-button.html',
-  styleUrls: ['./block-user-button.css']
 })
 export class BlockUserButtonComponent {
 
@@ -19,8 +25,8 @@ export class BlockUserButtonComponent {
 
   @Output() blockChanged = new EventEmitter<void>();
 
-  loading = false;
   showDialog = false;
+  loading = false;
   reason = '';
 
   constructor(
@@ -40,8 +46,8 @@ export class BlockUserButtonComponent {
     if (!this.reason.trim()) {
       this.messageService.add({
         severity: 'warn',
-        summary: 'Warning',
-        detail: 'Reason is required'
+        summary: 'Reason required',
+        detail: 'Please enter a reason'
       });
       return;
     }

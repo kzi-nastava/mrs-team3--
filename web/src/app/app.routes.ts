@@ -66,6 +66,13 @@ export const routes: Routes = [
   { path: 'incoming-rides', component: IncomingRides, canActivate: [passengerGuard] },
   { path: 'pricing-management', component: PricingManagementComponent, canActivate: [adminGuard] },
   {
+    path: 'admin/users',
+    loadComponent: () =>
+      import('./admin-users/admin-users')
+        .then(m => m.AdminUsersComponent),
+    canActivate: [adminGuard]
+  },
+  {
     path: 'report',
     component: Report,
     canActivate: [authGuard] // opcionalno ali preporučeno

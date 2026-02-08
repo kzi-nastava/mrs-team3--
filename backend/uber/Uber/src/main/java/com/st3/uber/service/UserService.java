@@ -1,6 +1,7 @@
 package com.st3.uber.service;
 
 import com.st3.uber.domain.Passenger;
+import com.st3.uber.domain.Ride;
 import com.st3.uber.domain.User;
 import com.st3.uber.dto.auth.ForgotPasswordRequest;
 import com.st3.uber.dto.auth.LoginRequest;
@@ -8,6 +9,10 @@ import com.st3.uber.dto.auth.LoginResponse;
 import com.st3.uber.dto.auth.RegisterPassengerRequest;
 import com.st3.uber.dto.user.BlockUserRequest;
 import com.st3.uber.dto.user.UserDto;
+import com.st3.uber.dto.user.admin.ActiveDriverDto;
+import com.st3.uber.dto.user.admin.AdminUserDetailsDto;
+import com.st3.uber.enums.RideStatus;
+import com.st3.uber.repository.RideRepository;
 import com.st3.uber.repository.UserRepository;
 import lombok.SneakyThrows;
 import org.springframework.http.HttpStatus;
@@ -29,9 +34,11 @@ import static java.util.Base64.getDecoder;
 public class UserService {
 
     UserRepository userRepository;
+    private final RideRepository rideRepository;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, RideRepository rideRepository) {
         this.userRepository = userRepository;
+        this.rideRepository = rideRepository;
     }
 
     public List<UserDto> getAllUsers() {
@@ -71,6 +78,40 @@ public class UserService {
     }
 
 
+    public List<AdminUserDetailsDto> getAllUsersForAdmin() {
+        return userRepository.findAll()
+                .stream()
+                .map(u -> new AdminUserDetailsDto(
+                        u.getId(),
+                        u.getName(),
+                        u.getSurname(),
+                        u.getEmail(),
+                        u.getPhoneNumber(),
+                        u.getAddress(),
+                        u.getRole(),
+                        u.isBlocked(),
+                        u.getBlockReason(),
+                        u.isVerified()
+                ))
+                .toList();
+    }
+
+
+    public List<ActiveDriverDto> getDriversInProgress() {
+        return rideRepository.findByStatus(RideStatus.IN_PROGRESS)
+                .stream()
+                .map(Ride::getDriver)
+                .filter(d -> d != null)
+                .distinct()
+                .map(d -> new ActiveDriverDto(
+                        d.getId(),
+                        d.getName(),
+                        d.getSurname(),
+                        d.getEmail(),
+                        d.isBlocked()
+                ))
+                .toList();
+    }
 
 
 }
