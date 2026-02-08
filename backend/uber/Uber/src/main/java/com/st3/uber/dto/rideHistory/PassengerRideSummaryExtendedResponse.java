@@ -1,6 +1,7 @@
-package com.st3.uber.dto.ride;
+package com.st3.uber.dto.rideHistory;
 
 import com.st3.uber.domain.*;
+import com.st3.uber.dto.ride.InconsistencyReportItemResponse;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 

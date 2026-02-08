@@ -120,6 +120,7 @@ public interface RideRepository extends JpaRepository<Ride, Long> {
             LocalDateTime to
     );
 
+    List<Ride> getAllByStatusIn(List<RideStatus> statuses);
     @Query("""
         SELECT r FROM Ride r
         WHERE r.finishedAt BETWEEN :from AND :to
@@ -147,8 +148,4 @@ public interface RideRepository extends JpaRepository<Ride, Long> {
     );
 
     List<Ride> findByStatus(RideStatus status);
-
-
-
-
 }

@@ -80,7 +80,7 @@ public class PanicService {
     }
 
     private void savePanic(Ride ride, User user){
-        ride.setStatus(RideStatus.PANIC);
+//        ride.setStatus(RideStatus.PANIC);
         ride.setPanic(true);
         PanicEvent panicEvent = new PanicEvent();
         panicEvent.setRide(ride);
@@ -118,7 +118,7 @@ public class PanicService {
         panicEvent.setEmail(email);
         panicEvent.setCreatedAt(java.time.LocalDateTime.now());
 
-        ride.setStatus(RideStatus.PANIC);
+//        ride.setStatus(RideStatus.PANIC);
         ride.setPanic(true);
 
         panicEventRepository.save(panicEvent);

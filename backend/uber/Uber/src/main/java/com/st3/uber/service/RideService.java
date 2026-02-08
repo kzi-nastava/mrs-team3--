@@ -6,6 +6,7 @@ import com.st3.uber.dto.route.RouteInfo;
 import com.st3.uber.enums.CancelledBy;
 import com.st3.uber.enums.NotificationType;
 import com.st3.uber.enums.RideStatus;
+import com.st3.uber.repository.DriverRepository;
 import com.st3.uber.exception.UserBlockedException;
 import com.st3.uber.repository.PassengerRepository;
 import com.st3.uber.repository.RideInviteRepository;
@@ -25,7 +26,6 @@ import java.time.LocalDate;
 import java.util.*;
 
 import java.time.LocalDateTime;
-import java.util.stream.Collectors;
 
 @Service
 public class RideService {
@@ -39,7 +39,7 @@ public class RideService {
     private final RideInviteMailService rideInviteMailService;
     private final NotificationService notificationService;
     private final MailService mailService;
-
+    private final DriverRepository driverRepository;
     public RideService(
             RideRepository rideRepository,
             PassengerRepository passengerRepository,
@@ -49,7 +49,7 @@ public class RideService {
             DriverService driverService,
             RideInviteMailService rideInviteMailService,
             NotificationService notificationService,
-            MailService mailService) {
+            MailService mailService, DriverRepository driverRepository) {
         this.rideRepository = rideRepository;
         this.passengerRepository = passengerRepository;
         this.rideInviteRepository = rideInviteRepository;
@@ -58,6 +58,7 @@ public class RideService {
         this.driverService = driverService;
         this.rideInviteMailService = rideInviteMailService;
         this.notificationService = notificationService;
+        this.driverRepository = driverRepository;
         this.mailService = mailService;
     }
 
@@ -269,8 +270,6 @@ public class RideService {
         return savedRide;
     }
 
-
-
     public RouteEstimateResponse estimateRoute(RouteEstimateRequest request) {
         Location start = new Location(
                 request.getStartLocation().latitude(),
@@ -309,101 +308,6 @@ public class RideService {
                 routeInfo.durationMinutes(),
                 calculatedPrice
         );
-    }
-
-    public List<PassengerRideSummaryResponse> getPastPassengerRides(Long id) {
-    Passenger passenger = passengerRepository.findById(id).orElseThrow(
-        () -> new IllegalArgumentException("Passenger not found."));
-
-    List<Ride> rides = rideRepository.findByCreatorAndFinishedAtIsNotNull(passenger);
-
-      List<Ride> favoriteRides = passenger.getFavoriteRides();
-      Set<Long> favoriteRideIds = favoriteRides.stream()
-          .map(Ride::getId)
-          .collect(Collectors.toSet());
-
-      return rides.stream()
-          .map(r -> new PassengerRideSummaryResponse(
-              r.getId(),
-              r.getStatus(),
-              r.getStartLocation(),
-              r.getActualEndLocation(),
-              r.getStartedAt(),
-              r.getFinishedAt(),
-              favoriteRideIds.contains(r.getId())
-          ))
-          .toList();
-  }
-
-    public PassengerRideSummaryExtendedResponse getPastRideDetails(Long id, Long rideId) {
-        Passenger passenger = passengerRepository.findById(id).orElseThrow(
-                () -> new IllegalArgumentException("Passenger not found."));
-        Ride ride = rideRepository.findById(rideId).orElseThrow(
-                () -> new IllegalArgumentException("Ride not found.")
-        );
-
-        if (!ride.getCreator().equals(passenger)) {
-            throw new IllegalArgumentException("Passenger did not create this ride.");
-        }
-        boolean favorite = passenger.getFavoriteRides() != null &&
-                passenger.getFavoriteRides().stream().anyMatch(r -> r.getId().equals(ride.getId()));
-
-        return detailsResponse(ride, favorite);
-    }
-
-    private static PassengerRideSummaryExtendedResponse detailsResponse(Ride ride, boolean favorite) {
-        PassengerRideSummaryExtendedResponse res = new PassengerRideSummaryExtendedResponse();
-
-        res.setId(ride.getId());
-        res.setStatus(ride.getStatus());
-        res.setStartLocation(ride.getStartLocation());
-        res.setEndLocation(ride.getActualEndLocation());
-        res.setStartTime(ride.getStartedAt());
-        res.setEndTime(ride.getFinishedAt());
-        res.setFavorite(favorite);
-
-        res.setStops(ride.getRideStops() == null ? List.of() : ride.getRideStops());
-
-        if (ride.getDriver() == null){
-            res.setDriverName("-");
-        }
-        else{
-            Driver driver = ride.getDriver();
-            String name = driver.getName() == null ? "" : driver.getName();
-            String surname = driver.getSurname() == null ? "" : driver.getSurname();
-            res.setDriverName((name + surname).isBlank() ? "-" : name + surname);
-        }
-
-        List<Review> reviews = ride.getReviews();
-        if (reviews == null || reviews.isEmpty()) {
-            res.setDriverReview(null);
-            res.setRideReview(null);
-        } else {
-            res.setDriverReview(calculateReview(reviews.stream().map(Review::getDriverRating).toList()));
-            res.setRideReview(calculateReview(reviews.stream().map(Review::getVehicleRating).toList()));
-        }
-        List<InconsistencyReport> inconsistencyReports = ride.getInconsistencyReports();
-        res.setInconsistencyReports(
-                inconsistencyReports == null ? List.of() : inconsistencyReports.stream().map(r -> {
-                    InconsistencyReportItemResponse dto = new InconsistencyReportItemResponse();
-                    dto.setId(r.getId());
-                    dto.setReportText(r.getReportText());
-                    dto.setCreatedAt(r.getCreatedAt());
-                    return dto;
-                }).toList()
-        );
-
-        return res;
-    }
-
-    private static Double calculateReview(List<Integer> values){
-        if (values == null || values.isEmpty())
-            return null;
-        long count = values.stream().filter(Objects::nonNull).count();
-        if (count == 0)
-            return null;
-        int sum = values.stream().filter(Objects::nonNull).mapToInt(Integer::intValue).sum();
-        return sum / (double) count;
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -568,38 +472,28 @@ public class RideService {
         return savedRide;
     }
 
-    public List<IncomingRideResponse> getAllIncomingRidesForPassenger(Long id) {
-        Passenger passenger = passengerRepository.findById(id).orElseThrow(
-                () -> new IllegalArgumentException("Passenger not found."));
-
-        List<Ride> rides = rideRepository.findByCreatorAndScheduledAtAfterAndStatusIn(
-                passenger,
-                LocalDateTime.now(),
-                List.of(RideStatus.ACCEPTED, RideStatus.PENDING)
-        );
-
-        return rides.stream().map(r -> {
-            IncomingRideResponse item = new IncomingRideResponse();
-            item.setId(r.getId());
-            item.setStartLocation(r.getStartLocation());
-            item.setEndLocation(r.getEndLocation());
-            item.setStartTime(r.getScheduledAt());
-            return item;
-        }).toList();
-
-    }
 
     public void cancelRideByPassenger(Long rideId, Long passengerId){
         Passenger passenger = passengerRepository.findById(passengerId)
                 .orElseThrow(() -> new IllegalArgumentException("Passenger not found"));
         Ride ride = rideRepository.findById(rideId)
                 .orElseThrow(() -> new IllegalArgumentException("Ride not found"));
+
+        if(ride.getDriver() != null){
+            Driver driver = ride.getDriver();
+            driver.setActive(true);
+            driver.setAvailable(true);
+            driver.setFree(true);
+            driver.setCurrentRide(null);
+            driverRepository.save(driver);
+        }
         if (!ride.getCreator().equals(passenger))
             return;
 
         ride.setStatus(RideStatus.CANCELLED_BY_PASSENGER);
         ride.setCancelledAt(LocalDateTime.now());
         ride.setCancelledBy(CancelledBy.PASSENGER);
+
         rideRepository.save(ride);
     }
 
@@ -722,7 +616,4 @@ public class RideService {
                 totalMoney / days
         );
     }
-
-
-
 }

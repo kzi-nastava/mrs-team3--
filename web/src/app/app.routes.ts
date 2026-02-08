@@ -22,6 +22,7 @@ import { Report } from './report/report';
 
 
 import { PricingManagementComponent } from './pricing/pricing-managment/pricing-management';
+import {AdminRideHistoryComponent} from './ride-history/admin/admin-history';
 
 export const routes: Routes = [
 
@@ -63,6 +64,9 @@ export const routes: Routes = [
   { path: 'passenger-notifications', component: PassengerNotificationsComponent, canActivate: [passengerGuard] },
   { path: 'ride-review/:id', component: RideReviewComponent, canActivate: [passengerGuard] },
   { path: 'driver-dashboard', component: DriverDashboardComponent, canActivate: [driverGuard] },
+  {path: 'incoming-rides', component: IncomingRides, canActivate: [passengerGuard]},
+  {path: 'pricing-management', component: PricingManagementComponent, canActivate: [adminGuard]},
+  {path: 'admin-history', component: AdminRideHistoryComponent, canActivate: [adminGuard]},
   { path: 'incoming-rides', component: IncomingRides, canActivate: [passengerGuard] },
   { path: 'pricing-management', component: PricingManagementComponent, canActivate: [adminGuard] },
   {
@@ -75,7 +79,7 @@ export const routes: Routes = [
   {
     path: 'report',
     component: Report,
-    canActivate: [authGuard] // opcionalno ali preporučeno
+    canActivate: [authGuard]
   },
 
   { path: '**', component: ErrorComponent }
