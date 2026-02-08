@@ -1,0 +1,26 @@
+<button (click)="openDialog()" [disabled]="loading" [class.block-btn]="!isBlocked" [class.unblock-btn]="isBlocked">
+  {{ isBlocked ? 'Unblock user' : 'Block user' }}
+</button>
+
+@if (showDialog) {
+<div class="modal">
+  <div class="modal-content">
+
+    <h3>Block user</h3>
+
+    <div class="modal-body">
+      <textarea [(ngModel)]="reason" placeholder="Enter reason..."></textarea>
+    </div>
+
+    <div class="actions">
+      <button class="confirm-btn" (click)="confirmBlock()">
+        Confirm
+      </button>
+      <button class="cancel-btn" (click)="showDialog=false">
+        Cancel
+      </button>
+    </div>
+
+  </div>
+</div>
+}

@@ -6,6 +6,7 @@ import com.st3.uber.dto.auth.ForgotPasswordRequest;
 import com.st3.uber.dto.auth.LoginRequest;
 import com.st3.uber.dto.auth.LoginResponse;
 import com.st3.uber.dto.auth.RegisterPassengerRequest;
+import com.st3.uber.dto.user.BlockUserRequest;
 import com.st3.uber.dto.user.UserDto;
 import com.st3.uber.repository.UserRepository;
 import lombok.SneakyThrows;
@@ -42,6 +43,31 @@ public class UserService {
                         u.getSurname()
                 ))
                 .toList();
+    }
+
+    public UserDto blockUser(Long id, BlockUserRequest request) {
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "User not found"
+                ));
+
+        user.setBlocked(request.isBlocked());
+
+        if (request.isBlocked()) {
+            user.setBlockReason(request.getReason());
+        } else {
+            user.setBlockReason(null);
+        }
+
+        userRepository.save(user);
+
+        return new UserDto(
+                user.getId(),
+                user.getName(),
+                user.getSurname()
+        );
     }
 
 

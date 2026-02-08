@@ -94,8 +94,6 @@ export class DriverSidebarComponent implements OnInit, OnDestroy {
 }
 
 
-  isActive = true;
-
   toggleActiveStatus(): void {
     const prev = this.isActive;
     this.isActive = !this.isActive;

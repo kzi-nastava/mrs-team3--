@@ -1,0 +1,127 @@
+
+.block-btn {
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  border: 2px solid #ef4444;
+  background: #fee2e2;
+  color: #dc2626;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.block-btn:hover {
+  background: #fecaca;
+}
+
+.unblock-btn {
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  border: 2px solid #22c55e;
+  background: #dcfce7;
+  color: #15803d;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+
+.modal-content {
+  background: #fff;
+  border-radius: 12px;
+  width: 420px;
+  max-width: 95%;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .15);
+  animation: pop 0.2s ease;
+  overflow: hidden;
+}
+
+
+.modal-content h3 {
+  padding: 1.2rem 1.5rem;
+  background: #eef2ff;
+  color: #4f46e5;
+  font-weight: 700;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+textarea {
+  width: 100%;
+  padding: 0.8rem;
+  border-radius: 8px;
+  border: 2px solid #e5e7eb;
+  font-size: 14px;
+  resize: none;
+  min-height: 90px;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: #6366f1;
+}
+
+
+.actions {
+  display: flex;
+  gap: 1rem;
+  padding: 1.2rem 1.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.actions button {
+  flex: 1;
+}
+
+
+.confirm-btn {
+  padding: 0.75rem;
+  border-radius: 10px;
+  border: 2px solid #ef4444;
+  background: #fee2e2;
+  color: #dc2626;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+
+.cancel-btn {
+  padding: 0.75rem;
+  border-radius: 10px;
+  border: 2px solid #e5e7eb;
+  background: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cancel-btn:hover {
+  background: #f9fafb;
+}
+
+
+@keyframes pop {
+  from {
+    transform: scale(.95);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
