@@ -146,4 +146,6 @@ public interface RideRepository extends JpaRepository<Ride, Long> {
             LocalDateTime to,
             Long userId
     );
+
+    List<Ride> findByStatus(RideStatus status);
 }

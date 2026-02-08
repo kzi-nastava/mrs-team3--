@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+
 import {
   AdminProfileChangeService,
   AdminProfileChangeRequest,
@@ -99,7 +100,6 @@ approve(): void {
     });
 }
 
-// ===== REJECT =====
 reject(): void {
   if (!this.selectedDetails || this.decisionLoading) return;
   this.decisionLoading = true;
@@ -122,16 +122,12 @@ reject(): void {
  
 
 
-  // ===== AFTER DECISION =====
-// ===== AFTER DECISION =====
-// ===== AFTER DECISION =====
+
 afterDecision(newStatus: 'APPROVED' | 'REJECTED'): void {
-  // Ažuriraj status u detaljima
   if (this.selectedDetails) {
     this.selectedDetails.status = newStatus;
   }
   
-  // Ažuriraj status u listi kartica
   const reqInList = this.requests.find(
     r => r.requestId === this.selectedDetails?.requestId
   );
@@ -142,13 +138,11 @@ afterDecision(newStatus: 'APPROVED' | 'REJECTED'): void {
   this.decisionLoading = false;
   this.cdr.detectChanges();
   
-  // DODAJ OVO - automatski zatvori modal nakon 500ms
   setTimeout(() => {
     this.closeModal();
   }, 500);
 }
-  // ===== HELPER METODE =====
-// ===== HELPER METODE =====
+
 getRequestStatus(requestId: number): string {
   const req = this.requests.find(r => r.requestId === requestId);
   return req?.status || 'PENDING';

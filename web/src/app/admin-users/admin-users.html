@@ -1,0 +1,83 @@
+<div class="page">
+
+  <h2>Users Management</h2>
+
+  <div class="tabs">
+    <button (click)="switchTab('USERS')" [class.active]="selectedTab==='USERS'">
+      All Users
+    </button>
+
+    <button (click)="switchTab('DRIVERS')" [class.active]="selectedTab==='DRIVERS'">
+      Active Drivers
+    </button>
+  </div>
+
+  @if (selectedTab==='USERS' && loadingUsers) {
+  <p>Loading users...</p>
+  }
+
+  @if (selectedTab==='DRIVERS' && loadingDrivers) {
+  <p>Loading drivers...</p>
+  }
+
+  @if (!loadingUsers && selectedTab==='USERS') {
+  <div class="list">
+    @for (u of users; track u.id) {
+    <div class="card" (click)="openUser(u)">
+      <h3>{{u.name}} {{u.surname}}</h3>
+      <p>{{u.email}}</p>
+    </div>
+    }
+  </div>
+  }
+
+  @if (!loadingDrivers && selectedTab==='DRIVERS') {
+  <div class="list">
+    @for (d of drivers; track d.id) {
+    <div class="card">
+      <h3>{{d.name}} {{d.surname}}</h3>
+      <p>{{d.email}}</p>
+    </div>
+    }
+  </div>
+  }
+
+</div>
+
+@if (showUserModal && selectedUser) {
+
+<div class="modal-overlay" (click)="closeModal()">
+
+  <div class="modal-box" (click)="$event.stopPropagation()">
+
+    <div class="modal-header">
+      <h2>User details</h2>
+      <button (click)="closeModal()">✕</button>
+    </div>
+
+    <div class="modal-body">
+
+      <p><b>Name:</b> {{selectedUser.name}} {{selectedUser.surname}}</p>
+      <p><b>Email:</b> {{selectedUser.email}}</p>
+
+      @if (selectedUser.phoneNumber) {
+      <p><b>Phone:</b> {{selectedUser.phoneNumber}}</p>
+      }
+
+      @if (selectedUser.address) {
+      <p><b>Address:</b> {{selectedUser.address}}</p>
+      }
+
+      <p><b>Role:</b> {{selectedUser.role}}</p>
+
+      <app-block-user-button [userId]="selectedUser.id" [isBlocked]="selectedUser.blocked"
+        (blockChanged)="onBlockChanged()">
+      </app-block-user-button>
+
+    </div>
+
+  </div>
+
+</div>
+
+}

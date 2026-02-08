@@ -1,5 +1,6 @@
 package com.st3.uber.controller;
 
+import com.st3.uber.dto.user.BlockStatusDto;
 import com.st3.uber.dto.user.UpdateUserProfileRequest;
 import com.st3.uber.exception.PendingProfileChangeRequestException;
 import com.st3.uber.service.UserProfileService;
@@ -118,6 +119,23 @@ public class UserProfileController {
                 .badRequest() // 400
                 .body(ex.getMessage());
     }
+
+    @GetMapping("/me/block-status")
+    public ResponseEntity<BlockStatusDto> getBlockStatus(
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        Long userId = jwt.getClaim("uid");
+
+        var user = userProfileService.findUserById(userId);
+
+        return ResponseEntity.ok(
+                new BlockStatusDto(
+                        user.isBlocked(),
+                        user.getBlockReason()
+                )
+        );
+    }
+
 
 
 }

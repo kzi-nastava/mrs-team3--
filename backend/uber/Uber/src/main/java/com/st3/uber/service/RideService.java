@@ -7,6 +7,7 @@ import com.st3.uber.enums.CancelledBy;
 import com.st3.uber.enums.NotificationType;
 import com.st3.uber.enums.RideStatus;
 import com.st3.uber.repository.DriverRepository;
+import com.st3.uber.exception.UserBlockedException;
 import com.st3.uber.repository.PassengerRepository;
 import com.st3.uber.repository.RideInviteRepository;
 import com.st3.uber.repository.RideRepository;
@@ -90,6 +91,17 @@ public class RideService {
     public Ride createRide(Long passengerId, CreateRideRequest request) {
         Passenger creator = passengerRepository.findById(passengerId)
                 .orElseThrow(() -> new IllegalArgumentException("Passenger not found"));
+
+
+        if (creator.isBlocked()) {
+            throw new UserBlockedException(
+                    creator.getBlockReason() != null
+                            ? creator.getBlockReason()
+                            : "Your account is blocked."
+            );
+        }
+
+
 
         LocalDateTime now = LocalDateTime.now();
 

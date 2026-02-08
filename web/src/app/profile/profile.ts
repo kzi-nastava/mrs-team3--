@@ -67,6 +67,10 @@ export class ProfileComponent implements OnInit {
   pendingChanges: ChangeRequest[] = [];
   hasPendingChanges = false;
 
+  isBlocked = false;
+  blockReason: string | null = null;
+
+
   constructor(
     private fb: FormBuilder,
     private profileService: UserProfileService,
@@ -77,6 +81,11 @@ export class ProfileComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.profileService.getBlockStatus().subscribe(res => {
+      this.isBlocked = res.blocked;
+      this.blockReason = res.reason;
+    });
+
     this.loadProfile();
   }
 
