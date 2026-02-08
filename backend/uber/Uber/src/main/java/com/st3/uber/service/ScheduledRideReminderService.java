@@ -3,6 +3,7 @@ package com.st3.uber.service;
 import com.st3.uber.domain.Driver;
 import com.st3.uber.domain.Passenger;
 import com.st3.uber.domain.Ride;
+import com.st3.uber.domain.RideInvite;
 import com.st3.uber.enums.NotificationType;
 import com.st3.uber.enums.RideStatus;
 import com.st3.uber.repository.RideRepository;
@@ -33,7 +34,8 @@ public class ScheduledRideReminderService {
 
     private final RideRepository rideRepository;
     private final NotificationService notificationService;
-    private final JavaMailSender mailSender;
+    private final MailService mailService;
+
 
     // Track which reminders have been sent: Map<RideId, Set<MinutesBefore>>
     // Example: {101: [15, 10], 102: [15]}
@@ -42,11 +44,12 @@ public class ScheduledRideReminderService {
     public ScheduledRideReminderService(
             RideRepository rideRepository,
             NotificationService notificationService,
-            JavaMailSender mailSender
+            MailService mailService
+
     ) {
         this.rideRepository = rideRepository;
         this.notificationService = notificationService;
-        this.mailSender = mailSender;
+        this.mailService = mailService;
     }
 
     /**
@@ -169,11 +172,9 @@ public class ScheduledRideReminderService {
         // Email to passengers
         for (Passenger passenger : ride.getPassengers()) {
             try {
-                SimpleMailMessage message = new SimpleMailMessage();
-                message.setTo(passenger.getEmail());
-                message.setSubject("Ride Reminder - Starting in " + minutesUntilRide + " minutes");
-                message.setText(buildPassengerEmailBody(ride, passenger, minutesUntilRide));
-                mailSender.send(message);
+                String subject = "Ride Reminder - Starting in " + minutesUntilRide + " minutes";
+                String body = buildPassengerEmailBody(ride, passenger, minutesUntilRide);
+                mailService.sendText(passenger.getEmail(), subject, body);
                 System.out.println("  ✓ Sent email to passenger: " + passenger.getEmail());
             } catch (Exception e) {
                 System.err.println("  ✗ Failed to send email to passenger " + passenger.getEmail() + ": " + e.getMessage());
@@ -183,14 +184,23 @@ public class ScheduledRideReminderService {
         // Email to driver
         if (ride.getDriver() != null) {
             try {
-                SimpleMailMessage message = new SimpleMailMessage();
-                message.setTo(ride.getDriver().getEmail());
-                message.setSubject("Pickup Reminder - " + minutesUntilRide + " minutes");
-                message.setText(buildDriverEmailBody(ride, minutesUntilRide));
-                mailSender.send(message);
+                String subject = "Pickup Reminder - " + minutesUntilRide + " minutes";
+                String body = buildDriverEmailBody(ride, minutesUntilRide);
+                mailService.sendText(ride.getDriver().getEmail(), subject, body);
                 System.out.println("  ✓ Sent email to driver: " + ride.getDriver().getEmail());
             } catch (Exception e) {
                 System.err.println("  ✗ Failed to send email to driver: " + e.getMessage());
+            }
+        }
+        // Email invites
+        for (RideInvite invite : ride.getInvites()) {
+            try {
+                String subject = "Ride Reminder - Starting in " + minutesUntilRide + " minutes";
+                String body = buildInviteEmailBody(ride, minutesUntilRide, invite.getTrackingToken());
+                mailService.sendText(invite.getEmail(), subject, body);
+                System.out.println("  ✓ Sent email to invite: " + invite.getEmail());
+            } catch (Exception e) {
+                System.err.println("  ✗ Failed to send email to invite " + invite.getEmail() + ": " + e.getMessage());
             }
         }
     }
@@ -261,6 +271,36 @@ public class ScheduledRideReminderService {
                 ride.getScheduledAt().toString(),
                 ride.getPassengers().size(),
                 buildSpecialRequirements(ride)
+        );
+    }
+
+    /**
+     * Build email body for ride invite
+     */
+    private String buildInviteEmailBody(Ride ride, long minutesUntilRide, String trackingToken) {
+        return String.format("""
+            Hello,
+            
+            This is a reminder that the ride you are tracking is scheduled to start in %d minutes.
+            
+            Ride Details:
+            - Pickup Location: %s
+            - Destination: %s
+            - Scheduled Time: %s
+            - Vehicle Type: %s
+            
+            You can continue tracking the ride using this link:
+            http://localhost:4200/ride-tracking/%s
+            
+            Best regards,
+            Uber Team
+            """,
+                minutesUntilRide,
+                ride.getStartLocation().getAddress(),
+                ride.getEndLocation().getAddress(),
+                ride.getScheduledAt().toString(),
+                ride.getVehicleType(),
+                trackingToken
         );
     }
 
