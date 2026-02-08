@@ -4,20 +4,20 @@
     <item android:top="2dp">
         <shape android:shape="oval">
             <solid android:color="#40000000"/>
-            <size android:width="32dp" android:height="32dp"/>
+            <size android:width="28dp" android:height="28dp"/>
         </shape>
     </item>
     <!-- Main circle -->
     <item android:bottom="2dp">
         <shape android:shape="oval">
-            <solid android:color="#EF4444"/>
+            <solid android:color="#3B82F6"/>
             <stroke android:width="3dp" android:color="#FFFFFF"/>
-            <size android:width="32dp" android:height="32dp"/>
+            <size android:width="28dp" android:height="28dp"/>
         </shape>
     </item>
-    <!-- Inner square -->
-    <item android:bottom="11dp" android:top="11dp" android:left="11dp" android:right="11dp">
-        <shape android:shape="rectangle">
+    <!-- Number background - slightly smaller -->
+    <item android:bottom="8dp" android:top="8dp" android:left="8dp" android:right="8dp">
+        <shape android:shape="oval">
             <solid android:color="#FFFFFF"/>
         </shape>
     </item>
