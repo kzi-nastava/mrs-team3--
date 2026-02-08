@@ -17,18 +17,14 @@ public class ApiClient {
     public static Retrofit getClient(Context context) {
 
         OkHttpClient client = new OkHttpClient.Builder()
+                .followRedirects(false)
+                .followSslRedirects(false)
                 .addInterceptor(chain -> {
-
                     String token = TokenManager.getToken(context);
-
-                    Request.Builder requestBuilder =
-                            chain.request().newBuilder();
+                    Request.Builder requestBuilder = chain.request().newBuilder();
 
                     if (token != null) {
-                        requestBuilder.addHeader(
-                                "Authorization",
-                                "Bearer " + token
-                        );
+                        requestBuilder.addHeader("Authorization", "Bearer " + token);
                     }
 
                     return chain.proceed(requestBuilder.build());

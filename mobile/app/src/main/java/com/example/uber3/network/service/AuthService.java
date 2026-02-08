@@ -2,6 +2,8 @@ package com.example.uber3.network.service;
 
 import android.content.Context;
 
+import androidx.annotation.NonNull;
+
 import com.example.uber3.network.api.ApiClient;
 import com.example.uber3.network.api.ApiService;
 import com.example.uber3.network.manager.TokenManager;
@@ -108,9 +110,11 @@ public class AuthService {
             }
 
             @Override
-            public void onFailure(Call<RegisterResponse> call, Throwable t) {
+            public void onFailure(@NonNull Call<RegisterResponse> call, @NonNull Throwable t) {
+                t.printStackTrace(); // KLJUČNO
                 callback.onError("Network error: " + t.getMessage());
             }
+
         });
     }
 }
