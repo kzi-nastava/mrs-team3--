@@ -1,10 +1,18 @@
 <p-toast position="top-right"></p-toast>
+@if (isBlocked) {
+<div class="blocked-banner">
+  🚫 Your account is blocked
+  <br>
+  {{ blockReason }}
+</div>
+}
+
 @if (user) {
 <div class="profile-container">
   <div class="profile-card">
     <div class="profile-header">
       <h1>My Profile</h1>
-      @if (!editMode) {
+      @if (!editMode && !isBlocked) {
       <button class="edit-btn" (click)="toggleEditMode()">✏️ Edit Profile</button>
       }
     </div>

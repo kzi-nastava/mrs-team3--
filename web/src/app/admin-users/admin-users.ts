@@ -37,10 +37,10 @@ export class AdminUsersComponent implements OnInit {
     this.loadingUsers = true;
 
     this.service.getAllUsers().subscribe(res => {
-      this.users = res;
+      this.users = res.filter(u => u.role !== 'ADMIN');
       this.loadingUsers = false;
 
-      this.cdr.detectChanges(); 
+      this.cdr.detectChanges();
     });
   }
 
@@ -51,7 +51,7 @@ export class AdminUsersComponent implements OnInit {
       this.drivers = res;
       this.loadingDrivers = false;
 
-      this.cdr.detectChanges(); 
+      this.cdr.detectChanges();
     });
   }
 

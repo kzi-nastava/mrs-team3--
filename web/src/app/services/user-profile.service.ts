@@ -30,6 +30,12 @@ export interface DriverProfileResponse extends BaseProfile {
   active: boolean;
 }
 
+export interface BlockStatus {
+  blocked: boolean;
+  reason: string | null;
+}
+
+
 export interface PassengerProfileResponse extends BaseProfile { }
 
 export interface AdminProfileResponse extends BaseProfile { }
@@ -95,5 +101,12 @@ export class UserProfileService {
       { email }
     );
   }
+
+  getBlockStatus(): Observable<BlockStatus> {
+    return this.http.get<BlockStatus>(
+      `${this.API_URL}/me/block-status`
+    );
+  }
+
 
 }

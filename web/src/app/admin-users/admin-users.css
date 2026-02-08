@@ -41,10 +41,13 @@
 }
 
 .list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
 }
+
+
 
 .card {
   background: #fff;
@@ -54,6 +57,7 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
   cursor: pointer;
   transition: 0.25s;
+  width: 100%;
 }
 
 .card:hover {
@@ -185,11 +189,7 @@
   border-color: #6366f1;
 }
 
-.list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 16px;
-}
+
 
 .card {
   background: white;

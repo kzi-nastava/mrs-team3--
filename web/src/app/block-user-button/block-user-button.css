@@ -1,7 +1,3 @@
-/* =========================
-   BLOCK / UNBLOCK BUTTONS
-========================= */
-
 .block-btn,
 .unblock-btn {
   padding: 0.6rem 1.2rem;
@@ -12,7 +8,6 @@
   font-size: 0.9rem;
 }
 
-/* BLOCK (danger but soft) */
 .block-btn {
   border: 2px solid #fca5a5;
   background: #fee2e2;
@@ -24,7 +19,6 @@
   transform: translateY(-1px);
 }
 
-/* UNBLOCK (success soft) */
 .unblock-btn {
   border: 2px solid #86efac;
   background: #dcfce7;
@@ -37,14 +31,11 @@
 }
 
 
-/* =========================
-   MODAL OVERLAY
-========================= */
 
 .modal {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,.5);
+  background: rgba(0, 0, 0, .5);
   backdrop-filter: blur(3px);
   display: flex;
   justify-content: center;
@@ -53,37 +44,25 @@
 }
 
 
-/* =========================
-   MODAL BOX
-========================= */
 
 .modal-content {
   background: #fff;
   border-radius: 14px;
   width: 460px;
   max-width: 95%;
-  box-shadow: 0 20px 40px rgba(0,0,0,.15);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, .15);
   animation: pop 0.25s ease;
   overflow: hidden;
 }
 
-
-/* =========================
-   HEADER (purple theme)
-========================= */
-
 .modal-content h3 {
   padding: 1.2rem 1.5rem;
-  background: linear-gradient(135deg,#9b7fc9,#8566b3);
+  background: linear-gradient(135deg, #9b7fc9, #8566b3);
   color: white;
   font-weight: 700;
   font-size: 1rem;
 }
 
-
-/* =========================
-   BODY
-========================= */
 
 .modal-body {
   padding: 1.5rem;
@@ -105,13 +84,10 @@ textarea:focus {
   outline: none;
   border-color: #9b7fc9;
   background: #fff;
-  box-shadow: 0 0 0 3px rgba(155,127,201,.15);
+  box-shadow: 0 0 0 3px rgba(155, 127, 201, .15);
 }
 
 
-/* =========================
-   ACTIONS
-========================= */
 
 .actions {
   display: flex;
@@ -127,12 +103,11 @@ textarea:focus {
 }
 
 
-/* CONFIRM */
 .confirm-btn {
   padding: 0.75rem;
   border-radius: 10px;
   border: none;
-  background: linear-gradient(135deg,#9b7fc9,#8566b3);
+  background: linear-gradient(135deg, #9b7fc9, #8566b3);
   color: white;
   cursor: pointer;
   transition: 0.2s;
@@ -140,11 +115,10 @@ textarea:focus {
 
 .confirm-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 14px rgba(155,127,201,.35);
+  box-shadow: 0 6px 14px rgba(155, 127, 201, .35);
 }
 
 
-/* CANCEL */
 .cancel-btn {
   padding: 0.75rem;
   border-radius: 10px;
@@ -159,15 +133,12 @@ textarea:focus {
 }
 
 
-/* =========================
-   ANIMATION
-========================= */
-
 @keyframes pop {
   from {
     transform: scale(.94);
     opacity: 0;
   }
+
   to {
     transform: scale(1);
     opacity: 1;
