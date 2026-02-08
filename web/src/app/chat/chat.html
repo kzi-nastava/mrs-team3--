@@ -1,0 +1,93 @@
+<div class="chat-popup-overlay" *ngIf="isOpen" (click)="close()"></div>
+
+<div class="chat-popup-container" [class.open]="isOpen">
+  
+  <div class="chat-header">
+    <h3>💬 Messages</h3>
+    <button class="close-btn" (click)="close()">✕</button>
+  </div>
+
+  <div class="chat-content">
+    
+    <div class="chat-list" *ngIf="isAdmin">
+      <div class="chat-list-header">
+        <h4>Conversations</h4>
+      </div>
+      
+      <div class="chat-list-items">
+        <div 
+          *ngFor="let room of chatRooms" 
+          class="chat-list-item"
+          [class.active]="selectedPartnerId === room.user.id"
+          (click)="selectChat(room.user.id, room.user.firstName + ' ' + room.user.lastName)">
+          
+          <div class="chat-item-avatar">
+            {{ getInitials(room.user.firstName, room.user.lastName) }}
+          </div>
+          
+          <div class="chat-item-info">
+            <div class="chat-item-name">
+              {{ room.user.firstName }} {{ room.user.lastName }}
+            </div>
+            <div class="chat-item-preview">
+              Click to open chat
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="chatRooms.length === 0" class="empty-state">
+          <p>No conversations yet</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-messages-area" [class.full-width]="!isAdmin">
+      
+      <div class="chat-partner-header" *ngIf="selectedPartnerName">
+        <div class="partner-avatar">
+          {{ getInitials(selectedPartnerName.split(' ')[0], selectedPartnerName.split(' ')[1]) }}
+        </div>
+        <div class="partner-name">{{ selectedPartnerName }}</div>
+      </div>
+
+      <div class="messages-container" #messagesContainer>
+        <div *ngIf="messages.length === 0" class="empty-chat">
+          <p>No messages yet. Start the conversation!</p>
+        </div>
+
+        <div 
+          *ngFor="let msg of messages" 
+          class="message"
+          [class.message-me]="msg.fromUserId === currentUserId"
+          [class.message-other]="msg.fromUserId !== currentUserId">
+          
+          <div class="message-bubble">
+            <div class="message-content">{{ msg.content }}</div>
+            <div class="message-time">{{ formatTime(msg.timestamp) }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chat-input-area" *ngIf="selectedPartnerId || !isAdmin">
+        <input 
+          type="text" 
+          [(ngModel)]="messageInput"
+          (keyup.enter)="sendMessage()"
+          placeholder="Type a message..."
+          class="chat-input">
+        
+        <button 
+          class="send-btn" 
+          (click)="sendMessage()"
+          [disabled]="!messageInput.trim()">
+          ➤
+        </button>
+      </div>
+
+      <div class="select-chat-prompt" *ngIf="isAdmin && !selectedPartnerId">
+        <p>← Select a conversation to start messaging</p>
+      </div>
+    </div>
+
+  </div>
+</div>

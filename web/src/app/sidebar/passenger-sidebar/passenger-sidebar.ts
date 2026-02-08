@@ -1,14 +1,16 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { Subject, takeUntil } from 'rxjs';
 import { NotificationService } from '../../services/notification.service';
 import { LogoutModalComponent } from '../../logout-modal/logout-modal';
+import { ChatService } from '../../services/chat.service';
+import { ChatPopupComponent } from '../../chat/chat';
 
 @Component({
   selector: 'app-passenger-sidebar',
   standalone: true,
-  imports: [LogoutModalComponent],
+  imports: [LogoutModalComponent, ChatPopupComponent],
   templateUrl: './passenger-sidebar.html',
   styleUrls: ['./passenger-sidebar.css']
 })
@@ -16,15 +18,18 @@ export class PassengerSidebarComponent implements OnInit, OnDestroy {
   unreadCount = 0;
   showLogoutModal = false;
   private destroy$ = new Subject<void>();
+  @ViewChild(ChatPopupComponent) chatPopup!: ChatPopupComponent;
+
 
   constructor(
     private notificationService: NotificationService,
     private router: Router,
     private authService: AuthService,
-    private cdr: ChangeDetectorRef,
-  ) { }
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void {
+
     setTimeout(() => {
       this.notificationService.unreadCount$
         .pipe(takeUntil(this.destroy$))
@@ -60,8 +65,9 @@ export class PassengerSidebarComponent implements OnInit, OnDestroy {
     this.router.navigate(['/passenger-notifications']);
   }
 
+
   goMessages() {
-    alert('Messages - to be implemented');
+    this.chatPopup.toggle();
   }
 
   goProfile() {
@@ -84,4 +90,9 @@ export class PassengerSidebarComponent implements OnInit, OnDestroy {
   incomingRides() {
     this.router.navigate(['/incoming-rides']);
   }
+
+  goReport() {
+    this.router.navigate(['/report']);
+  }
+
 }

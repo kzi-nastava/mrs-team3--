@@ -9,7 +9,7 @@ import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
-
+import com.example.uber3.ReportFragment;
 import com.example.uber3.network.manager.LogoutHelper;
 import com.example.uber3.network.manager.TokenManager;
 import com.example.uber3.network.websocket.ChatWebSocketManager;
@@ -32,14 +32,11 @@ public class MainActivity extends AppCompatActivity {
 
         String token = TokenManager.getToken(this);
 
+        // FIXED: Only connect WebSocket, don't subscribe here
+        // Let fragments handle their own subscriptions
         if (token != null) {
             ChatWebSocketManager.getInstance().connect(token);
-
-            ChatWebSocketManager.getInstance().subscribeToMessages();
         }
-
-
-
 
         drawerLayout = findViewById(R.id.drawerLayout);
         topAppBar = findViewById(R.id.topAppBar);
@@ -65,7 +62,7 @@ public class MainActivity extends AppCompatActivity {
                 if(currentUserRole.equals("ADMIN")){
                     loadFragment(new AdminChatListFragment());
                 } else {
-                    loadFragment(new ChatFragment());
+                    loadFragment(ChatFragment.forAdmin());
                 }
             }
             else if (id == R.id.nav_ride) {
@@ -89,7 +86,11 @@ public class MainActivity extends AppCompatActivity {
             } else if (id == R.id.nav_register_driver) {
                 topAppBar.setTitle("Register Driver");
                 loadFragment(new RegisterDriverFragment());
+            } else if (id == R.id.nav_report) {
+                topAppBar.setTitle("Reports");
+                loadFragment(new ReportFragment());
             }
+
 
             drawerLayout.close();
             return true;
@@ -127,7 +128,7 @@ public class MainActivity extends AppCompatActivity {
                             mode != null ? mode : "RESET"
                     )
             );
-                topAppBar.setTitle("Set Password");
+            topAppBar.setTitle("Set Password");
         }
     }
 

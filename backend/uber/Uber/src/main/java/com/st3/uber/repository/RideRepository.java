@@ -121,4 +121,29 @@ public interface RideRepository extends JpaRepository<Ride, Long> {
     );
 
     List<Ride> getAllByStatusIn(List<RideStatus> statuses);
+    @Query("""
+        SELECT r FROM Ride r
+        WHERE r.finishedAt BETWEEN :from AND :to
+        AND r.status = 'COMPLETED'
+    """)
+    List<Ride> findCompletedBetween(
+            LocalDateTime from,
+            LocalDateTime to
+    );
+
+    @Query("""
+        SELECT DISTINCT r FROM Ride r
+        LEFT JOIN r.passengers p
+        WHERE r.finishedAt BETWEEN :from AND :to
+        AND (
+            r.driver.id = :userId
+            OR r.creator.id = :userId
+            OR p.id = :userId
+        )
+    """)
+    List<Ride> findCompletedBetweenForUser(
+            LocalDateTime from,
+            LocalDateTime to,
+            Long userId
+    );
 }

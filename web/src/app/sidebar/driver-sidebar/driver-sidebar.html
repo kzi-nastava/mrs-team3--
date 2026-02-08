@@ -1,12 +1,15 @@
+<!-- driver-sidebar.component.html (UPDATED) -->
+
 <div class="icon-sidebar">
   <button class="icon-btn" (click)="goHistory()" title="Ride History">
     📊
   </button>
+  
   <button class="icon-btn" (click)="goMessages()" title="Messages">
     💬
   </button>
 
-  <button class="icon-btn" (click)="goDriverDashboard()" title="Dashboard"> 
+  <button class="icon-btn" (click)="goDriverDashboard()" title="Dashboard">
     🚗
   </button>
 
@@ -16,7 +19,14 @@
     <span class="notification-badge">{{unreadCount}}</span>
     }
   </button>
+
+  <button class="icon-btn" (click)="goReport()" title="Analytics">
+    📈
+  </button>
+
+
   <div class="spacer"></div>
+  
   <button class="icon-btn" (click)="toggleActiveStatus()" [title]="isActive ? 'Go Inactive' : 'Go Active'">
     @if (isActive) {
     <span>🟢</span>
@@ -25,14 +35,20 @@
     <span>🔴</span>
     }
   </button>
+  
   <button class="icon-btn" (click)="goProfile()" title="Profile">
     👤
   </button>
+  
   <button class="icon-btn logout-btn" (click)="logout()" title="Logout">
     🚪
   </button>
 </div>
 
+<!-- Chat Popup Component -->
+<app-chat-popup></app-chat-popup>
+
+<!-- Logout Modal -->
 @if (showLogoutModal) {
 <app-logout-modal (confirm)="onLogoutConfirm()" (cancel)="onLogoutCancel()">
 </app-logout-modal>

@@ -4,6 +4,7 @@ import com.st3.uber.domain.Location;
 import com.st3.uber.domain.Ride;
 import com.st3.uber.domain.RideInvite;
 import com.st3.uber.domain.User;
+import com.st3.uber.dto.report.RideReportResponse;
 import com.st3.uber.dto.ride.*;
 import com.st3.uber.dto.rideHistory.AdminRideHistoryExtendedResponse;
 import com.st3.uber.dto.rideHistory.AdminRideHistoryResponse;
@@ -440,4 +441,22 @@ public class RideController {
         AdminRideHistoryExtendedResponse res = rideTimelineService.adminRideHistoryDetails(rideId);
         return ResponseEntity.ok(res);
     }
+    @GetMapping("/reports")
+    public ResponseEntity<RideReportResponse> getReport(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            LocalDateTime from,
+
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            LocalDateTime to,
+
+            @RequestParam(required = false)
+            Long userId
+    ) {
+        return ResponseEntity.ok(
+                rideService.generateReport(from, to, userId)
+        );
+    }
+
+
+
 }

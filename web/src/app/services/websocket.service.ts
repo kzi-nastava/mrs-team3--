@@ -1,3 +1,5 @@
+// websocket.service.ts (UPDATED)
+
 import { Injectable, NgZone } from '@angular/core';
 import { Client, IMessage, StompSubscription } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
@@ -13,12 +15,14 @@ export class WebSocketService {
 
   private connectedSubject = new BehaviorSubject<boolean>(false);
   private notificationSubject = new BehaviorSubject<any | null>(null);
+  private chatMessageSubject = new BehaviorSubject<any | null>(null);
 
   private subscriptions = new Map<string, StompSubscription>();
 
   /** public streams */
   readonly isConnected$: Observable<boolean> = this.connectedSubject.asObservable();
   readonly notifications$: Observable<any | null> = this.notificationSubject.asObservable();
+  readonly chatMessages$: Observable<any | null> = this.chatMessageSubject.asObservable();
 
   constructor(
     private ngZone: NgZone
@@ -29,9 +33,8 @@ export class WebSocketService {
      ============================ */
 
   connect(token: string): void {
-      if (this.client?.connected) return;
-      if (!token) return;
-
+    if (this.client?.connected) return;
+    if (!token) return;
 
     this.client = new Client({
       webSocketFactory: () => new SockJS(`${env.API_URL}/ws`),
@@ -89,12 +92,16 @@ export class WebSocketService {
      *  Use /user/queue/... NOT /user/{id}/queue/...
      *  Spring resolves user automatically from Principal
      */
+    
+    // Notifications subscription
     this.subscribe('/user/queue/notifications', (msg) => {
       this.notificationSubject.next(JSON.parse(msg.body));
     });
 
-    // future:
-    // this.subscribe('/user/queue/messages', ...)
+    // Chat messages subscription
+    this.subscribe('/user/queue/messages', (msg) => {
+      this.chatMessageSubject.next(JSON.parse(msg.body));
+    });
   }
 
   private subscribe(destination: string, handler: (msg: IMessage) => void): void {
@@ -107,9 +114,6 @@ export class WebSocketService {
     this.subscriptions.set(destination, sub);
   }
 
-  /* ============================
-     SEND
-     ============================ */
 
   send(destination: string, body: any): void {
     if (!this.client?.connected) return;
@@ -120,9 +124,6 @@ export class WebSocketService {
     });
   }
 
-  /* ============================
-     STATE
-     ============================ */
 
   isConnected(): boolean {
     return !!this.client?.connected;

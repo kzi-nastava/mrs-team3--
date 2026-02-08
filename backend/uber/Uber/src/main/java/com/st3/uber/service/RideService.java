@@ -17,6 +17,10 @@ import com.st3.uber.dto.route.RouteEstimateResponse;
 import com.st3.uber.dto.location.LocationRequest;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import com.st3.uber.dto.report.RideReportResponse;
+import com.st3.uber.dto.report.DailyReportItem;
+import java.time.LocalDate;
+
 
 import java.util.*;
 
@@ -33,16 +37,18 @@ public class RideService {
     private final DriverService driverService;
     private final RideInviteMailService rideInviteMailService;
     private final NotificationService notificationService;
+    private final MailService mailService;
     private final DriverRepository driverRepository;
     public RideService(
-        RideRepository rideRepository,
-        PassengerRepository passengerRepository,
-        RideInviteRepository rideInviteRepository,
-        RouteCalculationService routeCalculationService,
-        PriceCalculationService priceCalculationService,
-        DriverService driverService,
-        RideInviteMailService rideInviteMailService,
-        NotificationService notificationService, DriverRepository driverRepository) {
+            RideRepository rideRepository,
+            PassengerRepository passengerRepository,
+            RideInviteRepository rideInviteRepository,
+            RouteCalculationService routeCalculationService,
+            PriceCalculationService priceCalculationService,
+            DriverService driverService,
+            RideInviteMailService rideInviteMailService,
+            NotificationService notificationService,
+            MailService mailService, DriverRepository driverRepository) {
         this.rideRepository = rideRepository;
         this.passengerRepository = passengerRepository;
         this.rideInviteRepository = rideInviteRepository;
@@ -52,6 +58,7 @@ public class RideService {
         this.rideInviteMailService = rideInviteMailService;
         this.notificationService = notificationService;
         this.driverRepository = driverRepository;
+        this.mailService = mailService;
     }
 
     @Transactional
@@ -326,6 +333,67 @@ public class RideService {
             );
         }
 
+        for (Passenger passenger : ride.getPassengers()) {
+            try {
+                String subject = "Ride Completed";
+                String body = String.format("""
+            Dear %s,
+            
+            Your ride has been completed.
+            
+            Ride Details:
+            - From: %s
+            - To: %s
+            - Distance: %.2f km
+            - Duration: %d minutes
+            - Total Cost: %.2f RSD
+            
+            Thank you for riding with us!
+            
+            Best regards,
+            Uber Team
+            """,
+                        passenger.getName(),
+                        ride.getStartLocation().getAddress(),
+                        ride.getActualEndLocation() != null ? ride.getActualEndLocation().getAddress() : ride.getEndLocation().getAddress(),
+                        ride.getDistance(),
+                        ride.getEstimatedTimeMinutes(),
+                        ride.getCalculatedPrice()
+                );
+                mailService.sendText(passenger.getEmail(), subject, body);
+            } catch (Exception e) {
+                System.err.println("Failed to send completion email to passenger: " + e.getMessage());
+            }
+        }
+
+        for (RideInvite invite : ride.getInvites()) {
+            try {
+                String subject = "Ride Completed - Tracking Update";
+                String body = String.format("""
+            Hello,
+            
+            The ride you were tracking has been completed.
+            
+            Ride Details:
+            - From: %s
+            - To: %s
+            - Distance: %.2f km
+            
+            Thank you for your interest!
+            
+            Best regards,
+            Uber Team
+            """,
+                        ride.getStartLocation().getAddress(),
+                        ride.getActualEndLocation() != null ? ride.getActualEndLocation().getAddress() : ride.getEndLocation().getAddress(),
+                        ride.getDistance()
+                );
+                mailService.sendText(invite.getEmail(), subject, body);
+            } catch (Exception e) {
+                System.err.println("Failed to send completion email to invite: " + e.getMessage());
+            }
+        }
+
         return savedRide;
     }
 
@@ -426,7 +494,7 @@ public class RideService {
         List<Ride> rides = rideRepository
                 .findByStatusAndScheduledAtBefore(
                         RideStatus.PENDING,
-                        now.plusMinutes(10) // 10 минута пре старта
+                        now.plusMinutes(10)
                 );
 
         for (Ride ride : rides) {
@@ -446,7 +514,6 @@ public class RideService {
 
                 rideRepository.save(ride);
 
-                // notifications
                 for (Passenger p : ride.getPassengers()) {
                     notificationService.createNotification(
                             p.getId(),
@@ -457,9 +524,84 @@ public class RideService {
                 }
 
             } catch (Exception ignored) {
-                // нема возача тренутно — покушаће следећи минут
             }
         }
     }
 
+    public RideReportResponse generateReport(
+            LocalDateTime from,
+            LocalDateTime to,
+            Long userId
+    ) {
+
+
+        List<Ride> rides;
+
+        if (userId != null) {
+            rides = rideRepository.findCompletedBetweenForUser(from, to, userId);
+        } else {
+            rides = rideRepository.findCompletedBetween(from, to);
+        }
+
+        if (userId != null) {
+            rides = rides.stream()
+                    .filter(r ->
+
+                            (r.getDriver() != null &&
+                                    r.getDriver().getId().equals(userId))
+
+                                    ||
+
+                                    (r.getCreator() != null &&
+                                            r.getCreator().getId().equals(userId))
+
+                                    ||
+
+                                    (r.getPassengers() != null &&
+                                            r.getPassengers().stream()
+                                                    .anyMatch(p -> p.getId().equals(userId)))
+                    )
+                    .toList();
+        }
+
+        Map<LocalDate, List<Ride>> byDate =
+                rides.stream()
+                        .collect(Collectors.groupingBy(
+                                r -> r.getFinishedAt().toLocalDate()
+                        ));
+
+        List<DailyReportItem> daily = new ArrayList<>();
+
+        long totalRides = 0;
+        double totalDistance = 0;
+        double totalMoney = 0;
+
+        for (var entry : byDate.entrySet()) {
+
+            LocalDate date = entry.getKey();
+            List<Ride> dayRides = entry.getValue();
+
+            long rideCount = dayRides.size();
+            double dist = dayRides.stream().mapToDouble(Ride::getDistance).sum();
+            double money = dayRides.stream().mapToDouble(Ride::getCalculatedPrice).sum();
+
+            daily.add(new DailyReportItem(date, rideCount, dist, money));
+
+            totalRides += rideCount;
+            totalDistance += dist;
+            totalMoney += money;
+        }
+
+        long days = Math.max(1, byDate.size());
+
+        return new RideReportResponse(
+                daily,
+                totalRides,
+                totalDistance,
+                totalMoney,
+                (double) totalRides / days,
+                totalDistance / days,
+                totalMoney / days
+        );
+    }
 }

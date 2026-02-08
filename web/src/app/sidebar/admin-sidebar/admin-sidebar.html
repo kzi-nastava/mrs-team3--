@@ -5,6 +5,9 @@
   <button class="icon-btn" (click)="registerDriver()" title="Register Driver">
     🚗
   </button>
+  <button class="icon-btn" (click)="goMessages()" title="Messages">
+    💬
+  </button>
   <button class="icon-btn notification-btn" (click)="goNotifications()" title="Notifications">
     🔔
     @if (unreadCount > 0) {
@@ -16,6 +19,12 @@
   <button class="icon-btn" (click)="goPricing()" title="Pricing Management">
     📊
   </button>
+
+  <button class="icon-btn" (click)="goReport()" title="Analytics">
+    📈
+  </button>
+
+
   <div class="spacer"></div>
   <button class="icon-btn" (click)="goProfile()" title="Profile">
     👤
@@ -25,6 +34,7 @@
   </button>
 </div>
 
+<app-chat-popup></app-chat-popup>
 @if (showLogoutModal) {
 <app-logout-modal (confirm)="onLogoutConfirm()" (cancel)="onLogoutCancel()">
 </app-logout-modal>
