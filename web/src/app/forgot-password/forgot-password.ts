@@ -19,7 +19,7 @@ import {ToastModule} from 'primeng/toast';
     ToastModule
   ],
   templateUrl: './forgot-password.html',
-  styleUrl: '../change-password/change-password.css',
+  // styleUrl: '../reset-password/change-password.css',
   standalone: true,
   providers: [MessageService],
 })
@@ -33,7 +33,7 @@ export class ForgotPassword {
   ) {}
   onSubmit() {
     if (!this.email.trim()) {
-      console.log('Please enter email.');
+      this.messageService.add({severity:'warn', summary: 'Input Required', detail: 'Please enter your email address.'});
       return;
     }
 

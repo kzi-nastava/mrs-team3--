@@ -1,4 +1,9 @@
 <div class="container">
+  @if (user$ | async; as user) {
   <app-ride-booking></app-ride-booking>
   <app-map mode="booking"></app-map>
+  } @else {
+  <app-ride-form></app-ride-form>
+  <app-map mode="simple"></app-map>
+  }
 </div>

@@ -1,0 +1,116 @@
+<p-toast position="top-right"></p-toast>
+<div class="left-scroll">
+  <div class="content-wrapper">
+    <div class="card-wrapper">
+
+      <p-card>
+
+        <ng-template pTemplate="header">
+          <div class="text-center mb-4">
+            <div class="text-900 text-3xl font-medium mb-2">
+              Register Driver
+            </div>
+          </div>
+        </ng-template>
+
+        <form [formGroup]="form" (ngSubmit)="submit()">
+          <div class="grid-2 gap-lg">
+
+            <div class="flex flex-column gap-3">
+              <div class="flex flex-column gap-1">
+                <label>Name</label>
+                <input pInputText type="text" formControlName="firstName" />
+              </div>
+
+              <div class="flex flex-column gap-1">
+                <label>Surname</label>
+                <input pInputText type="text" formControlName="lastName" />
+              </div>
+
+              <div class="flex flex-column gap-1">
+                <label>Email</label>
+                <input pInputText type="email" formControlName="email" />
+              </div>
+
+              <div class="flex flex-column gap-1">
+                <label>Phone number</label>
+                <input pInputText type="text" formControlName="phone" />
+              </div>
+
+              <div class="flex flex-column gap-1">
+                <label>Address</label>
+                <input pInputText type="text" formControlName="address" />
+              </div>
+            </div>
+
+            <div class="flex flex-column gap-3">
+              <div class="flex flex-column gap-1">
+                <label>Vehicle model</label>
+                <input pInputText type="text" formControlName="vehicleModel" />
+              </div>
+
+              <div class="flex flex-column gap-1">
+                <label>License plate number</label>
+                <input pInputText type="text" formControlName="plate" />
+              </div>
+
+              <div class="flex flex-column gap-1">
+                <label>Number of seats</label>
+                <input pInputText type="number" formControlName="seats" />
+              </div>
+
+              <div class="flex flex-column gap-1">
+              <label>Vehicle type</label>
+              <p-select
+                formControlName="vehicleType"
+                [options]="vehicleTypes"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Select vehicle type"
+              ></p-select>
+              </div>
+
+
+              <div class="flex flex-column gap-2 mt-3">
+              <label>Additional options</label>
+
+              <div class="flex align-items-center gap-2">
+                <p-checkbox
+                  formControlName="babyTransport"
+                  [binary]="true"
+                  inputId="baby"
+                ></p-checkbox>
+                <label for="baby">Baby transport</label>
+              </div>
+
+              <div class="flex align-items-center gap-2">
+                <p-checkbox
+                  formControlName="petTransport"
+                  [binary]="true"
+                  inputId="pet"
+                ></p-checkbox>
+                <label for="pet">Pet friendly</label>
+              </div>
+            </div>
+
+            </div>
+
+          </div>
+
+          <div class="footer-space">
+            <p-button
+              [label]="submitting ? 'Registering…' : 'Register'"
+              class="w-full"
+              styleClass="w-full"
+              size="large"
+              type="submit"
+              [disabled]="form.invalid || submitting"
+            ></p-button>
+          </div>
+        </form>
+
+      </p-card>
+
+    </div>
+  </div>
+</div>

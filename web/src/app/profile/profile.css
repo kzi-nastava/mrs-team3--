@@ -66,34 +66,34 @@
 .image-section {
   display: flex;
   justify-content: center;
-  align-items: center; 
-  gap: var(--spacing-xl); 
+  align-items: center;
+  gap: var(--spacing-xl);
   margin-bottom: var(--spacing-xl);
 }
 
 .profile-image {
   width: 10rem;
   height: 10rem;
-  min-width: 10rem; 
+  min-width: 10rem;
   min-height: 10rem;
   border-radius: var(--radius-md);
   object-fit: cover;
   border: 0.25rem solid var(--color-primary);
   margin-bottom: var(--spacing-md);
   box-shadow: var(--shadow-md);
-  background: linear-gradient(135deg, #e0e0e0 0%, #f5f5f5 100%); 
+  background: linear-gradient(135deg, #e0e0e0 0%, #f5f5f5 100%);
 }
 
-.profile-image[src=""], 
+.profile-image[src=""],
 .profile-image:not([src]) {
-  content: '👤'; 
+  content: '👤';
   font-size: 4rem;
   color: var(--color-gray-light);
 }
 
 .image-actions {
   display: flex;
-  flex-direction: column; 
+  flex-direction: column;
   gap: var(--spacing-md);
   justify-content: center;
 }
@@ -101,7 +101,7 @@
 .image-wrapper {
   display: flex;
   align-items: center;
-  gap: var(--spacing-xl); 
+  gap: var(--spacing-xl);
 }
 
 .profile-image-placeholder {
@@ -264,7 +264,7 @@
 }
 
 .save-btn:hover {
-  background: #6F52C9;  
+  background: #6F52C9;
 }
 
 .cancel-btn {
@@ -322,4 +322,14 @@
     width: 8rem;
     height: 8rem;
   }
+}
+
+.blocked-banner {
+  background: #ffdddd;
+  color: #b30000;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  font-weight: bold;
+  text-align: center;
 }

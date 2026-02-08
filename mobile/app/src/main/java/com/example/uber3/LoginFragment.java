@@ -2,21 +2,22 @@ package com.example.uber3;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.example.uber3.network.manager.TokenManager;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
-
 import java.util.Objects;
+import com.example.uber3.network.service.AuthService;
+import com.example.uber3.network.model.LoginResponse;
+
 
 public class LoginFragment extends Fragment {
 
@@ -73,10 +74,35 @@ public class LoginFragment extends Fragment {
     }
 
     private void performLogin(String email, String password) {
+
         Toast.makeText(requireContext(), "Logging in...", Toast.LENGTH_SHORT).show();
 
+        AuthService.login(
+                requireContext(),
+                email,
+                password,
+                new AuthService.LoginCallback() {
+                    @Override
+                    public void onSuccess(LoginResponse response) {
+                        goToMain();
+                    }
+
+                    @Override
+                    public void onError(String message) {
+                        Toast.makeText(requireContext(),
+                                message,
+                                Toast.LENGTH_SHORT).show();
+                    }
+                }
+        );
+
+    }
+
+    private void goToMain() {
         Intent intent = new Intent(requireActivity(), MainActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
     }
+
+
 }

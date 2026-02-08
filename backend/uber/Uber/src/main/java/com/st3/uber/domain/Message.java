@@ -2,8 +2,11 @@ package com.st3.uber.domain;
 
 import com.st3.uber.enums.SenderType;
 import jakarta.persistence.*;
+import lombok.Data;
+
 import java.time.LocalDateTime;
 
+@Data
 @Entity
 @Table(name = "messages")
 public class Message {

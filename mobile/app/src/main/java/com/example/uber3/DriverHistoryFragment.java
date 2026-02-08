@@ -1,416 +1,812 @@
 package com.example.uber3;
 
-import android.annotation.SuppressLint;
+import android.app.DatePickerDialog;
+import android.app.Dialog;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.button.MaterialButton;
-import com.google.android.material.datepicker.MaterialDatePicker;
+import com.example.uber3.adapter.RideHistoryAdapter;
+import com.example.uber3.network.manager.TokenManager;
+import com.example.uber3.network.model.history.DriverRideHistoryDetailResponse;
+import com.example.uber3.network.model.history.DriverRideHistoryResponse;
+import com.example.uber3.network.model.location.LocationDto;
+import com.example.uber3.network.model.ride.InconsistencyReportDto;
+import com.example.uber3.network.model.ride.ReviewDto;
+import com.example.uber3.network.service.DriverHistoryService;
+import com.example.uber3.repository.ORSRepository;
+import com.google.android.material.textfield.TextInputEditText;
 
+import org.osmdroid.api.IMapController;
+import org.osmdroid.config.Configuration;
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
+import org.osmdroid.util.GeoPoint;
+import org.osmdroid.views.MapView;
+import org.osmdroid.views.overlay.Marker;
+import org.osmdroid.views.overlay.Polyline;
+
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-public class DriverHistoryFragment extends Fragment {
+public class DriverHistoryFragment extends Fragment implements RideHistoryAdapter.OnRideClickListener {
 
-    private static final String KEY_START_DATE = "start_date";
-    private static final String KEY_END_DATE = "end_date";
-    private static final String KEY_SORT_FIELD = "sort_field";
-    private static final String KEY_IS_ASCENDING = "is_ascending";
-    private static final String KEY_RIDE_LIST = "ride_list";
-    private static final String KEY_FILTERED_LIST = "filtered_list";
+    private static final String TAG = "DriverHistoryFragment";
 
+    // UI Components
     private RecyclerView recyclerView;
     private RideHistoryAdapter adapter;
-    private ArrayList<RideHistory> rideList;
-    private ArrayList<RideHistory> filteredList;
+    private ProgressBar progressBar;
+    private LinearLayout tvEmptyState;
+    private TextInputEditText etStartDate;
+    private TextInputEditText etEndDate;
+    private Button btnViewReport;
 
-    private TextView tvFromDate, tvToDate;
-    private MaterialButton btnViewReport;
+    // Service Layer
+    private DriverHistoryService historyService;
 
-    private Long startDateMillis = null;
-    private Long endDateMillis = null;
+    // Data
+    private Date startDate = null;
+    private Date endDate = null;
+    private Long driverId;
+    private List<DriverRideHistoryResponse> allRides = new ArrayList<>();
 
-    private String currentSortField = "id";
-    private boolean isAscending = true;
+    public DriverHistoryFragment() {
+    }
 
     public static DriverHistoryFragment newInstance() {
         return new DriverHistoryFragment();
     }
 
-    @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-
-        // Restore saved state
-        if (savedInstanceState != null) {
-            if (savedInstanceState.containsKey(KEY_START_DATE)) {
-                startDateMillis = savedInstanceState.getLong(KEY_START_DATE);
-            }
-            if (savedInstanceState.containsKey(KEY_END_DATE)) {
-                endDateMillis = savedInstanceState.getLong(KEY_END_DATE);
-            }
-            currentSortField = savedInstanceState.getString(KEY_SORT_FIELD, "id");
-            isAscending = savedInstanceState.getBoolean(KEY_IS_ASCENDING, true);
-
-            rideList = savedInstanceState.getParcelableArrayList(KEY_RIDE_LIST);
-            filteredList = savedInstanceState.getParcelableArrayList(KEY_FILTERED_LIST);
-        }
-
-        if (rideList == null) {
-            rideList = new ArrayList<>();
-        }
-        if (filteredList == null) {
-            filteredList = new ArrayList<>();
-        }
-    }
-
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_driver_history, container, false);
-    }
-
-    @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
+    public View onCreateView(@NonNull LayoutInflater inflater,
+                             @Nullable ViewGroup container,
+                             @Nullable Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.fragment_driver_history, container, false);
 
         initializeViews(view);
         setupRecyclerView();
-
-        if (rideList.isEmpty()) {
-            loadMockData();
-        }
-
         setupDatePickers();
-        setupSortHeaders(view);
+        setupService();
+        loadRideHistory();
 
-        restoreDateText();
-    }
-
-    @Override
-    public void onSaveInstanceState(@NonNull Bundle outState) {
-        super.onSaveInstanceState(outState);
-
-        if (startDateMillis != null) {
-            outState.putLong(KEY_START_DATE, startDateMillis);
-        }
-        if (endDateMillis != null) {
-            outState.putLong(KEY_END_DATE, endDateMillis);
-        }
-        outState.putString(KEY_SORT_FIELD, currentSortField);
-        outState.putBoolean(KEY_IS_ASCENDING, isAscending);
-        outState.putParcelableArrayList(KEY_RIDE_LIST, rideList);
-        outState.putParcelableArrayList(KEY_FILTERED_LIST, filteredList);
+        return view;
     }
 
     private void initializeViews(View view) {
-        recyclerView = view.findViewById(R.id.recyclerViewHistory);
-        tvFromDate = view.findViewById(R.id.tvFromDate);
-        tvToDate = view.findViewById(R.id.tvToDate);
+        recyclerView = view.findViewById(R.id.recyclerViewRides);
+        progressBar = view.findViewById(R.id.progressBar);
+        tvEmptyState = view.findViewById(R.id.tvEmptyState);
+        etStartDate = view.findViewById(R.id.etStartDate);
+        etEndDate = view.findViewById(R.id.etEndDate);
         btnViewReport = view.findViewById(R.id.btnViewReport);
 
-        btnViewReport.setOnClickListener(v -> filterByDate());
+        btnViewReport.setOnClickListener(v -> showReportDialog());
     }
 
     private void setupRecyclerView() {
-        adapter = new RideHistoryAdapter(filteredList);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        adapter = new RideHistoryAdapter(this);
+        recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
         recyclerView.setAdapter(adapter);
     }
 
-    private void restoreDateText() {
-        SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy", Locale.getDefault());
+    private void setupDatePickers() {
+        etStartDate.setOnClickListener(v -> showDatePicker(true));
+        etEndDate.setOnClickListener(v -> showDatePicker(false));
+    }
 
-        if (startDateMillis != null) {
-            tvFromDate.setText(sdf.format(new Date(startDateMillis)));
-        }
+    private void setupService() {
+        // Initialize service
+        historyService = new DriverHistoryService(requireContext());
 
-        if (endDateMillis != null) {
-            tvToDate.setText(sdf.format(new Date(endDateMillis)));
+        // Get driver ID from token
+        String token = TokenManager.getToken(requireContext());
+        if (token != null) {
+            driverId = extractDriverIdFromToken(token);
         }
     }
 
-    private void setupDatePickers() {
-        tvFromDate.setOnClickListener(v -> showDatePicker(true));
-        tvToDate.setOnClickListener(v -> showDatePicker(false));
+    private Long extractDriverIdFromToken(String token) {
+        // Decode JWT token to get driver ID from "uid" claim
+        try {
+            String[] parts = token.split("\\.");
+            if (parts.length > 1) {
+                String payload = new String(android.util.Base64.decode(parts[1], android.util.Base64.DEFAULT));
+                // Parse JSON to get "uid" field
+                int uidIndex = payload.indexOf("\"uid\":");
+                if (uidIndex != -1) {
+                    int start = uidIndex + 6;
+                    int end = payload.indexOf(",", start);
+                    if (end == -1) end = payload.indexOf("}", start);
+                    String uidStr = payload.substring(start, end).trim();
+                    return Long.parseLong(uidStr);
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error decoding token", e);
+        }
+        return null;
     }
 
     private void showDatePicker(boolean isStartDate) {
-        MaterialDatePicker<Long> datePicker = MaterialDatePicker.Builder.datePicker()
-                .setTitleText(isStartDate ? "Select Start Date" : "Select End Date")
-                .setSelection(MaterialDatePicker.todayInUtcMilliseconds())
-                .build();
+        Calendar calendar = Calendar.getInstance();
 
-        datePicker.addOnPositiveButtonClickListener(selection -> {
-            SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy", Locale.getDefault());
-            String dateString = sdf.format(new Date(selection));
+        DatePickerDialog datePickerDialog = new DatePickerDialog(
+                requireContext(),
+                (view, year, month, dayOfMonth) -> {
+                    calendar.set(year, month, dayOfMonth);
+                    SimpleDateFormat displayFormat = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());
 
-            if (isStartDate) {
-                startDateMillis = selection;
-                tvFromDate.setText(dateString);
-            } else {
-                endDateMillis = selection;
-                tvToDate.setText(dateString);
-            }
-        });
+                    String displayDate = displayFormat.format(calendar.getTime());
 
-        datePicker.show(getParentFragmentManager(), "DATE_PICKER");
+                    if (isStartDate) {
+                        etStartDate.setText(displayDate);
+                        startDate = calendar.getTime();
+                    } else {
+                        etEndDate.setText(displayDate);
+                        endDate = calendar.getTime();
+                    }
+
+                    // Reload rides with new filter
+                    loadRideHistory();
+                },
+                calendar.get(Calendar.YEAR),
+                calendar.get(Calendar.MONTH),
+                calendar.get(Calendar.DAY_OF_MONTH)
+        );
+
+        datePickerDialog.show();
     }
 
-    private void filterByDate() {
-        if (startDateMillis == null || endDateMillis == null) {
-            filteredList.clear();
-            filteredList.addAll(rideList);
-            adapter.notifyDataSetChanged();
+    private void loadRideHistory() {
+        if (driverId == null) {
+            Toast.makeText(requireContext(), "Driver ID not found", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        filteredList.clear();
-        for (RideHistory ride : rideList) {
-            if (ride.getStartTimeMillis() >= startDateMillis && ride.getStartTimeMillis() <= endDateMillis) {
-                filteredList.add(ride);
-            }
-        }
-        adapter.notifyDataSetChanged();
+        showLoading(true);
+
+        // Use service to fetch rides
+        historyService.getDriverRideHistory(driverId, startDate, endDate,
+                new DriverHistoryService.RideHistoryCallback() {
+                    @Override
+                    public void onSuccess(List<DriverRideHistoryResponse> rides) {
+                        showLoading(false);
+                        allRides = rides;
+                        updateUI(rides);
+
+                        // Log basic statistics
+                        Log.d(TAG, "Total rides: " + rides.size());
+                        Log.d(TAG, "Completed rides: " + historyService.getCompletedRides(rides).size());
+                    }
+
+                    @Override
+                    public void onError(String errorMessage) {
+                        showLoading(false);
+                        Toast.makeText(requireContext(), errorMessage, Toast.LENGTH_LONG).show();
+                        updateUI(new ArrayList<>());
+                    }
+                });
     }
 
-    private void setupSortHeaders(View view) {
-        LinearLayout headerID = view.findViewById(R.id.headerID);
-        LinearLayout headerStart = view.findViewById(R.id.headerStart);
-        LinearLayout headerEnd = view.findViewById(R.id.headerEnd);
-        LinearLayout headerFrom = view.findViewById(R.id.headerFrom);
-        LinearLayout headerTo = view.findViewById(R.id.headerTo);
-        LinearLayout headerPrice = view.findViewById(R.id.headerPrice);
-        LinearLayout headerCancelled = view.findViewById(R.id.headerCancelled);
-        LinearLayout headerPanic = view.findViewById(R.id.headerPanic);
-
-        headerID.setOnClickListener(v -> sortBy("id"));
-        headerStart.setOnClickListener(v -> sortBy("start"));
-        headerEnd.setOnClickListener(v -> sortBy("end"));
-        headerFrom.setOnClickListener(v -> sortBy("from"));
-        headerTo.setOnClickListener(v -> sortBy("to"));
-        headerPrice.setOnClickListener(v -> sortBy("price"));
-        headerCancelled.setOnClickListener(v -> sortBy("cancelled"));
-        headerPanic.setOnClickListener(v -> sortBy("panic"));
+    private void showLoading(boolean show) {
+        progressBar.setVisibility(show ? View.VISIBLE : View.GONE);
+        recyclerView.setVisibility(show ? View.GONE : View.VISIBLE);
     }
 
-    @SuppressLint("NotifyDataSetChanged")
-    private void sortBy(String field) {
-        if (currentSortField.equals(field)) {
-            isAscending = !isAscending;
+    private void updateUI(List<DriverRideHistoryResponse> rides) {
+        if (rides.isEmpty()) {
+            tvEmptyState.setVisibility(View.VISIBLE);
+            recyclerView.setVisibility(View.GONE);
         } else {
-            currentSortField = field;
-            isAscending = true;
-        }
-
-        Comparator<RideHistory> comparator = null;
-
-        switch (field) {
-            case "id":
-                comparator = Comparator.comparingLong(RideHistory::getId);
-                break;
-            case "start":
-                comparator = Comparator.comparing(RideHistory::getStartTime);
-                break;
-            case "end":
-                comparator = Comparator.comparing(RideHistory::getEndTime);
-                break;
-            case "from":
-                comparator = Comparator.comparing(RideHistory::getFromAddress);
-                break;
-            case "to":
-                comparator = Comparator.comparing(RideHistory::getToAddress);
-                break;
-            case "price":
-                comparator = Comparator.comparingDouble(RideHistory::getPrice);
-                break;
-            case "cancelled":
-                comparator = Comparator.comparing(RideHistory::isCancelled);
-                break;
-            case "panic":
-                comparator = Comparator.comparing(RideHistory::isPanic);
-                break;
-        }
-
-        if (comparator != null) {
-            if (!isAscending) {
-                comparator = comparator.reversed();
-            }
-            Collections.sort(filteredList, comparator);
-            adapter.notifyDataSetChanged();
+            tvEmptyState.setVisibility(View.GONE);
+            recyclerView.setVisibility(View.VISIBLE);
+            adapter.setRides(rides);
         }
     }
 
-    private void loadMockData() {
-        rideList.add(new RideHistory(1, "10:00", "10:25", "Main Street", "University",
-                "prle, Andjela", 85.0, false, false, System.currentTimeMillis() - 86400000));
-        rideList.add(new RideHistory(2, "12:30", "12:55", "Airport", "City Center",
-                "Marko, Jovan, Ana", 150.0, true, false, System.currentTimeMillis() - 172800000));
-        rideList.add(new RideHistory(3, "15:00", "15:30", "Downtown", "Suburban Area",
-                "Stefan", 120.0, false, false, System.currentTimeMillis() - 259200000));
-        rideList.add(new RideHistory(4, "08:00", "08:45", "Train Station", "Shopping Mall",
-                "Milica, Nikola", 95.0, false, true, System.currentTimeMillis() - 345600000));
+    @Override
+    public void onRideClick(DriverRideHistoryResponse ride) {
+        if (driverId == null || ride.rideId == null) {
+            Toast.makeText(requireContext(), "Cannot load ride details", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-        filteredList.addAll(rideList);
-        adapter.notifyDataSetChanged();
+        // Show loading dialog
+        Dialog loadingDialog = new Dialog(requireContext());
+        loadingDialog.setContentView(android.R.layout.simple_list_item_1);
+        loadingDialog.setCancelable(false);
+        loadingDialog.show();
+
+        // Fetch detailed ride information
+        historyService.getDriverRideDetail(driverId, ride.rideId,
+                new DriverHistoryService.RideDetailCallback() {
+                    @Override
+                    public void onSuccess(DriverRideHistoryDetailResponse rideDetail) {
+                        loadingDialog.dismiss();
+                        showRideDetailDialog(rideDetail);
+                    }
+
+                    @Override
+                    public void onError(String errorMessage) {
+                        loadingDialog.dismiss();
+                        Toast.makeText(requireContext(),
+                                "Failed to load ride details: " + errorMessage,
+                                Toast.LENGTH_LONG).show();
+                    }
+                });
     }
 
-    // Inner class for RideHistory data model
-    public static class RideHistory implements android.os.Parcelable {
-        private long id;
-        private String startTime;
-        private String endTime;
-        private String fromAddress;
-        private String toAddress;
-        private String passengers;
-        private double price;
-        private boolean cancelled;
-        private boolean panic;
-        private long startTimeMillis;
+    private void showRideDetailDialog(DriverRideHistoryDetailResponse ride) {
+        Dialog dialog = new Dialog(requireContext());
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialog.setContentView(R.layout.dialog_ride_detail);
+        dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
 
-        public RideHistory(long id, String startTime, String endTime, String fromAddress,
-                           String toAddress, String passengers, double price,
-                           boolean cancelled, boolean panic, long startTimeMillis) {
-            this.id = id;
-            this.startTime = startTime;
-            this.endTime = endTime;
-            this.fromAddress = fromAddress;
-            this.toAddress = toAddress;
-            this.passengers = passengers;
-            this.price = price;
-            this.cancelled = cancelled;
-            this.panic = panic;
-            this.startTimeMillis = startTimeMillis;
-        }
+        // Initialize views
+        TextView tvDialogDate = dialog.findViewById(R.id.tvDialogDate);
+        TextView tvDialogStatus = dialog.findViewById(R.id.tvDialogStatus);
+        TextView tvDialogStartAddress = dialog.findViewById(R.id.tvDialogStartAddress);
+        TextView tvDialogEndAddress = dialog.findViewById(R.id.tvDialogEndAddress);
+        TextView tvDialogPrice = dialog.findViewById(R.id.tvDialogPrice);
+        TextView tvDialogDistance = dialog.findViewById(R.id.tvDialogDistance);
+        TextView tvDialogDuration = dialog.findViewById(R.id.tvDialogDuration);
+        TextView tvDialogVehicleType = dialog.findViewById(R.id.tvDialogVehicleType);
+        MapView mapView = dialog.findViewById(R.id.mapView);
+        Button btnClose = dialog.findViewById(R.id.btnClose);
+        LinearLayout layoutPlannedStops = dialog.findViewById(R.id.layoutPlannedStops);
+        LinearLayout layoutActualStops = dialog.findViewById(R.id.layoutActualStops);
+        TextView tvPlannedStopsLabel = dialog.findViewById(R.id.tvPlannedStopsLabel);
+        TextView tvActualStopsLabel = dialog.findViewById(R.id.tvActualStopsLabel);
+        LinearLayout layoutPassengers = dialog.findViewById(R.id.layoutPassengers);
+        LinearLayout layoutReviews = dialog.findViewById(R.id.layoutReviews);
+        LinearLayout layoutReports = dialog.findViewById(R.id.layoutReports);
+        LinearLayout layoutCancellation = dialog.findViewById(R.id.layoutCancellation);
 
-        protected RideHistory(android.os.Parcel in) {
-            id = in.readLong();
-            startTime = in.readString();
-            endTime = in.readString();
-            fromAddress = in.readString();
-            toAddress = in.readString();
-            passengers = in.readString();
-            price = in.readDouble();
-            cancelled = in.readByte() != 0;
-            panic = in.readByte() != 0;
-            startTimeMillis = in.readLong();
-        }
+        // Set basic information
+        tvDialogDate.setText(formatDateTime(ride.startedAt));
 
-        @Override
-        public void writeToParcel(android.os.Parcel dest, int flags) {
-            dest.writeLong(id);
-            dest.writeString(startTime);
-            dest.writeString(endTime);
-            dest.writeString(fromAddress);
-            dest.writeString(toAddress);
-            dest.writeString(passengers);
-            dest.writeDouble(price);
-            dest.writeByte((byte) (cancelled ? 1 : 0));
-            dest.writeByte((byte) (panic ? 1 : 0));
-            dest.writeLong(startTimeMillis);
-        }
+        String status = ride.getFormattedStatus();
+        tvDialogStatus.setText(getStatusText(status));
+        setStatusBadgeStyle(tvDialogStatus, status);
 
-        @Override
-        public int describeContents() {
-            return 0;
-        }
+        tvDialogStartAddress.setText(ride.startAddress != null ? ride.startAddress : "N/A");
+        tvDialogEndAddress.setText(ride.endAddress != null ? ride.endAddress : "N/A");
+        tvDialogPrice.setText(String.format(Locale.getDefault(), "%.0f din",
+                ride.price != null ? ride.price : 0));
+        tvDialogDistance.setText(String.format(Locale.getDefault(), "%.1f km",
+                ride.distance != null ? ride.distance : 0));
+        tvDialogDuration.setText(String.format(Locale.getDefault(), "%d min",
+                ride.getDurationMinutes()));
+        tvDialogVehicleType.setText(ride.vehicleType != null ? ride.vehicleType : "Standard");
 
-        public static final Creator<RideHistory> CREATOR = new Creator<RideHistory>() {
-            @Override
-            public RideHistory createFromParcel(android.os.Parcel in) {
-                return new RideHistory(in);
-            }
+        // Setup map
+        Configuration.getInstance().setUserAgentValue(requireContext().getPackageName());
+        mapView.setTileSource(TileSourceFactory.MAPNIK);
+        mapView.setMultiTouchControls(true);
 
-            @Override
-            public RideHistory[] newArray(int size) {
-                return new RideHistory[size];
-            }
-        };
+        displayRouteOnMap(mapView, ride);
 
-        public long getId() { return id; }
-        public String getStartTime() { return startTime; }
-        public String getEndTime() { return endTime; }
-        public String getFromAddress() { return fromAddress; }
-        public String getToAddress() { return toAddress; }
-        public String getPassengers() { return passengers; }
-        public double getPrice() { return price; }
-        public boolean isCancelled() { return cancelled; }
-        public boolean isPanic() { return panic; }
-        public long getStartTimeMillis() { return startTimeMillis; }
-        public String getCancelledDisplay() { return cancelled ? "Yes (Driver)" : "No"; }
-        public String getPanicDisplay() { return panic ? "Yes" : "No"; }
+        // Display planned and actual stops
+        displayPlannedStops(layoutPlannedStops, tvPlannedStopsLabel, ride);
+        displayActualStops(layoutActualStops, tvActualStopsLabel, ride);
+
+        // Display passengers
+        displayPassengers(layoutPassengers, ride);
+
+        // Display reviews
+        displayReviews(layoutReviews, ride);
+
+        // Display reports
+        displayReports(layoutReports, ride);
+
+        // Display cancellation info
+        displayCancellationInfo(layoutCancellation, ride);
+
+        btnClose.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
     }
 
-
-    private static class RideHistoryAdapter extends RecyclerView.Adapter<RideHistoryAdapter.ViewHolder> {
-
-        private final List<RideHistory> rides;
-
-        public RideHistoryAdapter(List<RideHistory> rides) {
-            this.rides = rides;
+    private void displayRouteOnMap(MapView mapView, DriverRideHistoryDetailResponse ride) {
+        if (ride.startLatitude == null || ride.startLongitude == null) {
+            return;
         }
 
-        @NonNull
-        @Override
-        public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            View view = LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.item_ride_history, parent, false);
-            return new ViewHolder(view);
-        }
+        IMapController mapController = mapView.getController();
+        mapController.setZoom(13.0);
 
-        @Override
-        public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-            RideHistory ride = rides.get(position);
-            holder.bind(ride);
-        }
+        GeoPoint startPoint = new GeoPoint(ride.startLatitude, ride.startLongitude);
+        List<GeoPoint> allRoutePoints = new ArrayList<>();
+        allRoutePoints.add(startPoint);
 
-        @Override
-        public int getItemCount() {
-            return rides.size();
-        }
+        // Add start marker (green with custom drawable)
+        Marker startMarker = new Marker(mapView);
+        startMarker.setPosition(startPoint);
+        startMarker.setTitle("Start: " + (ride.startAddress != null ? ride.startAddress : ""));
+        startMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
+        startMarker.setIcon(ContextCompat.getDrawable(requireContext(), R.drawable.circle_start));
+        mapView.getOverlays().add(startMarker);
 
-        static class ViewHolder extends RecyclerView.ViewHolder {
-            TextView tvId, tvStart, tvEnd, tvFrom, tvTo, tvPassengers, tvPrice, tvCancelled, tvPanic;
+        // Add planned stops (blue markers with numbers)
+        if (ride.plannedStops != null && !ride.plannedStops.isEmpty()) {
+            for (int i = 0; i < ride.plannedStops.size(); i++) {
+                LocationDto stop = ride.plannedStops.get(i);
+                if (stop.latitude != null && stop.longitude != null) {
+                    GeoPoint stopPoint = new GeoPoint(stop.latitude, stop.longitude);
+                    allRoutePoints.add(stopPoint);
 
-            public ViewHolder(@NonNull View itemView) {
-                super(itemView);
-                tvId = itemView.findViewById(R.id.tvId);
-                tvStart = itemView.findViewById(R.id.tvStart);
-                tvEnd = itemView.findViewById(R.id.tvEnd);
-                tvFrom = itemView.findViewById(R.id.tvFrom);
-                tvTo = itemView.findViewById(R.id.tvTo);
-                tvPassengers = itemView.findViewById(R.id.tvPassengers);
-                tvPrice = itemView.findViewById(R.id.tvPrice);
-                tvCancelled = itemView.findViewById(R.id.tvCancelled);
-                tvPanic = itemView.findViewById(R.id.tvPanic);
-            }
-
-            public void bind(RideHistory ride) {
-                tvId.setText(String.valueOf(ride.getId()));
-                tvStart.setText(ride.getStartTime());
-                tvEnd.setText(ride.getEndTime());
-                tvFrom.setText(ride.getFromAddress());
-                tvTo.setText(ride.getToAddress());
-                tvPassengers.setText(ride.getPassengers());
-                tvPrice.setText(String.valueOf((int) ride.getPrice()));
-                tvCancelled.setText(ride.getCancelledDisplay());
-                tvPanic.setText(ride.getPanicDisplay());
+                    Marker stopMarker = new Marker(mapView);
+                    stopMarker.setPosition(stopPoint);
+                    stopMarker.setTitle("Planned Stop " + (i + 1) + ": " +
+                            (stop.address != null ? stop.address : ""));
+                    stopMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
+                    stopMarker.setIcon(ContextCompat.getDrawable(requireContext(), R.drawable.circle_stop));
+                    mapView.getOverlays().add(stopMarker);
+                }
             }
         }
+
+        // Add actual stops (orange/yellow markers with numbers)
+        if (ride.actualStops != null && !ride.actualStops.isEmpty()) {
+            for (int i = 0; i < ride.actualStops.size(); i++) {
+                LocationDto stop = ride.actualStops.get(i);
+                if (stop.latitude != null && stop.longitude != null) {
+                    GeoPoint stopPoint = new GeoPoint(stop.latitude, stop.longitude);
+
+                    // Only add to route if not already there (from planned)
+                    boolean alreadyInRoute = false;
+                    for (GeoPoint existing : allRoutePoints) {
+                        if (Math.abs(existing.getLatitude() - stopPoint.getLatitude()) < 0.0001 &&
+                                Math.abs(existing.getLongitude() - stopPoint.getLongitude()) < 0.0001) {
+                            alreadyInRoute = true;
+                            break;
+                        }
+                    }
+                    if (!alreadyInRoute) {
+                        allRoutePoints.add(stopPoint);
+                    }
+
+                    Marker stopMarker = new Marker(mapView);
+                    stopMarker.setPosition(stopPoint);
+                    stopMarker.setTitle("Actual Stop " + (i + 1) + ": " +
+                            (stop.address != null ? stop.address : ""));
+                    stopMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
+                    stopMarker.setIcon(ContextCompat.getDrawable(requireContext(), R.drawable.circle_stop));
+                    mapView.getOverlays().add(stopMarker);
+                }
+            }
+        }
+
+        // Add end marker if available (red with custom drawable)
+        if (ride.endLatitude != null && ride.endLongitude != null) {
+            GeoPoint endPoint = new GeoPoint(ride.endLatitude, ride.endLongitude);
+            allRoutePoints.add(endPoint);
+
+            Marker endMarker = new Marker(mapView);
+            endMarker.setPosition(endPoint);
+            endMarker.setTitle("End: " + (ride.endAddress != null ? ride.endAddress : ""));
+            endMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
+            endMarker.setIcon(ContextCompat.getDrawable(requireContext(), R.drawable.circle_end));
+            mapView.getOverlays().add(endMarker);
+        }
+
+        // Draw route line connecting all points using ORS routing
+        if (allRoutePoints.size() >= 2) {
+            // Request the actual route from ORS
+            ORSRepository.getRoute(allRoutePoints, routePoints -> {
+                if (!routePoints.isEmpty()) {
+                    requireActivity().runOnUiThread(() -> {
+                        Polyline routeLine = new Polyline(mapView);
+                        routeLine.setPoints(routePoints);
+                        routeLine.setColor(Color.parseColor("#6366F1"));
+                        routeLine.setWidth(8f);
+                        mapView.getOverlays().add(routeLine);
+                        mapView.invalidate();
+                    });
+                }
+            });
+        }
+
+        // Center map to show all points
+        if (allRoutePoints.size() > 0) {
+            // Calculate bounds
+            double minLat = allRoutePoints.get(0).getLatitude();
+            double maxLat = allRoutePoints.get(0).getLatitude();
+            double minLon = allRoutePoints.get(0).getLongitude();
+            double maxLon = allRoutePoints.get(0).getLongitude();
+
+            for (GeoPoint point : allRoutePoints) {
+                minLat = Math.min(minLat, point.getLatitude());
+                maxLat = Math.max(maxLat, point.getLatitude());
+                minLon = Math.min(minLon, point.getLongitude());
+                maxLon = Math.max(maxLon, point.getLongitude());
+            }
+
+            double centerLat = (minLat + maxLat) / 2;
+            double centerLon = (minLon + maxLon) / 2;
+            mapController.setCenter(new GeoPoint(centerLat, centerLon));
+
+            // Adjust zoom based on bounds
+            double latSpan = maxLat - minLat;
+            double lonSpan = maxLon - minLon;
+            double maxSpan = Math.max(latSpan, lonSpan);
+
+            if (maxSpan < 0.01) {
+                mapController.setZoom(15.0);
+            } else if (maxSpan < 0.05) {
+                mapController.setZoom(13.0);
+            } else {
+                mapController.setZoom(11.0);
+            }
+        } else {
+            mapController.setCenter(startPoint);
+        }
+    }
+
+    private void displayPlannedStops(LinearLayout layout, TextView label, DriverRideHistoryDetailResponse ride) {
+        layout.removeAllViews();
+
+        if (ride.plannedStops != null && !ride.plannedStops.isEmpty()) {
+            label.setVisibility(View.VISIBLE);
+            layout.setVisibility(View.VISIBLE);
+
+            for (int i = 0; i < ride.plannedStops.size(); i++) {
+                LocationDto stop = ride.plannedStops.get(i);
+
+                LinearLayout stopCard = new LinearLayout(requireContext());
+                stopCard.setOrientation(LinearLayout.VERTICAL);
+                stopCard.setPadding(16, 12, 16, 12);
+                stopCard.setBackgroundColor(Color.parseColor("#EFF6FF"));
+
+                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                );
+                params.setMargins(0, 0, 0, 8);
+                stopCard.setLayoutParams(params);
+
+                TextView tvStopNumber = new TextView(requireContext());
+                tvStopNumber.setText("Stop " + (i + 1));
+                tvStopNumber.setTextSize(12);
+                tvStopNumber.setTextColor(Color.parseColor("#1E40AF"));
+                tvStopNumber.setTypeface(null, android.graphics.Typeface.BOLD);
+                stopCard.addView(tvStopNumber);
+
+                if (stop.address != null && !stop.address.isEmpty()) {
+                    TextView tvAddress = new TextView(requireContext());
+                    tvAddress.setText("📍 " + stop.address);
+                    tvAddress.setTextSize(14);
+                    tvAddress.setTextColor(Color.parseColor("#111827"));
+                    tvAddress.setPadding(0, 4, 0, 0);
+                    stopCard.addView(tvAddress);
+                }
+
+                if (stop.latitude != null && stop.longitude != null) {
+                    TextView tvCoords = new TextView(requireContext());
+                    tvCoords.setText(String.format(Locale.getDefault(),
+                            "%.6f, %.6f", stop.latitude, stop.longitude));
+                    tvCoords.setTextSize(11);
+                    tvCoords.setTextColor(Color.parseColor("#6B7280"));
+                    tvCoords.setPadding(0, 2, 0, 0);
+                    stopCard.addView(tvCoords);
+                }
+
+                layout.addView(stopCard);
+            }
+        } else {
+            label.setVisibility(View.GONE);
+            layout.setVisibility(View.GONE);
+        }
+    }
+
+    private void displayActualStops(LinearLayout layout, TextView label, DriverRideHistoryDetailResponse ride) {
+        layout.removeAllViews();
+
+        if (ride.actualStops != null && !ride.actualStops.isEmpty()) {
+            label.setVisibility(View.VISIBLE);
+            layout.setVisibility(View.VISIBLE);
+
+            for (int i = 0; i < ride.actualStops.size(); i++) {
+                LocationDto stop = ride.actualStops.get(i);
+
+                LinearLayout stopCard = new LinearLayout(requireContext());
+                stopCard.setOrientation(LinearLayout.VERTICAL);
+                stopCard.setPadding(16, 12, 16, 12);
+                stopCard.setBackgroundColor(Color.parseColor("#FEF3C7"));
+
+                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                );
+                params.setMargins(0, 0, 0, 8);
+                stopCard.setLayoutParams(params);
+
+                TextView tvStopNumber = new TextView(requireContext());
+                tvStopNumber.setText("Stop " + (i + 1));
+                tvStopNumber.setTextSize(12);
+                tvStopNumber.setTextColor(Color.parseColor("#D97706"));
+                tvStopNumber.setTypeface(null, android.graphics.Typeface.BOLD);
+                stopCard.addView(tvStopNumber);
+
+                if (stop.address != null && !stop.address.isEmpty()) {
+                    TextView tvAddress = new TextView(requireContext());
+                    tvAddress.setText("📍 " + stop.address);
+                    tvAddress.setTextSize(14);
+                    tvAddress.setTextColor(Color.parseColor("#111827"));
+                    tvAddress.setPadding(0, 4, 0, 0);
+                    stopCard.addView(tvAddress);
+                }
+
+                if (stop.latitude != null && stop.longitude != null) {
+                    TextView tvCoords = new TextView(requireContext());
+                    tvCoords.setText(String.format(Locale.getDefault(),
+                            "%.6f, %.6f", stop.latitude, stop.longitude));
+                    tvCoords.setTextSize(11);
+                    tvCoords.setTextColor(Color.parseColor("#6B7280"));
+                    tvCoords.setPadding(0, 2, 0, 0);
+                    stopCard.addView(tvCoords);
+                }
+
+                layout.addView(stopCard);
+            }
+        } else {
+            label.setVisibility(View.GONE);
+            layout.setVisibility(View.GONE);
+        }
+    }
+
+    private void displayPassengers(LinearLayout layout, DriverRideHistoryDetailResponse ride) {
+        layout.removeAllViews();
+
+        if (ride.passengerNames != null) {
+            for (String name : ride.passengerNames) {
+                TextView tv = new TextView(requireContext());
+                tv.setText("👤 " + name);
+                tv.setPadding(16, 8, 16, 8);
+                tv.setTextSize(14);
+                layout.addView(tv);
+            }
+        }
+
+        if (ride.invitedPassengers != null) {
+            for (String email : ride.invitedPassengers) {
+                TextView tv = new TextView(requireContext());
+                tv.setText("✉️ " + email + " (Invited)");
+                tv.setPadding(16, 8, 16, 8);
+                tv.setTextSize(14);
+                layout.addView(tv);
+            }
+        }
+
+        if (layout.getChildCount() == 0) {
+            layout.setVisibility(View.GONE);
+        }
+    }
+
+    private void displayReviews(LinearLayout layout, DriverRideHistoryDetailResponse ride) {
+        layout.removeAllViews();
+
+        if (ride.reviews != null && !ride.reviews.isEmpty()) {
+            for (ReviewDto review : ride.reviews) {
+                LinearLayout reviewCard = new LinearLayout(requireContext());
+                reviewCard.setOrientation(LinearLayout.VERTICAL);
+                reviewCard.setPadding(16, 12, 16, 12);
+
+                if (review.driverRating != null) {
+                    TextView tvDriverRating = new TextView(requireContext());
+                    tvDriverRating.setText("Driver: " + getStars(review.driverRating));
+                    tvDriverRating.setTextSize(14);
+                    reviewCard.addView(tvDriverRating);
+                }
+
+                if (review.vehicleRating != null) {
+                    TextView tvVehicleRating = new TextView(requireContext());
+                    tvVehicleRating.setText("Vehicle: " + getStars(review.vehicleRating));
+                    tvVehicleRating.setTextSize(14);
+                    reviewCard.addView(tvVehicleRating);
+                }
+
+                if (review.comment != null && !review.comment.isEmpty()) {
+                    TextView tvComment = new TextView(requireContext());
+                    tvComment.setText(review.comment);
+                    tvComment.setTextSize(13);
+                    tvComment.setPadding(0, 8, 0, 0);
+                    tvComment.setTextColor(Color.parseColor("#6b7280"));
+                    reviewCard.addView(tvComment);
+                }
+
+                layout.addView(reviewCard);
+            }
+        } else {
+            layout.setVisibility(View.GONE);
+        }
+    }
+
+    private void displayReports(LinearLayout layout, DriverRideHistoryDetailResponse ride) {
+        layout.removeAllViews();
+
+        if (ride.inconsistencyReports != null && !ride.inconsistencyReports.isEmpty()) {
+            for (InconsistencyReportDto report : ride.inconsistencyReports) {
+                LinearLayout reportCard = new LinearLayout(requireContext());
+                reportCard.setOrientation(LinearLayout.VERTICAL);
+                reportCard.setPadding(16, 12, 16, 12);
+                reportCard.setBackgroundColor(Color.parseColor("#fef2f2"));
+
+                TextView tvReportDate = new TextView(requireContext());
+                tvReportDate.setText(formatDateTime(report.reportedAt));
+                tvReportDate.setTextSize(12);
+                tvReportDate.setTextColor(Color.parseColor("#991b1b"));
+                reportCard.addView(tvReportDate);
+
+                TextView tvReportMessage = new TextView(requireContext());
+                tvReportMessage.setText(report.message);
+                tvReportMessage.setTextSize(14);
+                tvReportMessage.setPadding(0, 4, 0, 0);
+                reportCard.addView(tvReportMessage);
+
+                layout.addView(reportCard);
+            }
+        } else {
+            layout.setVisibility(View.GONE);
+        }
+    }
+
+    private void displayCancellationInfo(LinearLayout layout, DriverRideHistoryDetailResponse ride) {
+        if (ride.wasCancelled) {
+            layout.setVisibility(View.VISIBLE);
+            layout.removeAllViews();
+
+            TextView tvCancelledBy = new TextView(requireContext());
+            tvCancelledBy.setText("Cancelled by: " + ride.cancelledBy);
+            tvCancelledBy.setPadding(0, 0, 0, 8);
+            layout.addView(tvCancelledBy);
+
+            if (ride.terminationReason != null && !ride.terminationReason.isEmpty()) {
+                TextView tvCancelReason = new TextView(requireContext());
+                tvCancelReason.setText("Reason: " + ride.terminationReason);
+                layout.addView(tvCancelReason);
+            }
+        } else {
+            layout.setVisibility(View.GONE);
+        }
+    }
+
+    private String getStars(int rating) {
+        StringBuilder stars = new StringBuilder();
+        for (int i = 0; i < 5; i++) {
+            stars.append(i < rating ? "★" : "☆");
+        }
+        return stars.toString();
+    }
+
+    private String getStatusText(String status) {
+        switch (status) {
+            case "COMPLETED":
+                return "Completed";
+            case "CANCELLED_BY_DRIVER":
+                return "Cancelled by Driver";
+            case "CANCELLED_BY_PASSENGER":
+                return "Cancelled by Passenger";
+            case "FINISHED_EARLY":
+                return "Finished Early";
+            default:
+                return status;
+        }
+    }
+
+    private void setStatusBadgeStyle(TextView badge, String status) {
+        int backgroundColor;
+        int textColor;
+
+        if (status.equals("COMPLETED")) {
+            backgroundColor = Color.parseColor("#d1fae5");
+            textColor = Color.parseColor("#065f46");
+        } else if (status.contains("CANCELLED")) {
+            backgroundColor = Color.parseColor("#fee2e2");
+            textColor = Color.parseColor("#991b1b");
+        } else if (status.equals("FINISHED_EARLY")) {
+            backgroundColor = Color.parseColor("#dbeafe");
+            textColor = Color.parseColor("#1e40af");
+        } else {
+            backgroundColor = Color.parseColor("#e5e7eb");
+            textColor = Color.parseColor("#374151");
+        }
+
+        badge.setBackgroundColor(backgroundColor);
+        badge.setTextColor(textColor);
+        badge.setPadding(12, 6, 12, 6);
+    }
+
+    private String formatDateTime(String isoDate) {
+        if (isoDate == null) return "";
+        try {
+            SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault());
+            SimpleDateFormat outputFormat = new SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault());
+            Date date = inputFormat.parse(isoDate);
+            return date != null ? outputFormat.format(date) : "";
+        } catch (ParseException e) {
+            return isoDate;
+        }
+    }
+
+    private void showReportDialog() {
+        if (allRides.isEmpty()) {
+            Toast.makeText(requireContext(), "No rides to generate report", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Calculate statistics manually
+        int totalRides = allRides.size();
+        int completedRides = historyService.getCompletedRides(allRides).size();
+        int cancelledRides = historyService.getCancelledRides(allRides).size();
+        int panicRides = historyService.getPanicRides(allRides).size();
+
+        double totalEarnings = 0;
+        double totalDistance = 0;
+        int totalDuration = 0;
+
+        for (DriverRideHistoryResponse ride : allRides) {
+            if (ride.price != null) totalEarnings += ride.price;
+            if (ride.distance != null) totalDistance += ride.distance;
+            totalDuration += ride.getDurationMinutes();
+        }
+
+        double avgEarnings = totalRides > 0 ? totalEarnings / totalRides : 0;
+        double avgDistance = totalRides > 0 ? totalDistance / totalRides : 0;
+        double completionRate = totalRides > 0 ? (completedRides * 100.0 / totalRides) : 0;
+        double cancellationRate = totalRides > 0 ? (cancelledRides * 100.0 / totalRides) : 0;
+
+        // Create simple statistics dialog
+        String reportMessage = String.format(Locale.getDefault(),
+                "Ride Statistics:\n\n" +
+                        "Total Rides: %d\n" +
+                        "Completed: %d (%.1f%%)\n" +
+                        "Cancelled: %d (%.1f%%)\n" +
+                        "Panic Events: %d\n\n" +
+                        "Total Earnings: %.0f din\n" +
+                        "Average Earnings: %.0f din\n\n" +
+                        "Total Distance: %.1f km\n" +
+                        "Average Distance: %.1f km\n\n" +
+                        "Total Duration: %d minutes",
+                totalRides,
+                completedRides, completionRate,
+                cancelledRides, cancellationRate,
+                panicRides,
+                totalEarnings,
+                avgEarnings,
+                totalDistance,
+                avgDistance,
+                totalDuration
+        );
+
+        new android.app.AlertDialog.Builder(requireContext())
+                .setTitle("📊 Ride Report")
+                .setMessage(reportMessage)
+                .setPositiveButton("OK", null)
+                .show();
     }
 }

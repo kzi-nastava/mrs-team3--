@@ -1,39 +1,55 @@
-import { Component } from '@angular/core';
-import { Router } from '@angular/router';
-import { CommonModule, NgIf} from '@angular/common';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Subscription } from 'rxjs';
+import { AuthService } from '../services/auth.service';
+import { GuestSidebarComponent } from './guest-sidebar/guest-sidebar';
+import { PassengerSidebarComponent } from './passenger-sidebar/passenger-sidebar';
+import { DriverSidebarComponent } from './driver-sidebar/driver-sidebar';
+import { AdminSidebarComponent } from './admin-sidebar/admin-sidebar';
 
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [CommonModule],
+  imports: [
+    CommonModule,
+    GuestSidebarComponent,
+    PassengerSidebarComponent,
+    DriverSidebarComponent,
+    AdminSidebarComponent
+  ],
   templateUrl: './sidebar.html',
   styleUrl: './sidebar.css'
 })
-export class SidebarComponent {
+export class SidebarComponent implements OnInit, OnDestroy {
+  userRole: string | null = null;
+  private userSubscription?: Subscription;
 
-  // HARD-CODED for now (easy to replace later)
-  role: 'DRIVER' | 'ADMIN' | 'GUEST' | 'REGISTERED' = 'DRIVER';
-  // role = authService.getRole();
-  constructor(private router: Router) {}
+  constructor(private authService: AuthService) {}
 
-  goHome() {
-    this.router.navigateByUrl('/');
+  ngOnInit() {
+    // Subscribe to user changes
+    this.userSubscription = this.authService.currentUser$.subscribe(user => {
+      this.userRole = user?.role || null;
+    });
   }
 
-  goHistory() {
-    this.router.navigateByUrl('/ride-history');
+  ngOnDestroy() {
+    this.userSubscription?.unsubscribe();
   }
 
-  goMessages() {
-    // this.router.navigateByUrl('/messages');
-    alert('Messages - to be implemented');
+  get isGuest(): boolean {
+    return !this.authService.isAuthenticated();
   }
 
-  goProfile() {
-    this.router.navigateByUrl('/profile');
+  get isPassenger(): boolean {
+    return this.authService.isPassenger();
   }
 
-  goLogin() {
-    this.router.navigateByUrl('/login');
+  get isDriver(): boolean {
+    return this.authService.isDriver();
+  }
+
+  get isAdmin(): boolean {
+    return this.authService.isAdmin();
   }
 }

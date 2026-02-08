@@ -7,14 +7,15 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-@Getter
-@Setter
 @Entity
 @Table(name = "rides")
+@Getter
+@Setter
 public class Ride {
 
     @Id
@@ -36,6 +37,11 @@ public class Ride {
             inverseJoinColumns = @JoinColumn(name = "passenger_id")
     )
     private List<Passenger> passengers = new ArrayList<>();
+
+
+    @OneToMany(mappedBy = "ride", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<RideInvite> invites = new ArrayList<>();
+
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -88,6 +94,9 @@ public class Ride {
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(nullable = false)
+    private int estimatedTimeMinutes;
+
     private LocalDateTime scheduledAt;
     private LocalDateTime startedAt;
     private LocalDateTime finishedAt;
@@ -110,6 +119,12 @@ public class Ride {
     @Column(nullable = false)
     private double calculatedPrice;
 
+    @Column(nullable = false)
+    private boolean babyTransport;
+
+    @Column(nullable = false)
+    private boolean petTransport;
+
     @Enumerated(EnumType.STRING)
     private CancelledBy cancelledBy;
 
@@ -124,14 +139,29 @@ public class Ride {
     @OneToMany(mappedBy = "ride", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PanicEvent> panicEvents = new ArrayList<>();
 
-    private Integer driverRating;
-    private Integer vehicleRating;
-
-    @Column(length = 1000)
-    private String reviewComment;
-
-    private LocalDateTime reviewedAt;
+    @OneToMany(mappedBy = "ride", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Review> reviews = new ArrayList<>();
 
     @OneToMany(mappedBy = "ride", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<InconsistencyReport> inconsistencyReports = new ArrayList<>();
+
+
+    public int getRemainingMinutes() {
+        if (startedAt == null) {
+            return Integer.MAX_VALUE;
+        }
+
+        LocalDateTime estimatedEnd =
+                startedAt.plusMinutes(estimatedTimeMinutes);
+
+        return (int) java.time.Duration
+                .between(LocalDateTime.now(), estimatedEnd)
+                .toMinutes();
+    }
+
+    public void assignDriver(Driver driver) {
+        this.driver = driver;
+        driver.setCurrentRide(this);
+    }
+
 }

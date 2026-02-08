@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="12dp"
+    app:cardCornerRadius="8dp"
+    app:cardBackgroundColor="#F9FAFB"
+    app:cardElevation="0dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:id="@+id/tvDriverRating"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/driver_rating"
+            android:textSize="14sp"
+            android:textColor="#111827"
+            android:layout_marginBottom="4dp"/>
+
+        <TextView
+            android:id="@+id/tvVehicleRating"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/vehicle_rating"
+            android:textSize="14sp"
+            android:textColor="#111827"
+            android:layout_marginBottom="8dp"/>
+
+        <TextView
+            android:id="@+id/tvReviewComment"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/great_ride_professional_driver"
+            android:textSize="13sp"
+            android:textColor="#6B7280"
+            android:fontFamily="serif"
+            android:textStyle="italic"/>
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

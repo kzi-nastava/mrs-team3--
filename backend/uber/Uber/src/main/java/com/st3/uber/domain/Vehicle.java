@@ -18,6 +18,7 @@ public class Vehicle {
     @Column(nullable = false)
     private String model;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private VehicleType type;
 

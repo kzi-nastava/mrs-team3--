@@ -1,0 +1,146 @@
+.block-btn,
+.unblock-btn {
+  padding: 0.6rem 1.2rem;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s;
+  font-size: 0.9rem;
+}
+
+.block-btn {
+  border: 2px solid #fca5a5;
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.block-btn:hover {
+  background: #fecaca;
+  transform: translateY(-1px);
+}
+
+.unblock-btn {
+  border: 2px solid #86efac;
+  background: #dcfce7;
+  color: #166534;
+}
+
+.unblock-btn:hover {
+  background: #bbf7d0;
+  transform: translateY(-1px);
+}
+
+
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .5);
+  backdrop-filter: blur(3px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+
+
+.modal-content {
+  background: #fff;
+  border-radius: 14px;
+  width: 460px;
+  max-width: 95%;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, .15);
+  animation: pop 0.25s ease;
+  overflow: hidden;
+}
+
+.modal-content h3 {
+  padding: 1.2rem 1.5rem;
+  background: linear-gradient(135deg, #9b7fc9, #8566b3);
+  color: white;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+textarea {
+  width: 100%;
+  padding: 0.9rem;
+  border-radius: 10px;
+  border: 2px solid #e5e7eb;
+  font-size: 14px;
+  resize: none;
+  min-height: 110px;
+  transition: 0.2s;
+  background: #fafafa;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: #9b7fc9;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(155, 127, 201, .15);
+}
+
+
+
+.actions {
+  display: flex;
+  gap: 1rem;
+  padding: 1.2rem 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  background: #fafafa;
+}
+
+.actions button {
+  flex: 1;
+  font-weight: 700;
+}
+
+
+.confirm-btn {
+  padding: 0.75rem;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, #9b7fc9, #8566b3);
+  color: white;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.confirm-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(155, 127, 201, .35);
+}
+
+
+.cancel-btn {
+  padding: 0.75rem;
+  border-radius: 10px;
+  border: 2px solid #e5e7eb;
+  background: white;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.cancel-btn:hover {
+  background: #f3f4f6;
+}
+
+
+@keyframes pop {
+  from {
+    transform: scale(.94);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}

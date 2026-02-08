@@ -1,13 +1,11 @@
 package com.st3.uber.domain;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
 import java.time.LocalDateTime;
 
-@Getter
-@Setter
+@Data
 @Entity
 @Table(name = "panic_events")
 public class PanicEvent {
@@ -20,9 +18,12 @@ public class PanicEvent {
     @JoinColumn(name = "ride_id", nullable = false)
     private Ride ride;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "user_id", nullable = false)
+    @ManyToOne()
+    @JoinColumn(name = "user_id")
     private User triggeredBy;
+
+    @Column(name = "email")
+    private String email;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;

@@ -1,8 +1,29 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { MessageService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
+import { RideApiService } from '../services/ride-api.service';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { CreateRideRequest } from '../services/ride-api.service';
+import {
+  FormBuilder,
+  FormGroup,
+  Validators,
+  ReactiveFormsModule,
+  FormArray
+} from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { RideBookingService, Location } from '../services/ride-booking.service';
 import { Subject, takeUntil } from 'rxjs';
+
+import {
+  RideBookingService,
+  Location,
+  VehicleType
+} from '../services/ride-booking.service';
+
+import {
+  FavoriteRoutesService,
+  FavoriteRoute
+} from '../services/favorite-routes.service';
+import { DriverLocationService } from '../services/driver-location.service';
 
 interface Stop {
   id: number;
@@ -14,297 +35,604 @@ interface Stop {
 @Component({
   selector: 'app-ride-booking',
   standalone: true,
-  imports: [FormsModule, CommonModule],
+  imports: [ReactiveFormsModule, CommonModule, ToastModule],
+  providers: [MessageService],
   templateUrl: './ride-booking.html',
   styleUrl: './ride-booking.css'
 })
 export class RideBookingComponent implements OnInit, OnDestroy {
+
   private destroy$ = new Subject<void>();
-  
-  pickupLocation: string = '';
-  destination: string = '';
+
+  rideForm!: FormGroup;
+
   stops: Stop[] = [];
-  
+
   pickupSuggestions: any[] = [];
   destinationSuggestions: any[] = [];
   showPickupSuggestions = false;
   showDestinationSuggestions = false;
-  
-  showRideInfo = false;
-  estimatedTime: string = '';
-  estimatedPrice: string = '';
-  
+
+
+  showConfirmModal = false;
+
+  modalEstimatedTime = '';
+  modalEstimatedPrice = '';
+
+  isCalculating = false;
+  private lastCalculationTime = 0;
+  private CALCULATION_COOLDOWN = 2000;
+
+
   showFavorites = false;
-  favoriteRoutes: any[] = [];
-  
+  favorites!: ReturnType<FavoriteRoutesService['getFavorites']>;
+
   private stopIdCounter = 0;
   private searchTimeout: any = null;
 
-  constructor(private rideBookingService: RideBookingService) {}
+
+
+  constructor(
+    private fb: FormBuilder,
+    private rideBookingService: RideBookingService,
+    private favoriteService: FavoriteRoutesService,
+    private rideApiService: RideApiService,
+    private messageService: MessageService,
+    private cdr: ChangeDetectorRef,
+    private driverLocationService: DriverLocationService
+  ) {
+    this.initForm();
+  }
 
   ngOnInit(): void {
-    // Listen for ride booking data changes from service
+    this.favorites = this.favoriteService.getFavorites();
+    this.favoriteService.loadFromBackend();
+
+
     this.rideBookingService.rideBookingData$
       .pipe(takeUntil(this.destroy$))
       .subscribe(data => {
         if (data.pickup) {
-          this.pickupLocation = data.pickup.name;
+          this.rideForm.patchValue(
+            { pickupLocation: data.pickup.name },
+            { emitEvent: false }
+          );
         }
+
         if (data.destination) {
-          this.destination = data.destination.name;
+          this.rideForm.patchValue(
+            { destination: data.destination.name },
+            { emitEvent: false }
+          );
         }
-        // Update stops from service
-        if (data.stops.length > this.stops.length) {
-          // Added more stops than we have
-          const diff = data.stops.length - this.stops.length;
-          for (let i = 0; i < diff; i++) {
-            this.stops.push({
-              id: this.stopIdCounter++,
-              location: '',
-              suggestions: [],
-              showSuggestions: false
-            });
-          }
-        }
-        // Update stop locations
-        data.stops.forEach((stop, index) => {
-          if (this.stops[index]) {
-            this.stops[index].location = stop.name;
-          }
-        });
-        
-        // Check and update ride info display automatically
-        this.checkAndUpdateRideInfo(data);
+
+        this.rideForm.patchValue({
+          vehicleType: data.vehicleType,
+          babyTransport: data.babyTransport,
+          petTransport: data.petTransport,
+          passengers: data.passengers
+        }, { emitEvent: false });
+
+        this.syncStops(data.stops);
       });
+
+    this.rideForm.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(val => {
+        this.rideBookingService.setVehicleType(val.vehicleType);
+        this.rideBookingService.setBabyTransport(val.babyTransport);
+        this.rideBookingService.setPetTransport(val.petTransport);
+        this.rideBookingService.setPassengers(val.passengers);
+      });
+
+    this.rideForm.get('pickupLocation')?.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.onPickupInputChange());
+
+    this.rideForm.get('destination')?.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.onDestinationInputChange());
   }
+
+
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
   }
 
-  private checkAndUpdateRideInfo(data: any): void {
-    // Show ride info only if we have pickup and destination
-    if (data.pickup && data.destination) {
-      this.showRideInfo = true;
-      this.calculateEstimate(data);
-    } else {
-      this.showRideInfo = false;
-    }
+  refreshDriverLocations(): void {
+    this.driverLocationService.refreshVehicles();
   }
 
-  //Mock calculation of time and price estimates
-  private calculateEstimate(data: any): void {
+  private initForm(): void {
+    this.rideForm = this.fb.group({
+      pickupLocation: ['', Validators.required],
+      destination: ['', Validators.required],
 
-    const baseTime = 5; 
-    const timePerStop = 3; 
-    const totalTime = baseTime + (data.stops.length * timePerStop);
-    
-    const basePricePerKm = 50; 
-    const estimatedKm = 5 + (data.stops.length * 2); 
-    const totalPrice = Math.round(basePricePerKm * estimatedKm);
-    
-    this.estimatedTime = `${totalTime} min`;
-    this.estimatedPrice = `${totalPrice} din`;
+      vehicleType: ['STANDARD' as VehicleType, Validators.required],
+      babyTransport: [false],
+      petTransport: [false],
+      passengers: [1, [Validators.required, Validators.min(1), Validators.max(8)]],
+
+      passengerEmails: this.fb.array([]),
+      scheduledAt: [null]
+    });
   }
 
-  // Pickup autocomplete
-  onPickupInputChange(): void {
-    if (this.searchTimeout) {
-      clearTimeout(this.searchTimeout);
-    }
-    
-    if (this.pickupLocation.length > 2) {
-      this.searchTimeout = setTimeout(() => {
-        this.searchLocation(this.pickupLocation, 'pickup');
-      }, 500);
-    } else {
-      this.showPickupSuggestions = false;
-    }
+  clearScheduledAt(): void {
+    this.rideForm.patchValue({ scheduledAt: null });
   }
 
-  selectPickupSuggestion(suggestion: any): void {
-    this.pickupLocation = suggestion.display_name;
-    this.showPickupSuggestions = false;
-    
-    const location: Location = {
-      lat: parseFloat(suggestion.lat),
-      lng: parseFloat(suggestion.lon),
-      name: suggestion.display_name
-    };
-    
-    this.rideBookingService.setPickupLocation(location);
+  get passengerEmails(): FormArray {
+    return this.rideForm.get('passengerEmails') as FormArray;
   }
 
-  // Destination autocomplete
-  onDestinationInputChange(): void {
-    if (this.searchTimeout) {
-      clearTimeout(this.searchTimeout);
-    }
-    
-    if (this.destination.length > 2) {
-      this.searchTimeout = setTimeout(() => {
-        this.searchLocation(this.destination, 'destination');
-      }, 500);
-    } else {
-      this.showDestinationSuggestions = false;
-    }
+  addPassengerEmail(input: HTMLInputElement): void {
+    const email = input.value.trim();
+    if (!email) return;
+
+    this.passengerEmails.push(
+      this.fb.control(email, Validators.email)
+    );
+
+    input.value = '';
   }
 
-  selectDestinationSuggestion(suggestion: any): void {
-    this.destination = suggestion.display_name;
-    this.showDestinationSuggestions = false;
-    
-    const location: Location = {
-      lat: parseFloat(suggestion.lat),
-      lng: parseFloat(suggestion.lon),
-      name: suggestion.display_name
-    };
-    
-    this.rideBookingService.setDestinationLocation(location);
-  }
-
-  // Stop autocomplete
-  onStopInputChange(stopId: number): void {
-    if (this.searchTimeout) {
-      clearTimeout(this.searchTimeout);
-    }
-    
-    const stop = this.stops.find(s => s.id === stopId);
-    if (!stop) return;
-    
-    if (stop.location.length > 2) {
-      this.searchTimeout = setTimeout(() => {
-        this.searchLocation(stop.location, 'stop', stopId);
-      }, 500);
-    } else {
-      stop.showSuggestions = false;
-    }
-  }
-
-  selectStopSuggestion(stopId: number, suggestion: any): void {
-    const stop = this.stops.find(s => s.id === stopId);
-    if (!stop) return;
-    
-    stop.location = suggestion.display_name;
-    stop.showSuggestions = false;
-    
-    const location: Location = {
-      lat: parseFloat(suggestion.lat),
-      lng: parseFloat(suggestion.lon),
-      name: suggestion.display_name
-    };
-    
-    const index = this.stops.findIndex(s => s.id === stopId);
-    this.rideBookingService.updateStopLocation(index, location);
-  }
-
-  // Generic search location
-  private searchLocation(query: string, type: 'pickup' | 'destination' | 'stop', stopId?: number): void {
-    const searchQuery = `${query}, Novi Sad, Serbia`;
-    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=5&countrycodes=rs&bounded=1&viewbox=19.7,45.3,20.0,45.2`;
-    
-    fetch(url)
-      .then(response => response.json())
-      .then(data => {
-        if (type === 'pickup') {
-          this.pickupSuggestions = data;
-          this.showPickupSuggestions = data.length > 0;
-        } else if (type === 'destination') {
-          this.destinationSuggestions = data;
-          this.showDestinationSuggestions = data.length > 0;
-        } else if (type === 'stop' && stopId !== undefined) {
-          const stop = this.stops.find(s => s.id === stopId);
-          if (stop) {
-            stop.suggestions = data;
-            stop.showSuggestions = data.length > 0;
-          }
-        }
-      })
-      .catch(error => console.error('Search error:', error));
-  }
-
-  addStop(): void {
-    const newStop: Stop = {
-      id: this.stopIdCounter++,
-      location: '',
-      suggestions: [],
-      showSuggestions: false
-    };
-    this.stops.push(newStop);
-  }
-
-  removeStop(id: number): void {
-    const index = this.stops.findIndex(s => s.id === id);
-    if (index !== -1) {
-      this.stops = this.stops.filter(stop => stop.id !== id);
-      this.rideBookingService.removeStopLocation(index);
-    }
-  }
-
-  onBookRide(): void {
-    const rideData = this.rideBookingService.getRideBookingData();
-    
-    if (rideData.pickup && rideData.destination) {
-      this.rideBookingService.calculateRoute();
-      console.log('Booking ride:', rideData);
-    } else {
-      alert('Please select pickup and destination locations!');
-    }
-  }
-
-  clearRoute(): void {
-    this.pickupLocation = '';
-    this.destination = '';
-    this.stops = [];
-    this.showPickupSuggestions = false;
-    this.showDestinationSuggestions = false;
-    this.showRideInfo = false;
-    this.rideBookingService.clearRoute();
-  }
-
-  // Feature for scheduling rides 
-  onSchedule(): void {
-    console.log('Schedule for later clicked');
-    alert('Schedule feature coming soon!');
+  removePassengerEmail(index: number): void {
+    this.passengerEmails.removeAt(index);
   }
 
   toggleFavorites(): void {
     this.showFavorites = !this.showFavorites;
-    
-    //Mock data for testing
-    if (this.favoriteRoutes.length === 0) {
-      this.favoriteRoutes = [
-        {
-          id: 1,
-          name: 'Home to Work',
-          pickup: 'Bulevar oslobođenja 46, Novi Sad',
-          destination: 'Faculty of Technical Sciences, Novi Sad'
-        },
-        {
-          id: 2,
-          name: 'Weekend Trip',
-          pickup: 'Novi Sad',
-          destination: 'Belgrade Airport'
-        }
-      ];
+  }
+
+  useFavoriteRoute(route: FavoriteRoute): void {
+    this.rideForm.patchValue({
+      pickupLocation: route.from.address,
+      destination: route.to.address
+    });
+
+    this.stops = [];
+
+    this.rideBookingService.setPickupLocationDirect({
+      lat: route.from.latitude,
+      lng: route.from.longitude,
+      name: route.from.address
+    });
+
+    this.rideBookingService.setDestinationLocationDirect({
+      lat: route.to.latitude,
+      lng: route.to.longitude,
+      name: route.to.address
+    });
+
+    this.rideBookingService.clearStops();
+
+    route.stops.forEach(s => {
+      this.rideBookingService.addStopLocationDirect({
+        lat: s.latitude,
+        lng: s.longitude,
+        name: s.address
+      });
+    });
+
+    this.syncStops(this.rideBookingService.getRideBookingData().stops);
+
+
+
+    this.showFavorites = false;
+
+    this.rideForm.patchValue({
+      vehicleType: route.vehicleType,
+      babyTransport: route.babyTransport,
+      petTransport: route.petTransport
+    }, { emitEvent: false });
+
+    this.rideBookingService.setVehicleType(route.vehicleType);
+    this.rideBookingService.setBabyTransport(route.babyTransport);
+    this.rideBookingService.setPetTransport(route.petTransport);
+
+    this.rideBookingService.calculateRoute();
+
+
+  }
+
+  onPickupInputChange(): void {
+    this.debounceSearch(this.rideForm.get('pickupLocation')?.value, 'pickup');
+  }
+
+  onDestinationInputChange(): void {
+    this.debounceSearch(this.rideForm.get('destination')?.value, 'destination');
+  }
+
+  onStopInputChange(stopId: number, event: Event): void {
+    const stop = this.stops.find(s => s.id === stopId);
+    if (!stop) return;
+
+    stop.location = (event.target as HTMLInputElement).value;
+    this.debounceSearch(stop.location, 'stop', stopId);
+  }
+
+  private debounceSearch(value: string, type: 'pickup' | 'destination' | 'stop', stopId?: number): void {
+    if (this.searchTimeout) clearTimeout(this.searchTimeout);
+
+    if (!value || value.length < 3) {
+      if (type === 'pickup') this.showPickupSuggestions = false;
+      if (type === 'destination') this.showDestinationSuggestions = false;
+      if (type === 'stop') {
+        const stop = this.stops.find(s => s.id === stopId);
+        if (stop) stop.showSuggestions = false;
+      }
+      return;
+    }
+
+    this.searchTimeout = setTimeout(() => {
+      this.searchLocation(value, type, stopId);
+    }, 500);
+  }
+
+  selectPickupSuggestion(suggestion: any): void {
+    this.selectLocation(suggestion, 'pickup');
+  }
+
+  selectDestinationSuggestion(suggestion: any): void {
+    this.selectLocation(suggestion, 'destination');
+  }
+
+  selectStopSuggestion(stopId: number, suggestion: any): void {
+    const location: Location = {
+      lat: +suggestion.lat,
+      lng: +suggestion.lon,
+      name: suggestion.display_name
+    };
+
+    const index = this.stops.findIndex(s => s.id === stopId);
+    if (index >= 0) {
+      this.rideBookingService.updateStopLocationDirect(index, location);
+      this.stops[index].location = suggestion.display_name;
+      this.stops[index].showSuggestions = false;
     }
   }
 
-  useFavoriteRoute(route: any): void {
-    this.pickupLocation = route.pickup;
-    this.destination = route.destination;
-    
-    // Set locations in service mock for now
-    console.log('Using favorite route:', route);
-    this.showFavorites = false;
+  private selectLocation(suggestion: any, type: 'pickup' | 'destination'): void {
+    const location: Location = {
+      lat: +suggestion.lat,
+      lng: +suggestion.lon,
+      name: suggestion.display_name
+    };
+
+    if (type === 'pickup') {
+      this.rideForm.patchValue({ pickupLocation: location.name });
+      this.showPickupSuggestions = false;
+      this.rideBookingService.setPickupLocationDirect(location);
+    } else {
+      this.rideForm.patchValue({ destination: location.name });
+      this.showDestinationSuggestions = false;
+      this.rideBookingService.setDestinationLocationDirect(location);
+    }
   }
 
-  deleteFavoriteRoute(id: number): void {
-    this.favoriteRoutes = this.favoriteRoutes.filter(r => r.id !== id);
+  private searchLocation(query: string, type: 'pickup' | 'destination' | 'stop', stopId?: number): void {
+    const url =
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ', Serbia')}&limit=5`;
+
+    fetch(url)
+      .then(res => res.json())
+      .then(data => {
+        if (type === 'pickup') {
+          this.pickupSuggestions = data;
+          this.showPickupSuggestions = true;
+        } else if (type === 'destination') {
+          this.destinationSuggestions = data;
+          this.showDestinationSuggestions = true;
+        } else if (type === 'stop' && stopId !== undefined) {
+          const stop = this.stops.find(s => s.id === stopId);
+          if (stop) {
+            stop.suggestions = data;
+            stop.showSuggestions = true;
+          }
+        }
+      });
+  }
+
+  addStop(): void {
+    this.stops.push({
+      id: this.stopIdCounter++,
+      location: '',
+      suggestions: [],
+      showSuggestions: false
+    });
+  }
+
+  removeStop(id: number): void {
+    const index = this.stops.findIndex(s => s.id === id);
+    if (index >= 0) {
+      this.stops.splice(index, 1);
+      this.rideBookingService.removeStopLocation(index);
+    }
+  }
+
+  private syncStops(serviceStops: Location[]): void {
+    if (serviceStops.length !== this.stops.length) {
+      this.stops = serviceStops.map((s, i) => ({
+        id: i,
+        location: s.name,
+        suggestions: [],
+        showSuggestions: false
+      }));
+      this.stopIdCounter = this.stops.length;
+    }
+  }
+
+
+
+  onBookRide(): void {
+    if (this.rideForm.invalid) return;
+
+    if (this.isCalculating) {
+      this.messageService.add({
+        severity: 'info',
+        summary: 'Please wait',
+        detail: 'Calculation in progress...'
+      });
+      return;
+    }
+
+    const now = Date.now();
+    const timeSinceLastCalc = now - this.lastCalculationTime;
+
+    if (timeSinceLastCalc < this.CALCULATION_COOLDOWN) {
+      const remainingTime = Math.ceil((this.CALCULATION_COOLDOWN - timeSinceLastCalc) / 1000);
+      this.messageService.add({
+        severity: 'info',
+        summary: 'Too fast',
+        detail: `Please wait ${remainingTime} second(s) before calculating again`
+      });
+      return;
+    }
+
+    const data = this.rideBookingService.getRideBookingData();
+
+    if (!data.pickup || !data.destination) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Missing information',
+        detail: 'Please select pickup and destination locations'
+      });
+      return;
+    }
+
+    this.lastCalculationTime = now;
+    this.openConfirmModal(data);
+  }
+
+
+  openConfirmModal(data: any): void {
+    this.isCalculating = true;
+
+    const payload = {
+      startLocation: {
+        latitude: data.pickup.lat,
+        longitude: data.pickup.lng,
+        address: data.pickup.name
+      },
+      endLocation: {
+        latitude: data.destination.lat,
+        longitude: data.destination.lng,
+        address: data.destination.name
+      },
+      stops: data.stops.map((s: any) => ({
+        latitude: s.lat,
+        longitude: s.lng,
+        address: s.name
+      })),
+      vehicleType: data.vehicleType,
+      babyTransport: data.babyTransport,
+      petTransport: data.petTransport
+    };
+
+    const timeout = setTimeout(() => {
+      this.isCalculating = false;
+      this.cdr.detectChanges();
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Request timeout',
+        detail: 'Route calculation is taking too long. Please try again.'
+      });
+    }, 15000);
+
+    this.rideApiService.estimateRoute(payload).subscribe({
+      next: res => {
+        clearTimeout(timeout);
+        this.isCalculating = false;
+        this.modalEstimatedTime = `${res.estimatedTimeMinutes} min`;
+        this.modalEstimatedPrice = `${res.estimatedPrice.toFixed(2)} din`;
+        this.showConfirmModal = true;
+        this.cdr.detectChanges();
+      },
+      error: err => {
+        clearTimeout(timeout);
+        this.isCalculating = false;
+        this.cdr.detectChanges();
+
+        let errorMessage = 'Unable to calculate route. Please try again.';
+
+        if (err.status === 429) {
+          errorMessage = 'Too many requests. Please wait a moment and try again.';
+        } else if (err.status === 0) {
+          errorMessage = 'Network error. Please check your connection.';
+        }
+
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Calculation failed',
+          detail: errorMessage
+        });
+      }
+    });
+  }
+
+
+  closeConfirmModal(): void {
+    this.showConfirmModal = false;
+  }
+
+
+  confirmCreateRide(): void {
+    this.showConfirmModal = false;
+
+    const data = this.rideBookingService.getRideBookingData();
+
+    const payload: CreateRideRequest = {
+      startLocation: {
+        latitude: data.pickup!.lat,
+        longitude: data.pickup!.lng,
+        address: data.pickup!.name
+      },
+      endLocation: {
+        latitude: data.destination!.lat,
+        longitude: data.destination!.lng,
+        address: data.destination!.name
+      },
+      stops: data.stops.map(s => ({
+        latitude: s.lat,
+        longitude: s.lng,
+        address: s.name
+      })),
+      passengerEmails: this.passengerEmails.value,
+      vehicleType: data.vehicleType,
+      babyTransport: data.babyTransport,
+      petTransport: data.petTransport,
+      scheduledAt: this.toIsoIfPresent(this.rideForm.value.scheduledAt)
+    };
+
+    this.rideApiService.createRide(payload).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Ride created',
+          detail: 'Your ride has been successfully created.'
+        });
+        this.clearRoute();
+      },
+      error: err => {
+        console.error(err);
+
+        const msg =
+          typeof err.error === 'string'
+            ? err.error
+            : err.error?.message ||
+            'Ride creation failed';
+
+        if (err.status === 403) {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Account blocked',
+            detail: msg,
+            life: 4000
+          });
+          return;
+        }
+
+        if (err.status === 409) {
+          this.messageService.add({
+            severity: 'warn',
+            summary: 'Ride rejected',
+            detail: msg,
+            life: 4000
+          });
+          return;
+        }
+
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: msg,
+          life: 4000
+        });
+      }
+
+
+
+    });
+  }
+
+
+  private toIsoIfPresent(value: string | null): string | undefined {
+    if (!value) return undefined;
+    return value;
+  }
+
+
+
+
+
+
+
+  clearRoute(): void {
+    this.rideForm.reset({
+      pickupLocation: '',
+      destination: '',
+      vehicleType: 'STANDARD',
+      babyTransport: false,
+      petTransport: false,
+      passengers: 1
+    });
+
+    this.rideForm.setControl('passengerEmails', this.fb.array([]));
+
+    //this.stops = [];
+    this.stopIdCounter = 0;
+
+    this.rideBookingService.clearRoute();
+
+  }
+
+
+  onSchedule(): void {
+    alert('Schedule feature coming soon');
   }
 
   trackByStopId(index: number, stop: Stop): number {
     return stop.id;
   }
+
+  private showRideError(reason: string) {
+    switch (reason) {
+      case 'NO_ACTIVE_DRIVERS':
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'No active drivers',
+          detail: 'There are currently no active drivers available.'
+        });
+        break;
+
+      case 'NO_MATCHING_DRIVERS':
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'No matching drivers',
+          detail: 'No driver matches your ride requirements.'
+        });
+        break;
+
+      case 'NO_DRIVER_WITH_LOCATION':
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Location unavailable',
+          detail: 'Drivers are active but none have a valid location.'
+        });
+        break;
+
+      default:
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Ride rejected',
+          detail: 'Ride cannot be created at the moment.'
+        });
+    }
+  }
+
 }
+
+

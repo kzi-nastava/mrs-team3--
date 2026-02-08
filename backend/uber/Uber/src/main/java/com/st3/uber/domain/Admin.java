@@ -1,9 +1,12 @@
 package com.st3.uber.domain;
 
-import lombok.Getter;
-import lombok.Setter;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import lombok.EqualsAndHashCode;
 
-@Getter
-@Setter
+@EqualsAndHashCode(callSuper = true)
+@Entity
+@Table(name = "admins")
 public class Admin extends User{
 }

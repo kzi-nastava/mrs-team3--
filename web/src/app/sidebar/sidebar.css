@@ -42,11 +42,11 @@
     justify-content: space-around;
     padding: var(--spacing-md);
   }
-  
+
   .spacer {
     display: none;
   }
-  
+
   .icon-btn {
     margin-bottom: 0;
   }
@@ -57,7 +57,7 @@
   .icon-sidebar {
     padding: var(--spacing-sm);
   }
-  
+
   .icon-btn {
     width: 3rem;
     height: 3rem;

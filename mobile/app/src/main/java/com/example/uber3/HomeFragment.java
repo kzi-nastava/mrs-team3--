@@ -9,6 +9,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+
 public class HomeFragment extends Fragment {
 
     private static final String ARG_ROLE = "role";
@@ -28,6 +30,25 @@ public class HomeFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater,
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_home, container, false);
+
+        View view = inflater.inflate(R.layout.fragment_home, container, false);
+
+        FloatingActionButton fab = view.findViewById(R.id.bookRideFab);
+
+        fab.setOnClickListener(v -> {
+
+            fab.hide();
+
+            RideBookingFragment sheet = RideBookingFragment.newInstance();
+
+            sheet.setOnDismissCallback(fab::show);
+
+            MapFragment.setOnLocationSelectedListener(sheet::setPickupFromMap);
+
+
+            sheet.show(getParentFragmentManager(), "RideBooking");
+        });
+
+        return view;
     }
 }

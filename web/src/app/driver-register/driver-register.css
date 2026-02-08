@@ -1,0 +1,106 @@
+:host {
+  display: block;
+  height: 100%;
+  background: var(--color-primary-lighter);
+}
+
+.left-scroll {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.content-wrapper {
+  min-height: 100%;
+  padding: 3rem 4rem;
+  display: flex;
+  justify-content: stretch;   
+}
+
+.card-wrapper {
+  width: 100%;
+  max-width: none;            
+}
+
+:host ::ng-deep .p-card {
+  border-radius: 20px;
+  width: 100%;
+}
+
+:host ::ng-deep .p-card-body {
+  padding: 3rem 4rem;
+}
+
+/* IMPROVED HEADER STYLING */
+:host ::ng-deep .p-card-header {
+  padding: 2.5rem 4rem 1.5rem 4rem;
+  background: linear-gradient(135deg, #9b7fc9 0%, #8566b3 100%);
+  border-radius: 20px 20px 0 0;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-900 {
+  color: #ffffff !important;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.text-3xl {
+  font-size: 2rem;
+}
+
+.mb-2 {
+  margin-bottom: 0.5rem;
+}
+
+.mb-4 {
+  margin-bottom: 1rem;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;                  
+}
+
+label {
+  font-size: 0.85rem;
+  color: #555;
+  font-weight: 500;
+}
+
+.footer-space {
+  margin-top: 3.5rem;
+}
+
+:host ::ng-deep .p-inputtext {
+  padding: 0.85rem 1rem;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 1100px) {
+  .content-wrapper {
+    padding: 2rem;
+  }
+
+  .grid-2 {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  :host ::ng-deep .p-card-body {
+    padding: 2rem;
+  }
+
+  :host ::ng-deep .p-card-header {
+    padding: 2rem 2rem 1rem 2rem;
+  }
+
+  .text-3xl {
+    font-size: 1.75rem;
+  }
+}

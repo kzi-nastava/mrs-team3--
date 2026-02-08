@@ -1,0 +1,85 @@
+<div class="modal-overlay" (click)="onCancel()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>💰 Confirm Pricing Changes</h2>
+      <button class="close-btn" (click)="onCancel()">&times;</button>
+    </div>
+    
+    <div class="modal-body">
+      <div class="warning-message">
+        <span class="warning-icon">⚠️</span>
+        <p>You are about to update the pricing configuration. Please review the changes below:</p>
+      </div>
+
+      <div class="changes-container">
+        <div *ngIf="positiveChanges.length > 0" class="change-section positive-section">
+          <h3 class="section-title">
+            <span class="icon">📈</span>
+            Price Increases
+          </h3>
+          <div class="change-list">
+            <div *ngFor="let change of positiveChanges" class="change-item positive-change">
+              <div class="change-header">
+                <span class="change-field">{{ change.field }}</span>
+                <span class="change-badge positive-badge">
+                  {{ formatDifference(change.difference) }}
+                </span>
+              </div>
+              <div class="change-details">
+                <span class="old-value">{{ formatCurrency(change.oldValue) }}</span>
+                <span class="arrow">→</span>
+                <span class="new-value positive-value">{{ formatCurrency(change.newValue) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="negativeChanges.length > 0" class="change-section negative-section">
+          <h3 class="section-title">
+            <span class="icon">📉</span>
+            Price Decreases
+          </h3>
+          <div class="change-list">
+            <div *ngFor="let change of negativeChanges" class="change-item negative-change">
+              <div class="change-header">
+                <span class="change-field">{{ change.field }}</span>
+                <span class="change-badge negative-badge">
+                  {{ formatDifference(change.difference) }}
+                </span>
+              </div>
+              <div class="change-details">
+                <span class="old-value">{{ formatCurrency(change.oldValue) }}</span>
+                <span class="arrow">→</span>
+                <span class="new-value negative-value">{{ formatCurrency(change.newValue) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="changes.length === 0" class="no-changes">
+          <span class="info-icon">ℹ️</span>
+          <p>No pricing changes detected</p>
+        </div>
+      </div>
+
+      <div class="impact-notice">
+        <span class="notice-icon">💡</span>
+        <p>These changes will apply to all new rides immediately after confirmation.</p>
+      </div>
+    </div>
+    
+    <div class="modal-footer">
+      <button class="btn btn-cancel" (click)="onCancel()">
+        <span class="btn-icon">✖️</span>
+        Cancel
+      </button>
+      <button 
+        class="btn btn-confirm" 
+        (click)="onConfirm()"
+        [disabled]="changes.length === 0">
+        <span class="btn-icon">✓</span>
+        Confirm Changes
+      </button>
+    </div>
+  </div>
+</div>

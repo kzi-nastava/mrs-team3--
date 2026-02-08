@@ -1,103 +1,141 @@
 package com.st3.uber.controller;
 
+import com.st3.uber.domain.Location;
+import com.st3.uber.domain.Ride;
+import com.st3.uber.domain.RideInvite;
+import com.st3.uber.domain.User;
+import com.st3.uber.dto.report.RideReportResponse;
 import com.st3.uber.dto.ride.*;
+import com.st3.uber.dto.rideHistory.AdminRideHistoryExtendedResponse;
+import com.st3.uber.dto.rideHistory.AdminRideHistoryResponse;
+import com.st3.uber.dto.rideHistory.PassengerRideSummaryExtendedResponse;
+import com.st3.uber.dto.rideHistory.PassengerRideSummaryResponse;
+import com.st3.uber.enums.CancelledBy;
 import com.st3.uber.enums.RideStatus;
-import com.st3.uber.enums.VehicleType;
+import com.st3.uber.dto.route.RouteEstimateRequest;
+import com.st3.uber.dto.route.RouteEstimateResponse;
+import com.st3.uber.enums.UserRole;
+import com.st3.uber.repository.RideInviteRepository;
+import com.st3.uber.repository.UserRepository;
+import com.st3.uber.service.RideService;
+import com.st3.uber.service.ReviewService;
+import com.st3.uber.service.RideTimelineService;
+import com.st3.uber.util.ComparatorUtils;
+import jakarta.annotation.security.RolesAllowed;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
+import org.springframework.security.oauth2.jwt.Jwt;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @CrossOrigin(origins = "http://localhost:4200")
 @RestController
 @RequestMapping("/api/rides")
 public class RideController {
 
+    private final RideService rideService;
+    private final RideInviteRepository rideInviteRepository;
+    private final ReviewService reviewService;
+    private final UserRepository userRepository;
+    private final RideTimelineService rideTimelineService;
+
+
+    public RideController(RideService rideService, RideInviteRepository rideInviteRepository,
+                          ReviewService reviewService, UserRepository userRepository,
+                          RideTimelineService rideTimelineService) {
+        this.rideService = rideService;
+        this.rideInviteRepository = rideInviteRepository;
+        this.reviewService = reviewService;
+        this.userRepository = userRepository;
+        this.rideTimelineService = rideTimelineService;
+    }
+
 
     @PostMapping(
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<RideResponse> createRide(@RequestBody CreateRideRequest request) {
+    public ResponseEntity<RideResponse> createRide(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestBody CreateRideRequest request
+    ) {
+        Long passengerId = jwt.getClaim("uid");
+
+        Ride ride = rideService.createRide(passengerId, request);
 
         RideResponse response = new RideResponse(
-                100L,
-                RideStatus.PENDING,
-                8,
-                650.0,
-                request.vehicleType()
+                ride.getId(),
+                ride.getStatus(),
+                ride.getDistance(),
+                ride.getEstimatedTimeMinutes(),
+                ride.getCalculatedPrice(),
+                ride.getVehicleType()
         );
+
 
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-    @PostMapping(
-            value = "/favorites/{favoriteRouteId}",
-            consumes = MediaType.APPLICATION_JSON_VALUE,
+    @GetMapping(
+            value = "/track/{token}",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    @ResponseStatus(HttpStatus.CREATED)
+    public ResponseEntity<RideResponse> trackRide(@PathVariable String token) {
 
-    public ResponseEntity<RideResponse> createRideFromFavorite(@PathVariable Long favoriteRouteId, @RequestBody CreateRideFromFavoriteRequest request) {
+        RideInvite invite = rideInviteRepository.findByTrackingToken(token)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid tracking token"));
+
+        Ride ride = invite.getRide();
 
         RideResponse response = new RideResponse(
-                200L,
-                RideStatus.PENDING,
-                6,
-                550.0,
-                request.vehicleType()
+                ride.getId(),
+                ride.getStatus(),
+                ride.getDistance(),
+                ride.getEstimatedTimeMinutes(),
+                ride.getCalculatedPrice(),
+                ride.getVehicleType()
         );
 
-        return new ResponseEntity<>(response, HttpStatus.CREATED);
+
+        return ResponseEntity.ok(response);
     }
 
 
     // GET /api/rides - Get all rides (with optional filters)
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<List<RideResponse>> getAllRides(
+    public ResponseEntity<?> getAllRides(
             @RequestParam(required = false) RideStatus status,
             @RequestParam(required = false) Long passengerId,
             @RequestParam(required = false) Long driverId
     ) {
-        // Mock data - lista ride-ova
-        List<RideResponse> rides = List.of(
-                new RideResponse(
-                        100L,
-                        RideStatus.PENDING,
-                        8,
-                        650.0,
-                        VehicleType.STANDARD
-                ),
-                new RideResponse(
-                        101L,
-                        RideStatus.IN_PROGRESS,
-                        12,
-                        850.0,
-                        VehicleType.VAN
-                ),
-                new RideResponse(
-                        102L,
-                        RideStatus.COMPLETED,
-                        15,
-                        1200.0,
-                        VehicleType.LUXURY
-                ),
-                new RideResponse(
-                        103L,
-                        RideStatus.CANCELLED,
-                        10,
-                        700.0,
-                        VehicleType.STANDARD
-                )
-        );
+        return ResponseEntity.ok().build();
+    }
 
+    @GetMapping("/history/passenger")
+    @RolesAllowed("PASSENGER")
+    public ResponseEntity<List<PassengerRideSummaryResponse>>getPastPassengerRides(
+        @AuthenticationPrincipal Jwt jwt
+    ){
+        Long id = jwt.getClaim("uid");
+        List<PassengerRideSummaryResponse> rides = rideTimelineService.getPastPassengerRides(id);
         return ResponseEntity.ok(rides);
     }
 
+    @GetMapping("/history/passenger/{rideId}")
+    @RolesAllowed("PASSENGER")
+    public ResponseEntity<PassengerRideSummaryExtendedResponse> getPastRideDetails
+        (@AuthenticationPrincipal Jwt jwt,
+         @PathVariable Long rideId){
+        Long id = jwt.getClaim("uid");
+        PassengerRideSummaryExtendedResponse ride = rideTimelineService.getPastRideDetails(id, rideId);
+        return ResponseEntity.ok(ride);
 
+    }
 
     @PostMapping(
             value = "/{rideId}/start",
@@ -105,15 +143,16 @@ public class RideController {
     )
     public ResponseEntity<StartRideResponse> startRide(@PathVariable Long rideId) {
 
+        Ride ride = rideService.startRide(rideId);
+
         StartRideResponse response = new StartRideResponse(
-                rideId,
-                RideStatus.IN_PROGRESS,
-                "2025-01-18T14:30:00"
+                ride.getId(),
+                ride.getStatus(),
+                ride.getStartedAt().toString()
         );
 
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
-
 
     // POST /api/rides/{id}/complete - Complete specific ride
     @PostMapping(
@@ -131,24 +170,6 @@ public class RideController {
     }
 
 
-    // POST /api/rides/{id}/complete-detailed - Complete ride with full details
-    @PostMapping(
-            value = "/{id}/complete-detailed",
-            produces = MediaType.APPLICATION_JSON_VALUE
-    )
-    public ResponseEntity<CompleteRideResponse> completeRideDetailed(@PathVariable Long id) {
-        CompleteRideResponse response = new CompleteRideResponse(
-                id,
-                RideStatus.COMPLETED,
-                LocalDateTime.now().minusMinutes(15),
-                LocalDateTime.now(),
-                "Bulevar oslobođenja 46",
-                "Futoška 10",
-                450.0,
-                8.5
-        );
-        return ResponseEntity.ok(response);
-    }
 
     // POST /api/rides/{id}/cancel - Cancel specific ride
     @PostMapping(
@@ -165,75 +186,277 @@ public class RideController {
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-    // GET /api/rides/{id}/location - Get current ride location and estimated arrival time
+    // ============ REVIEW ENDPOINTS ============
+
+    /**
+     * Get ride details for review (includes map data, driver info, and existing review if any)
+     * Only accessible by passengers who were part of the ride
+     */
     @GetMapping(
-            value = "/{id}/location",
+            value = "/{rideId}/review-details",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    public ResponseEntity<RideLocationResponse> getRideLocation(@PathVariable Long id) {
-        RideLocationResponse response = new RideLocationResponse(
-                id,
-                45.2671,
-                19.8335,
-                "Bulevar oslobođenja 46",
-                5,
-                LocalDateTime.now()
-        );
+    @RolesAllowed("PASSENGER")
+    public ResponseEntity<RideReviewDetailResponse> getRideForReview(
+            @PathVariable Long rideId,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        Long passengerId = jwt.getClaim("uid");
+        RideReviewDetailResponse response = reviewService.getRideForReview(rideId, passengerId);
         return ResponseEntity.ok(response);
     }
 
-    // POST /api/rides/{id}/report-inconsistency - Report driver inconsistency
+    /**
+     * Submit or update a review for a ride
+     * Can be updated within 3 days of ride completion
+     */
     @PostMapping(
-            value = "/{id}/report-inconsistency",
+            value = "/{rideId}/review",
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    public ResponseEntity<ReportInconsistencyResponse> reportInconsistency(
-            @PathVariable Long id,
-            @RequestBody ReportInconsistencyRequest request
+    @RolesAllowed("PASSENGER")
+    public ResponseEntity<SubmitRatingResponse> submitReview(
+            @PathVariable Long rideId,
+            @RequestBody SubmitRatingRequest request,
+            @AuthenticationPrincipal Jwt jwt
     ) {
-        ReportInconsistencyResponse response = new ReportInconsistencyResponse(
-                1L,
-                id,
-                "Inconsistency report submitted successfully",
-                LocalDateTime.now()
-        );
+        Long passengerId = jwt.getClaim("uid");
+        SubmitRatingResponse response = reviewService.submitOrUpdateReview(rideId, passengerId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+
+    @PutMapping(
+            value = "/{rideId}/cancel-universal",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @RolesAllowed({"PASSENGER", "DRIVER"})
+    public ResponseEntity<CancelRideResponse> cancelRide(
+            @PathVariable Long rideId,
+            @RequestBody(required = false) CancelRideRequest request
+    ) {
+        if (request == null || request.getCancellationReason() == null || request.getCancelledBy() == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        CancelRideResponse response = new CancelRideResponse(request, rideId);
         return ResponseEntity.ok(response);
     }
 
-    // POST /api/rides/{id}/rating - Submit rating for completed ride
-    @PostMapping(
-            value = "/{id}/rating",
-            consumes = MediaType.APPLICATION_JSON_VALUE,
+    @PutMapping(
+            value = "/{rideId}/stop",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    public ResponseEntity<SubmitRatingResponse> submitRating(
-            @PathVariable Long id,
-            @RequestBody SubmitRatingRequest request
+    @RolesAllowed("PASSENGER")
+    public ResponseEntity<StopRideResponse> stopRide(
+            @PathVariable Long rideId,
+            @RequestBody StopRideRequest request
     ) {
-        // Service layer will:
-        // 1. Verify ride exists and is COMPLETED
-        // 2. Verify passenger is part of this ride
-        // 3. Verify ride was completed within last 3 days
-        // 4. Verify ride hasn't been rated yet (reviewedAt == null)
-        // 5. Update ride: driverRating, vehicleRating, reviewComment, reviewedAt
-        // 6. Save and return response
-
-        SubmitRatingResponse response = new SubmitRatingResponse(
-                id,
-                request.driverRating(),
-                request.vehicleRating(),
-                request.comment(),
+        StopRideResponse response = new StopRideResponse(
+                rideId,
                 LocalDateTime.now(),
-                "Rating submitted successfully"
+                1200.0,
+                15.0,
+                request
         );
+
         return ResponseEntity.ok(response);
     }
 
-    // DELETE /api/rides/{id} - Delete ride (admin only)
+    @GetMapping(
+            value = "/admin/rides",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @RolesAllowed("ADMIN")
+    public ResponseEntity<List<AdminRideDetailsResponse>> getAllRidesForAdmin(
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            LocalDateTime from,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            LocalDateTime to,
+            @RequestParam(defaultValue = "rideStartTime")
+            String sortBy,
+            @RequestParam(defaultValue = "DESC")
+            String direction
+    ) {
+
+        List<AdminRideDetailsResponse> rides = mockRides();
+
+        rides = rides.stream()
+                .filter(r -> {
+                    LocalDateTime t = r.getRideStartTime();
+                    boolean okFrom = from == null || !t.isBefore(from);
+                    boolean okTo = to == null || !t.isAfter(to);
+                    return okFrom && okTo;
+                })
+                .sorted(ComparatorUtils.buildComparator(sortBy, direction))
+                .toList();
+
+        return ResponseEntity.ok(rides);
+    }
+
+    @GetMapping(
+            value = "/{rideId}/advanced",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    @RolesAllowed("ADMIN")
+    public ResponseEntity<AdminRideAdvancedDetailsResponse> getRideDetails(@PathVariable Long rideId) {
+
+        List<AdminRideDetailsResponse> rides = mockRides();
+
+        AdminRideDetailsResponse baseDetails;
+        if (rideId == 1L) {
+            baseDetails = rides.get(0);
+        } else if (rideId == 2L) {
+            baseDetails = rides.get(1);
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        AdminRideAdvancedDetailsResponse.UserDetails driver =
+                new AdminRideAdvancedDetailsResponse.UserDetails(
+                        1L, "Marko", "Marković", "marko@mail.com"
+                );
+
+        AdminRideAdvancedDetailsResponse.UserDetails passenger1 =
+                new AdminRideAdvancedDetailsResponse.UserDetails(
+                        2L, "Ana", "Anić", "ana@mail.com"
+                );
+
+        AdminRideAdvancedDetailsResponse.UserDetails passenger2 =
+                new AdminRideAdvancedDetailsResponse.UserDetails(
+                        3L, "Ivan", "Ivanović", "ivan@mail.com"
+                );
+
+        AdminRideAdvancedDetailsResponse response =
+                new AdminRideAdvancedDetailsResponse(
+                        driver,
+                        List.of(passenger1, passenger2),
+                        baseDetails
+                );
+
+        return ResponseEntity.ok(response);
+    }
+
+    private List<AdminRideDetailsResponse> mockRides() {
+        return List.of(
+                new AdminRideDetailsResponse(
+                        LocalDateTime.now().minusHours(1),
+                        LocalDateTime.now().minusMinutes(20),
+                        List.of(
+                                new Location(45.2671, 19.8335, "Bulevar oslobođenja 1"),
+                                new Location(45.2684, 19.8360, "Futoška ulica"),
+                                new Location(45.2702, 19.8401, "Trg slobode")
+                        ),
+                        new Location(45.2671, 19.8335, "Bulevar oslobođenja 1"),
+                        new Location(45.2702, 19.8401, "Trg slobode"),
+                        null,
+                        15.40,
+                        false
+                ),
+                new AdminRideDetailsResponse(
+                        LocalDateTime.now().minusDays(1).minusHours(2),
+                        LocalDateTime.now().minusDays(1).minusHours(1),
+                        List.of(
+                                new Location(45.2550, 19.8450, "Detelinara"),
+                                new Location(45.2600, 19.8500, "Limanska pijaca")
+                        ),
+                        new Location(45.2550, 19.8450, "Detelinara"),
+                        new Location(45.2600, 19.8500, "Limanska pijaca"),
+                        CancelledBy.DRIVER,
+                        0.0,
+                        true
+                )
+        );
+    }
+
+    @PostMapping(
+            value = "/estimate-route",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<RouteEstimateResponse> estimateRoute(
+            @RequestBody RouteEstimateRequest request
+    ) {
+        return ResponseEntity.ok(
+                rideService.estimateRoute(request)
+        );
+    }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public ResponseEntity<Void> deleteRide(@PathVariable Long id) {
         return ResponseEntity.noContent().build();
     }
+
+
+    @GetMapping("/incoming-rides/passenger")
+    @RolesAllowed("PASSENGER")
+    public ResponseEntity<List<IncomingRideResponse>> getAllIncomingRidesForPassenger(
+        @AuthenticationPrincipal Jwt jwt
+    ){
+        Long id = jwt.getClaim("uid");
+        List<IncomingRideResponse> res = rideTimelineService.getAllIncomingRidesForPassenger(id);
+        return ResponseEntity.ok(res);
+    }
+
+    @PostMapping("/incoming-rides/passenger/{rideId}/cancel")
+    @RolesAllowed("PASSENGER")
+    public ResponseEntity<Void> cancelIncomingRideForPassenger(
+        @AuthenticationPrincipal Jwt jwt,
+        @PathVariable Long rideId
+    ){
+        Long id = jwt.getClaim("uid");
+        rideService.cancelRideByPassenger(rideId, id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/history/admin")
+    @RolesAllowed("ADMIN")
+    public ResponseEntity<List<AdminRideHistoryResponse>> getRideHistoryForAdmin(
+        @AuthenticationPrincipal Jwt jwt
+    ){
+        Long id = jwt.getClaim("uid");
+        User admin = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+        if (!admin.getRole().equals(UserRole.ADMIN)) {
+            throw new RuntimeException("Unauthorized");
+        }
+        List<AdminRideHistoryResponse> res = rideTimelineService.adminRideHistory();
+        return ResponseEntity.ok(res);
+    }
+
+    @GetMapping("/history/admin/{rideId}")
+    @RolesAllowed("ADMIN")
+    public ResponseEntity<AdminRideHistoryExtendedResponse> getRideHistoryDetailsForAdmin(
+        @AuthenticationPrincipal Jwt jwt,
+        @PathVariable Long rideId
+    ){
+        Long id = jwt.getClaim("uid");
+        User admin = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+        if (!admin.getRole().equals(UserRole.ADMIN)) {
+            throw new RuntimeException("Unauthorized");
+        }
+        AdminRideHistoryExtendedResponse res = rideTimelineService.adminRideHistoryDetails(rideId);
+        return ResponseEntity.ok(res);
+    }
+    @GetMapping("/reports")
+    public ResponseEntity<RideReportResponse> getReport(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            LocalDateTime from,
+
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            LocalDateTime to,
+
+            @RequestParam(required = false)
+            Long userId
+    ) {
+        return ResponseEntity.ok(
+                rideService.generateReport(from, to, userId)
+        );
+    }
+
+
+
 }

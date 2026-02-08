@@ -6,15 +6,31 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import com.example.uber3.network.model.DriverProfileChangeRequestDto;
+import com.example.uber3.network.model.ProfileResponse;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import android.net.Uri;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import com.bumptech.glide.Glide;
+import com.example.uber3.network.enums.VehicleType;
 
+
+import com.example.uber3.network.model.UpdateProfileRequest;
+import com.example.uber3.network.service.ProfileService;
 import com.google.android.material.button.MaterialButton;
 
 public class ProfileFragment extends Fragment {
@@ -33,6 +49,14 @@ public class ProfileFragment extends Fragment {
     private static final String STATE_CHANGE_FIELD = "change_field";
     private static final String STATE_CHANGE_VALUES = "change_values";
     private static final String STATE_CHANGE_STATUS = "change_status";
+    private ActivityResultLauncher<String> imagePickerLauncher;
+
+    private ProfileService profileService;
+
+    private CheckBox cbBabyTransport;
+    private CheckBox cbPetTransport;
+    private Spinner spVehicleType;
+
 
     private boolean editMode = false;
     private boolean isDriver = false;
@@ -65,13 +89,21 @@ public class ProfileFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+
+        profileService = new ProfileService(requireContext());
+
         initializeViews(view);
 
-        String role = getArguments() != null ? getArguments().getString(ARG_ROLE) : "PASSENGER";
-        isDriver = "DRIVER".equals(role);
+        imagePickerLauncher = registerForActivityResult(
+                new ActivityResultContracts.GetContent(),
+                uri -> {
+                    if (uri != null) {
+                        uploadImage(uri);
+                    }
+                }
+        );
 
-        LinearLayout driverSection = view.findViewById(R.id.driverSection);
-        driverSection.setVisibility(isDriver ? View.VISIBLE : View.GONE);
+
 
         if (savedInstanceState != null) {
             restoreState(savedInstanceState);
@@ -79,7 +111,10 @@ public class ProfileFragment extends Fragment {
 
         setupEditButton();
         setupChangePasswordButton();
+
+        loadProfile();
     }
+
 
     private void initializeViews(View view) {
         btnEdit = view.findViewById(R.id.btnEdit);
@@ -107,6 +142,26 @@ public class ProfileFragment extends Fragment {
         tvChangeField = view.findViewById(R.id.tvChangeField);
         tvChangeValues = view.findViewById(R.id.tvChangeValues);
         tvChangeStatus = view.findViewById(R.id.tvChangeStatus);
+        spVehicleType = view.findViewById(R.id.spVehicleType);
+        cbBabyTransport = view.findViewById(R.id.cbBabyTransport);
+        cbPetTransport = view.findViewById(R.id.cbPetTransport);
+
+        String[] vehicleTypes = {"STANDARD", "VAN", "LUXURY"};
+
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                requireContext(),
+                android.R.layout.simple_spinner_dropdown_item,
+                vehicleTypes
+        );
+
+        spVehicleType.setAdapter(adapter);
+
+
+        ImageView profileImage = view.findViewById(R.id.profileImage);
+
+        profileImage.setOnClickListener(v ->
+                imagePickerLauncher.launch("image/*")
+        );
     }
 
     private void setupEditButton() {
@@ -185,6 +240,8 @@ public class ProfileFragment extends Fragment {
 
             tvSeats.setVisibility(View.GONE);
             etSeats.setVisibility(View.VISIBLE);
+            cbBabyTransport.setEnabled(true);
+            cbPetTransport.setEnabled(true);
         }
 
         etFirstName.requestFocus();
@@ -195,12 +252,16 @@ public class ProfileFragment extends Fragment {
         btnEdit.setText("✏️ Edit");
 
         if (!isDriver) {
-            tvFirstName.setText(etFirstName.getText().toString());
-            tvLastName.setText(etLastName.getText().toString());
-            tvEmail.setText(etEmail.getText().toString());
-            tvPhone.setText(etPhone.getText().toString());
-            tvAddress.setText(etAddress.getText().toString());
-        } else {
+
+            UpdateProfileRequest req = new UpdateProfileRequest(
+                    etFirstName.getText().toString(),
+                    etLastName.getText().toString(),
+                    etPhone.getText().toString(),
+                    etAddress.getText().toString()
+            );
+
+            sendUpdateProfile(req);
+        }else {
             createChangeRequest();
         }
 
@@ -228,7 +289,11 @@ public class ProfileFragment extends Fragment {
 
             etSeats.setVisibility(View.GONE);
             tvSeats.setVisibility(View.VISIBLE);
+
+            cbBabyTransport.setEnabled(false);
+            cbPetTransport.setEnabled(false);
         }
+
     }
 
     @SuppressLint("SetTextI18n")
@@ -254,6 +319,81 @@ public class ProfileFragment extends Fragment {
             tvChangeStatus.setText("Pending");
             changeRequestCard.setVisibility(View.VISIBLE);
         }
+
+        if (changeCount == 0) {
+            Toast.makeText(getContext(), "No changes detected", Toast.LENGTH_SHORT).show();
+            changeRequestCard.setVisibility(View.GONE);
+            return;
+        }
+
+
+
+        DriverProfileChangeRequestDto dto =
+                new DriverProfileChangeRequestDto(
+                        etFirstName.getText().toString(),
+                        etLastName.getText().toString(),
+                        etPhone.getText().toString(),
+                        etAddress.getText().toString(),
+                        null,
+                        etVehicleModel.getText().toString(),
+                        etLicensePlate.getText().toString(),
+                        Integer.parseInt(etSeats.getText().toString()),
+                        VehicleType.valueOf(spVehicleType.getSelectedItem().toString()),
+                        cbBabyTransport.isChecked(),
+                        cbPetTransport.isChecked()
+                );
+
+
+
+
+        profileService.submitDriverChangeRequest(
+                dto,
+                new Callback<Void>() {
+                    @Override
+                    public void onResponse(Call<Void> call, Response<Void> response) {
+
+                        if (response.isSuccessful()) {
+
+                            Toast.makeText(getContext(),
+                                    "Request sent to admin ✅",
+                                    Toast.LENGTH_LONG).show();
+
+                            tvChangeStatus.setText("Pending");
+                            changeRequestCard.setVisibility(View.VISIBLE);
+
+                            disableEditingWhilePending();
+
+                        } else if (response.code() == 409) {
+
+                            Toast.makeText(getContext(),
+                                    "You already have a pending request ⏳",
+                                    Toast.LENGTH_LONG).show();
+
+                            tvChangeStatus.setText("Pending");
+                            changeRequestCard.setVisibility(View.VISIBLE);
+
+                            disableEditingWhilePending();
+
+                        } else {
+
+                            Toast.makeText(getContext(),
+                                    "Error: " + response.code(),
+                                    Toast.LENGTH_SHORT).show();
+                        }
+                    }
+
+
+                    @Override
+                    public void onFailure(Call<Void> call,
+                                          Throwable t) {
+
+                        Toast.makeText(getContext(),
+                                "Network error",
+                                Toast.LENGTH_SHORT).show();
+                    }
+                }
+        );
+
     }
 
     private int addChangeIfDifferent(StringBuilder builder, String fieldName, TextView tv, EditText et) {
@@ -319,4 +459,166 @@ public class ProfileFragment extends Fragment {
             enterEditMode();
         }
     }
+
+
+    private void loadProfile() {
+
+        profileService.loadProfile(new Callback<ProfileResponse>() {
+
+            @Override
+            public void onResponse(Call<ProfileResponse> call,
+                                   Response<ProfileResponse> response) {
+
+                if (!response.isSuccessful() || response.body() == null) {
+                    Toast.makeText(getContext(),
+                            "Failed to load profile",
+                            Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                ProfileResponse p = response.body();
+
+                isDriver = p.vehicle != null;
+
+                LinearLayout driverSection =
+                        requireView().findViewById(R.id.driverSection);
+
+                driverSection.setVisibility(
+                        isDriver ? View.VISIBLE : View.GONE);
+
+                ImageView profileImage =
+                        requireView().findViewById(R.id.profileImage);
+
+                if (p.profileImage != null &&
+                        !p.profileImage.isEmpty()) {
+
+                    String imageUrl =
+                            "http://10.0.2.2:8080" + p.profileImage;
+
+                    Glide.with(requireContext())
+                            .load(imageUrl)
+                            .placeholder(R.drawable.ic_launcher_background)
+                            .error(R.drawable.ic_launcher_foreground)
+                            .into(profileImage);
+                }
+
+                tvFirstName.setText(p.firstName);
+                etFirstName.setText(p.firstName);
+
+                tvLastName.setText(p.lastName);
+                etLastName.setText(p.lastName);
+
+                tvEmail.setText(p.email);
+                etEmail.setText(p.email);
+
+                tvPhone.setText(p.phoneNumber);
+                etPhone.setText(p.phoneNumber);
+
+                tvAddress.setText(p.address);
+                etAddress.setText(p.address);
+
+                if (p.vehicle != null) {
+
+                    tvVehicleModel.setText(p.vehicle.model);
+                    etVehicleModel.setText(p.vehicle.model);
+
+                    tvLicensePlate.setText(p.vehicle.registrationNumber);
+                    etLicensePlate.setText(p.vehicle.registrationNumber);
+
+                    tvSeats.setText(String.valueOf(p.vehicle.seatingCapacity));
+                    etSeats.setText(String.valueOf(p.vehicle.seatingCapacity));
+                    cbBabyTransport.setChecked(p.vehicle.babyTransport);
+                    cbPetTransport.setChecked(p.vehicle.petTransport);
+
+                }
+
+            }
+
+            @Override
+            public void onFailure(Call<ProfileResponse> call,
+                                  Throwable t) {
+
+                Toast.makeText(getContext(),
+                        "FAILURE: " + t.getMessage(),
+                        Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    private void sendUpdateProfile(UpdateProfileRequest req) {
+        profileService.updateProfile(req,
+                new Callback<Void>() {
+
+                    @Override
+                    public void onResponse(Call<Void> call,
+                                           Response<Void> response) {
+
+                        if (response.isSuccessful()) {
+                            Toast.makeText(getContext(),
+                                    "Profile updated!",
+                                    Toast.LENGTH_SHORT).show();
+
+                            loadProfile();
+
+
+                        } else {
+                            Toast.makeText(getContext(),
+                                    "Update failed",
+                                    Toast.LENGTH_SHORT).show();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<Void> call,
+                                          Throwable t) {
+
+                        Toast.makeText(getContext(),
+                                "Network error",
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+
+    private void uploadImage(Uri uri) {
+
+        profileService.uploadImage(
+                requireContext(),
+                uri,
+                new Callback<String>() {
+
+                    @Override
+                    public void onResponse(Call<String> call,
+                                           Response<String> response) {
+
+                        if (response.isSuccessful()) {
+                            Toast.makeText(getContext(),
+                                    "Image uploaded!",
+                                    Toast.LENGTH_SHORT).show();
+
+                            loadProfile();
+                        } else {
+                            Toast.makeText(getContext(),
+                                    "Upload failed",
+                                    Toast.LENGTH_SHORT).show();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<String> call,
+                                          Throwable t) {
+
+                        Toast.makeText(getContext(),
+                                "Network error",
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+
+    private void disableEditingWhilePending() {
+        btnEdit.setEnabled(false);
+        btnEdit.setAlpha(0.5f);
+    }
+
+
+
 }

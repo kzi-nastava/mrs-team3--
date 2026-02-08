@@ -1,0 +1,220 @@
+<div class="ride-tracking-container">
+  <!-- Toast Notifications -->
+  <div class="toast-container">
+    @for (toast of toasts; track toast.id) {
+      <div class="toast" [ngClass]="'toast-' + toast.type">
+        <span class="toast-message">{{ toast.message }}</span>
+        <button class="toast-close" (click)="removeToast(toast.id)">×</button>
+      </div>
+    }
+  </div>
+
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading ride information...</p>
+    </div>
+  }
+
+  <!-- Error State -->
+  @else if (error()) {
+    <div class="error-state">
+      <div class="error-icon">⚠️</div>
+      <h3>Unable to Load Ride</h3>
+      <p>{{ error() }}</p>
+      <button class="btn-primary" (click)="refreshRide()">Try Again</button>
+    </div>
+  }
+
+  <!-- No Active Ride -->
+  @else if (!rideData()) {
+    <div class="empty-state">
+      <div class="empty-icon">🚗</div>
+      <h3>No Active Ride</h3>
+      <p>You don't have any rides in progress at the moment.</p>
+    </div>
+  }
+
+  <!-- Ride Tracking Display -->
+  @else {
+    <div class="tracking-content">
+      <!-- Header -->
+      <div class="tracking-header">
+        <div class="header-left">
+          <h1>Track Your Ride</h1>
+          <span class="status-badge" [ngClass]="getStatusClass(rideData()!.status)">
+            {{ getStatusText(rideData()!.status) }}
+          </span>
+        </div>
+        <button class="btn-refresh" (click)="refreshRide()">
+          🔄 Refresh
+        </button>
+      </div>
+
+      <!-- Map -->
+      <div class="map-section">
+        <div id="trackingMap" class="tracking-map"></div>
+      </div>
+
+      <!-- Ride Information -->
+      <div class="info-grid">
+        <!-- Driver Info -->
+        <div class="info-card">
+          <h3>Driver Information</h3>
+          <div class="info-row">
+            <span class="label">Driver:</span>
+            <span class="value">{{ rideData()!.driverName }}</span>
+          </div>
+          @if (rideData()!.driverPhone) {
+            <div class="info-row">
+              <span class="label">Phone:</span>
+              <span class="value">{{ rideData()!.driverPhone }}</span>
+            </div>
+          }
+          @if (rideData()!.vehicleModel) {
+            <div class="info-row">
+              <span class="label">Vehicle:</span>
+              <span class="value">{{ rideData()!.vehicleModel }}</span>
+            </div>
+          }
+          @if (rideData()!.vehicleRegistration) {
+            <div class="info-row">
+              <span class="label">Registration:</span>
+              <span class="value">{{ rideData()!.vehicleRegistration }}</span>
+            </div>
+          }
+        </div>
+
+        <!-- Time Remaining -->
+        <div class="info-card time-card">
+          <h3>Time Remaining</h3>
+          @if ((rideData()!.status === 'IN_PROGRESS' || rideData()!.status === 'PANIC') && rideData()!.remainingMinutes < 999999) {
+            <div class="time-remaining-display">
+              <div class="time-icon">⏱️</div>
+              <div class="time-value">
+                {{ formatTime(rideData()!.remainingMinutes) }}
+              </div>
+            </div>
+          } @else if (rideData()!.status === 'PENDING' || rideData()!.status === 'ACCEPTED') {
+            <div class="time-remaining-display">
+              <div class="time-icon">⏳</div>
+              <div class="time-value pending">
+                Waiting to start
+              </div>
+            </div>
+          } @else {
+            <div class="time-remaining-display">
+              <div class="time-icon">✅</div>
+              <div class="time-value completed">
+                Ride {{ rideData()!.status === 'COMPLETED' ? 'completed' : 'ended' }}
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Route Info -->
+        <div class="info-card full-width">
+          <h3>Route</h3>
+          <div class="route-details">
+            <div class="route-point">
+              <div class="route-icon start">S</div>
+              <div class="route-text">
+                <span class="route-label">Pickup</span>
+                <span class="route-address">{{ rideData()!.startLocation.address }}</span>
+              </div>
+            </div>
+
+            @for (stop of rideData()!.stops; track stop; let i = $index) {
+              <div class="route-point" [class.reached]="rideData()!.stopsReached && rideData()!.stopsReached[i]">
+                <div class="route-icon stop" [class.reached]="rideData()!.stopsReached && rideData()!.stopsReached[i]">
+                  {{ rideData()!.stopsReached && rideData()!.stopsReached[i] ? '✓' : (i + 1) }}
+                </div>
+                <div class="route-text">
+                  <span class="route-label">
+                    Stop {{ i + 1 }}
+                    {{ rideData()!.stopsReached && rideData()!.stopsReached[i] ? '(Reached)' : '' }}
+                  </span>
+                  <span class="route-address">{{ stop.address }}</span>
+                </div>
+              </div>
+            }
+
+            <div class="route-point">
+              <div class="route-icon end">E</div>
+              <div class="route-text">
+                <span class="route-label">Destination</span>
+                <span class="route-address">{{ rideData()!.endLocation.address }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="action-buttons">
+        <button class="btn-report" (click)="openReportModal()">
+          📝 Report Inconsistency
+        </button>
+        <button class="btn-panic" (click)="handlePanic()">
+          🚨 Panic
+        </button>
+      </div>
+
+      <!-- Guest Mode Notice -->
+      @if (isGuestMode) {
+        <div class="guest-notice">
+          <p>👤 You are viewing this ride as a guest via email invitation.</p>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Report Modal -->
+  @if (showReportModal()) {
+    <div class="modal-overlay" (click)="closeReportModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>Report Inconsistency</h2>
+          <button class="close-btn" (click)="closeReportModal()">×</button>
+        </div>
+
+        <div class="modal-body">
+          <p class="modal-description">
+            Please describe any issues or inconsistencies you've noticed during your ride.
+          </p>
+
+          <textarea
+            [(ngModel)]="reportText"
+            placeholder="Enter your report here..."
+            class="report-textarea"
+            rows="6"
+            maxlength="1000"
+            [disabled]="reportSubmitting"
+          ></textarea>
+
+          <div class="char-count">
+            {{ reportText.length }} / 1000 characters
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button
+            class="btn-secondary"
+            (click)="closeReportModal()"
+            [disabled]="reportSubmitting"
+          >
+            Cancel
+          </button>
+          <button
+            class="btn-primary"
+            (click)="submitReport()"
+            [disabled]="reportSubmitting || !reportText.trim()"
+          >
+            {{ reportSubmitting ? 'Submitting...' : 'Submit Report' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

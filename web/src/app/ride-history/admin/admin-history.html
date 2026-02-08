@@ -1,0 +1,293 @@
+<div class="admin-history-container">
+
+  <div class="admin-history-header">
+    <h1>Admin • Ride History</h1>
+  </div>
+
+  <div class="toolbar">
+
+    <div class="filter">
+
+      <label>
+        From:
+        <input
+          type="date"
+          [(ngModel)]="startDate"
+          (change)="onFilterChange()">
+      </label>
+
+      <label>
+        To:
+        <input
+          type="date"
+          [(ngModel)]="endDate"
+          (change)="onFilterChange()">
+      </label>
+
+      <div class="sort">
+        <label class="sort-label">Sort by</label>
+
+        <div class="select-wrap">
+          <select class="select" [(ngModel)]="sortOption" (change)="onSortChange()">
+            <option value="startTime-desc">Start time (newest)</option>
+            <option value="startTime-asc">Start time (oldest)</option>
+            <option value="endTime-desc">End time (newest)</option>
+            <option value="endTime-asc">End time (oldest)</option>
+
+            <option value="price-desc">Price (high → low)</option>
+            <option value="price-asc">Price (low → high)</option>
+
+            <option value="status-asc">Status (A → Z)</option>
+            <option value="status-desc">Status (Z → A)</option>
+
+            <option value="panic-desc">Panic first</option>
+            <option value="panic-asc">No panic first</option>
+
+            <option value="route-asc">Route (A → Z)</option>
+            <option value="route-desc">Route (Z → A)</option>
+          </select>
+
+          <span class="select-arrow">▾</span>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="actions">
+      <button type="button" (click)="resetFilters()">♻️ Reset</button>
+      <button type="button" (click)="viewReport()">📊 View Report</button>
+    </div>
+
+  </div>
+
+  @if (rides().length === 0) {
+  <div class="empty-state">
+    <div class="empty-state-icon">🗂️</div>
+    <h3>No rides found</h3>
+    <p>Enter user type + ID and adjust filters/sort to search the ride history.</p>
+  </div>
+  } @else {
+
+  <div class="rides-grid">
+    @for (ride of filteredRides(); track ride.id) {
+
+  <div class="ride-card" [class.panic-card]="ride.panic" (click)="openRideDetails(ride)">
+
+    <div class="ride-card-header">
+      <span class="ride-date">{{ formatDate(ride.startTime) }}</span>
+
+      <span class="status-badge"
+            [class.completed]="ride.status === 'COMPLETED'"
+            [class.cancelled]="ride.status.includes('CANCELLED')"
+            [class.finished-early]="ride.status === 'FINISHED_EARLY'">
+              {{ getStatusText(ride.status) }}
+            </span>
+    </div>
+
+    <div class="ride-route">
+      <div class="route-point">
+        <div class="route-icon start"></div>
+        <div class="route-address">{{ ride.startLocation.address }}</div>
+      </div>
+
+      <div class="route-point">
+        <div class="route-icon end"></div>
+        <div class="route-address">{{ ride.endLocation.address }}</div>
+      </div>
+    </div>
+
+    <div class="ride-info">
+
+      <div class="info-item">
+        <span class="info-label">Start</span>
+        <span class="info-value">{{ formatDateTimeShort(ride.startTime) }}</span>
+      </div>
+
+      <div class="info-item">
+        <span class="info-label">End</span>
+        <span class="info-value">{{ ride.endTime ? formatDateTimeShort(ride.endTime) : '-' }}</span>
+      </div>
+
+      <div class="info-item">
+        <span class="info-label">Price</span>
+        <span class="info-value price-value">{{ ride.price }} din</span>
+      </div>
+
+      <div class="info-item">
+        <span class="info-label">Panic</span>
+        <span class="info-value"
+              [class.panic-yes]="ride.panic">
+                {{ ride.panic ? '⚠️ Yes' : '✓ No' }}
+              </span>
+      </div>
+
+    </div>
+
+  </div>
+  }
+  </div>
+  }
+
+  @if (selectedRide()) {
+  <div class="modal-overlay" (click)="closeModal($event)">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+
+      <div class="modal-header">
+        <h2 class="modal-title">Ride #{{ selectedRide()!.id }} • Details</h2>
+          <button class="close-btn" (click)="closeModal($event)">×</button>
+        </div>
+
+        <div class="modal-body">
+
+          <div class="detail-section">
+            <div class="map-container" id="map-container">
+              <div id="detailMap"></div>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <div class="badges-row">
+
+              <span class="status-badge"
+                    [class.completed]="selectedRide()!.status === 'COMPLETED'"
+                    [class.cancelled]="selectedRide()!.status.includes('CANCELLED')"
+                    [class.finished-early]="selectedRide()!.status === 'FINISHED_EARLY'">
+  {{ getStatusText(selectedRide()!.status) }}
+  </span>
+
+  <span class="panic-badge" [class.panic-yes]="selectedRide()!.panic">
+  {{ selectedRide()!.panic ? '⚠️ PANIC triggered' : '✓ No panic' }}
+  </span>
+
+</div>
+  </div>
+
+  <div class="detail-section">
+    <h3 class="section-title">📍 Route</h3>
+
+    <div class="route-details">
+
+      <div class="route-detail-item">
+        <div class="route-detail-icon start">A</div>
+        <div class="route-detail-text">
+          <div class="route-detail-label">Pickup</div>
+          <div class="route-detail-address">{{ selectedRide()!.startLocation.address }}</div>
+                </div>
+              </div>
+
+              @for (stop of selectedRide()!.stops; track $index) {
+  <div class="route-detail-item">
+    <div class="route-detail-icon stop">{{ $index + 1 }}</div>
+    <div class="route-detail-text">
+      <div class="route-detail-label">Stop {{ $index + 1 }}</div>
+      <div class="route-detail-address">{{ stop.address }}</div>
+    </div>
+  </div>
+  }
+
+  <div class="route-detail-item">
+    <div class="route-detail-icon end">B</div>
+    <div class="route-detail-text">
+      <div class="route-detail-label">Destination</div>
+      <div class="route-detail-address">{{ selectedRide()!.endLocation.address }}</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="detail-section section--info">
+            <h3 class="section-title">ℹ️ Ride Information</h3>
+
+            <div class="info-grid">
+              <div class="detail-item">
+                <span class="detail-label">Start Time</span>
+                <span class="detail-value">{{ formatDateTime(selectedRide()!.startTime) }}</span>
+              </div>
+
+              <div class="detail-item">
+                <span class="detail-label">End Time</span>
+                <span class="detail-value">{{ selectedRide()!.endTime ? formatDateTime(selectedRide()!.endTime) : '-' }}</span>
+              </div>
+
+              <div class="detail-item">
+                <span class="detail-label">Price</span>
+                <span class="detail-value price-value">{{ selectedRide()!.price }} din</span>
+              </div>
+
+            </div>
+
+          </div>
+
+          <div class="detail-section">
+  <h3 class="section-title">⭐ Reviews</h3>
+
+  <div class="info-grid">
+
+    <div class="detail-item">
+      <span class="detail-label">Driver review</span>
+
+      @if (selectedRide()?.driverReview != null) {
+  <p-rating
+    [ngModel]="selectedRide()!.driverReview"
+    [readonly]="true"
+    stars="5">
+  </p-rating>
+  } @else {
+  <span class="no-review">/</span>
+  }
+  </div>
+
+  <div class="detail-item">
+    <span class="detail-label">Ride review</span>
+
+    @if (selectedRide()?.rideReview != null) {
+  <p-rating
+    [ngModel]="selectedRide()!.rideReview"
+    [readonly]="true"
+    stars="5">
+  </p-rating>
+  } @else {
+  <span class="no-review">/</span>
+  }
+  </div>
+
+  @if (selectedRide()!.status == 'CANCELLED_BY_DRIVER') {
+  <div class="cancel-info">
+
+    @if (selectedRide()!.cancellationReason) {
+    <p><strong>Cancellation reason:</strong> {{ selectedRide()!.cancellationReason }}</p>
+    }
+  </div>
+  }
+
+  @if (selectedRide()!.inconsistencyReports.length) {
+  <div class="detail-section">
+    <h3 class="section-title">⚠️ Inconsistency reports</h3>
+
+    <div class="reports-list">
+      @for (rep of selectedRide()!.inconsistencyReports; track rep.id ?? $index) {
+      <div class="report-card">
+        <div class="report-header">
+          <div class="report-text">
+      <p>{{ rep.reportText ?? '-' }}</p>
+          </div>
+        </div>
+    </div>
+      }
+    </div>
+  </div>
+  }
+
+
+  </div>
+  </div>
+
+
+        </div>
+
+      </div>
+    </div>
+  }
+
+</div>

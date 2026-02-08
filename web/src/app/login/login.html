@@ -32,14 +32,15 @@
 
               <div class="flex flex-column gap-2">
                 <label for="password">Password</label>
-                <input
-                  pInputText
-                  id="password"
-                  type="password"
+                <p-password
+                  inputId="password"
                   [(ngModel)]="password"
                   name="password"
-                  required
-                />
+                  [toggleMask]="true"
+                  [feedback]="false"
+                  autocomplete="current-password"
+                  [inputStyle]="{ width: '100%' }">
+                </p-password>
               </div>
             </div>
 
@@ -72,8 +73,8 @@
 
   <ng-template #panel>
     <div class="flex flex-column justify-content-center bg-primary h-full align-items-center">
-      <div>
-        <h1 style="text-align: center">Uber</h1>
+      <div style="text-align: center">
+        <h1>Uber</h1>
         <h3>Let’s get you moving. Walking is overrated anyway.</h3>
       </div>
     </div>

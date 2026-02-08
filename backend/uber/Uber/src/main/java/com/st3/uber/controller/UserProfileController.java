@@ -1,97 +1,141 @@
 package com.st3.uber.controller;
 
+import com.st3.uber.dto.user.BlockStatusDto;
 import com.st3.uber.dto.user.UpdateUserProfileRequest;
-import com.st3.uber.dto.user.admin.AdminProfileResponse;
-import com.st3.uber.dto.user.driver.DriverProfileResponse;
-import com.st3.uber.dto.user.passenger.PassengerProfileResponse;
-import com.st3.uber.dto.vehicle.VehicleResponse;
-import com.st3.uber.enums.VehicleType;
+import com.st3.uber.exception.PendingProfileChangeRequestException;
+import com.st3.uber.service.UserProfileService;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
+import com.st3.uber.service.DriverProfileChangeRequestService;
+import com.st3.uber.dto.user.driver.DriverProfileChangeRequestDto;
+import com.st3.uber.service.ImageStorageService;
+import org.springframework.web.multipart.MultipartFile;
 
-@CrossOrigin(origins = "http://localhost:4200")
+
 @RestController
 @RequestMapping("/api/profile")
+@CrossOrigin(origins = "http://localhost:4200")
 public class UserProfileController {
 
+    private final UserProfileService userProfileService;
+    private final DriverProfileChangeRequestService changeRequestService;
+    private final ImageStorageService imageStorageService;
 
-  @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<?> getProfile() {
-    String role = "DRIVER"; // Radi testiranja mockup podataka ovde samo treba da se izmeni uloga
 
-    if ("DRIVER".equals(role)) {
-
-      VehicleResponse vehicle = new VehicleResponse(
-        10L,
-        "Toyota Corolla",
-        VehicleType.STANDARD
-      );
-
-      DriverProfileResponse response = new DriverProfileResponse(
-        1L,
-        "driver@test.com",
-        "Marko",
-        "Markovic",
-        "+381641234567",
-        "Novi Sad",
-        vehicle,
-        true
-      );
-
-      return new ResponseEntity<>(response, HttpStatus.OK);
-    }
-
-    if ("PASSENGER".equals(role)) {
-
-      PassengerProfileResponse response = new PassengerProfileResponse(
-        2L,
-        "passenger@test.com",
-        "Ana",
-        "Anić",
-        "+381601112223",
-        "Beograd"
-      );
-
-      return new ResponseEntity<>(response, HttpStatus.OK);
+    public UserProfileController(UserProfileService userProfileService, DriverProfileChangeRequestService changeRequestService, ImageStorageService imageStorageService) {
+        this.userProfileService = userProfileService;
+        this.changeRequestService = changeRequestService;
+        this.imageStorageService = imageStorageService;
     }
 
 
-    AdminProfileResponse response = new AdminProfileResponse(
-      3L,
-      "admin@test.com",
-      "Petar",
-      "Petrović"
-    );
+    @GetMapping("/me")
+    public ResponseEntity<?> getMyProfile(@AuthenticationPrincipal Jwt jwt) {
+        Long userId = jwt.getClaim("uid");
+        return ResponseEntity.ok(userProfileService.getProfile(userId));
+    }
 
-    return new ResponseEntity<>(response, HttpStatus.OK);
-  }
+    @PutMapping("/me")
+    public ResponseEntity<Void> updateMyProfile(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestBody UpdateUserProfileRequest request
+    ) {
+        Long userId = jwt.getClaim("uid");
+        userProfileService.updateProfile(userId, request);
+        return ResponseEntity.ok().build();
+    }
 
 
-  @PutMapping(
-    consumes = MediaType.APPLICATION_JSON_VALUE,
-    produces = MediaType.APPLICATION_JSON_VALUE
-  )
-  public ResponseEntity<?> updateProfile(@RequestBody UpdateUserProfileRequest req) {
+    @PostMapping("/change-request")
+    public ResponseEntity<Void> submitDriverProfileChangeRequest(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestBody DriverProfileChangeRequestDto request
+    ) {
+        Long driverId = jwt.getClaim("uid");
+        changeRequestService.submitChangeRequest(driverId, request);
+        return ResponseEntity.ok().build();
+    }
 
-    VehicleResponse vehicle = new VehicleResponse(
-      10L,
-      "Toyota Corolla",
-      VehicleType.STANDARD
-    );
 
-    DriverProfileResponse response = new DriverProfileResponse(
-      1L,
-      "driver@test.com",
-      req.firstName(),
-      req.lastName(),
-      req.phoneNumber(),
-      req.address(),
-      vehicle,
-      true
-    );
+    @PostMapping("/me/image")
+    public ResponseEntity<String> uploadProfileImage(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam("file") MultipartFile file
+    ) {
+        Long userId = jwt.getClaim("uid");
 
-    return new ResponseEntity<>(response, HttpStatus.OK);
-  }
+        String oldImage = userProfileService.getProfileImagePath(userId);
+
+        imageStorageService.deleteProfileImageForUser(userId, oldImage);
+
+        String imagePath = imageStorageService.saveProfileImage(file, userId);
+
+        String role = jwt.getClaim("role");
+        if (!"DRIVER".equals(role)) {
+            userProfileService.updateProfileImage(userId, imagePath);
+        }
+
+        return ResponseEntity.ok(imagePath);
+    }
+
+
+    @DeleteMapping("/me/image")
+    public ResponseEntity<Void> deleteProfileImage(
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        Long userId = jwt.getClaim("uid");
+        String role = jwt.getClaim("role");
+
+        String imagePath = userProfileService.getProfileImagePath(userId);
+
+        imageStorageService.delete(imagePath);
+
+        if (!"DRIVER".equals(role)) {
+            userProfileService.updateProfileImage(userId, null);
+        }
+
+        return ResponseEntity.ok().build();
+    }
+
+
+
+    @ExceptionHandler(PendingProfileChangeRequestException.class)
+    public ResponseEntity<String> handlePendingProfileChange(
+            PendingProfileChangeRequestException ex
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT) // 409
+                .body(ex.getMessage());
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<String> handleIllegalArgument(
+            IllegalArgumentException ex
+    ) {
+        return ResponseEntity
+                .badRequest() // 400
+                .body(ex.getMessage());
+    }
+
+    @GetMapping("/me/block-status")
+    public ResponseEntity<BlockStatusDto> getBlockStatus(
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        Long userId = jwt.getClaim("uid");
+
+        var user = userProfileService.findUserById(userId);
+
+        return ResponseEntity.ok(
+                new BlockStatusDto(
+                        user.isBlocked(),
+                        user.getBlockReason()
+                )
+        );
+    }
+
+
+
 }

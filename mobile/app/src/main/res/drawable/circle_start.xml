@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Drop shadow -->
+    <item android:top="2dp">
+        <shape android:shape="oval">
+            <solid android:color="#40000000"/>
+            <size android:width="32dp" android:height="32dp"/>
+        </shape>
+    </item>
+    <!-- Main circle -->
+    <item android:bottom="2dp">
+        <shape android:shape="oval">
+            <solid android:color="#10B981"/>
+            <stroke android:width="3dp" android:color="#FFFFFF"/>
+            <size android:width="32dp" android:height="32dp"/>
+        </shape>
+    </item>
+    <!-- Inner dot -->
+    <item android:bottom="12dp" android:top="10dp" android:left="10dp" android:right="10dp">
+        <shape android:shape="oval">
+            <solid android:color="#FFFFFF"/>
+        </shape>
+    </item>
+</layer-list>

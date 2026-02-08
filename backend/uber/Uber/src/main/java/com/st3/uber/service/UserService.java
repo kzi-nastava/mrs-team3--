@@ -1,70 +1,117 @@
 package com.st3.uber.service;
 
 import com.st3.uber.domain.Passenger;
+import com.st3.uber.domain.Ride;
 import com.st3.uber.domain.User;
 import com.st3.uber.dto.auth.ForgotPasswordRequest;
 import com.st3.uber.dto.auth.LoginRequest;
 import com.st3.uber.dto.auth.LoginResponse;
 import com.st3.uber.dto.auth.RegisterPassengerRequest;
+import com.st3.uber.dto.user.BlockUserRequest;
+import com.st3.uber.dto.user.UserDto;
+import com.st3.uber.dto.user.admin.ActiveDriverDto;
+import com.st3.uber.dto.user.admin.AdminUserDetailsDto;
+import com.st3.uber.enums.RideStatus;
+import com.st3.uber.repository.RideRepository;
 import com.st3.uber.repository.UserRepository;
 import lombok.SneakyThrows;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.function.EntityResponse;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.UUID;
 
 import static java.util.Base64.getDecoder;
 
 @Service
 public class UserService {
-    private final UserRepository userRepository;
 
-    public UserService(UserRepository userRepository) {
+    UserRepository userRepository;
+    private final RideRepository rideRepository;
+
+    public UserService(UserRepository userRepository, RideRepository rideRepository) {
         this.userRepository = userRepository;
+        this.rideRepository = rideRepository;
     }
 
-    @SneakyThrows
-    public Passenger createPassenger(RegisterPassengerRequest req) {
-        if (userRepository.existsByEmail(req.getEmail())) {
-            throw new ResponseStatusException(HttpStatusCode.valueOf(400), "Email already in use");
-        }
-
-        Passenger p = new Passenger();
-        p.setEmail(req.getEmail());
-        p.setPassword(req.getPassword());
-        p.setName(req.getName());
-        p.setSurname(req.getSurname());
-        p.setPhoneNumber(req.getPhoneNumber());
-        p.setAddress(req.getAddress());
-
-        if (req.getBase64Image() != null) {
-          String fileName = UUID.randomUUID() + "." + req.getExtension();
-
-          p.setImagePath("uploads/" + fileName);
-
-          byte[] imageBytes = getDecoder().decode(req.getBase64Image());
-          Files.write(Path.of("uploads/" + fileName), imageBytes);
-        }
-      return userRepository.save(p);
+    public List<UserDto> getAllUsers() {
+        return userRepository.findAll()
+                .stream()
+                .map(u -> new UserDto(
+                        u.getId(),
+                        u.getName(),
+                        u.getSurname()
+                ))
+                .toList();
     }
 
-    public LoginResponse login(LoginRequest req) {
-        User u = userRepository.findByEmail(req.email())
-                .orElseThrow(() -> new RuntimeException("Invalid credentials"));
+    public UserDto blockUser(Long id, BlockUserRequest request) {
 
-        if (u.isBlocked()) {
-            throw new RuntimeException("User is blocked");
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "User not found"
+                ));
+
+        user.setBlocked(request.isBlocked());
+
+        if (request.isBlocked()) {
+            user.setBlockReason(request.getReason());
+        } else {
+            user.setBlockReason(null);
         }
 
-        if (!req.password().equals(u.getPassword())) {
-            throw new RuntimeException("Invalid credentials");
-        }
+        userRepository.save(user);
 
-        String role = u.getClass().getSimpleName().toUpperCase();
-        return new LoginResponse(u.getId(), u.getEmail(), role);
+        return new UserDto(
+                user.getId(),
+                user.getName(),
+                user.getSurname()
+        );
     }
+
+
+    public List<AdminUserDetailsDto> getAllUsersForAdmin() {
+        return userRepository.findAll()
+                .stream()
+                .map(u -> new AdminUserDetailsDto(
+                        u.getId(),
+                        u.getName(),
+                        u.getSurname(),
+                        u.getEmail(),
+                        u.getPhoneNumber(),
+                        u.getAddress(),
+                        u.getRole(),
+                        u.isBlocked(),
+                        u.getBlockReason(),
+                        u.isVerified()
+                ))
+                .toList();
+    }
+
+
+    public List<ActiveDriverDto> getDriversInProgress() {
+        return rideRepository.findByStatus(RideStatus.IN_PROGRESS)
+                .stream()
+                .map(Ride::getDriver)
+                .filter(d -> d != null)
+                .distinct()
+                .map(d -> new ActiveDriverDto(
+                        d.getId(),
+                        d.getName(),
+                        d.getSurname(),
+                        d.getEmail(),
+                        d.isBlocked()
+                ))
+                .toList();
+    }
+
 
 }

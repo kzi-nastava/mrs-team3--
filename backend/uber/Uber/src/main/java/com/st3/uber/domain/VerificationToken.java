@@ -1,5 +1,6 @@
 package com.st3.uber.domain;
 
+import com.st3.uber.enums.VerificationTokenType;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -23,10 +24,13 @@ public class VerificationToken {
   private LocalDateTime expiresAt;
 
   @Column(nullable = false)
-  private boolean used = false;
+  private boolean used;
 
-  @OneToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "passenger_id", nullable = false, unique = true)
-  private Passenger passenger;
+  @Column(nullable = false)
+  private VerificationTokenType tokenType;
+
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "user_id", nullable = false)
+  private User user;
 
 }

@@ -1,16 +1,17 @@
 package com.st3.uber.domain;
 import jakarta.persistence.*;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
 
-
-@Getter
-@Setter
+@EqualsAndHashCode(callSuper = true)
+@Data
 @Entity
-@DiscriminatorValue("PASSENGER")
+@Table(name = "passengers")
 public class Passenger extends User {
     @ManyToMany
     @JoinTable(
@@ -20,6 +21,4 @@ public class Passenger extends User {
     )
     private List<Ride> favoriteRides = new ArrayList<>();
 
-  @Column(nullable = false)
-  private boolean verified = false;
 }

@@ -1,0 +1,74 @@
+<div class="notification-container">
+      <div class="notification-header">
+        <h2>Admin Notifications</h2>
+        <div class="header-actions">
+          <button 
+            *ngIf="unreadCount > 0" 
+            class="btn btn-secondary"
+            (click)="markAllAsRead()">
+            Mark All Read
+          </button>
+        </div>
+      </div>
+
+      <div class="notification-filter">
+        <button 
+          [class.active]="filter === 'all'"
+          (click)="setFilter('all')"
+          class="filter-btn">
+          All ({{allNotifications.length}})
+        </button>
+        <button 
+          [class.active]="filter === 'unread'"
+          (click)="setFilter('unread')"
+          class="filter-btn">
+          Unread ({{unreadCount}})
+        </button>
+      </div>
+
+      <div class="notification-list">
+        <div *ngIf="filteredNotifications.length === 0" class="empty-state">
+          <span class="empty-icon">🔔</span>
+          <p>No notifications yet</p>
+        </div>
+
+        <div 
+          *ngFor="let notification of filteredNotifications"
+          class="notification-item"
+          [class.unread]="!notification.isRead"
+          (click)="handleNotificationClick(notification)">
+          
+          <div class="notification-icon">
+            {{getNotificationIcon(notification.type)}}
+          </div>
+
+          <div class="notification-content">
+            <div class="notification-type">
+              {{getNotificationTypeLabel(notification.type)}}
+            </div>
+            <div class="notification-message">
+              {{notification.message}}
+            </div>
+            <div class="notification-time">
+              {{formatTime(notification.createdAt)}}
+            </div>
+          </div>
+
+          <div class="notification-actions">
+            <button 
+              *ngIf="!notification.isRead"
+              class="action-btn"
+              (click)="markAsRead($event, notification.id)"
+              title="Mark as read">
+              ✓
+            </button>
+            <button 
+              class="action-btn delete-btn"
+              (click)="deleteNotification($event, notification.id)"
+              title="Delete">
+              🗑️
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>

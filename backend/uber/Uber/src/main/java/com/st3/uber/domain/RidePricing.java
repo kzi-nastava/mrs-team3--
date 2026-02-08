@@ -2,6 +2,7 @@ package com.st3.uber.domain;
 
 import com.st3.uber.enums.VehicleType;
 import jakarta.persistence.*;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -10,8 +11,7 @@ import java.util.Map;
 
 @Entity
 @Table(name = "ride_pricing")
-@Getter
-@Setter
+@Data
 public class RidePricing {
 
     @Id

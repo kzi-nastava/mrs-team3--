@@ -1,5 +1,9 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Subject } from 'rxjs';
+import { Util } from '../util/util';
+
+
+export type VehicleType = 'STANDARD' | 'VAN' | 'LUXURY';
 
 export interface Location {
   lat: number;
@@ -11,6 +15,11 @@ export interface RideBookingData {
   pickup: Location | null;
   stops: Location[];
   destination: Location | null;
+
+  vehicleType: VehicleType;
+  babyTransport: boolean;
+  petTransport: boolean;
+  passengers: number;
 }
 
 @Injectable({
@@ -20,37 +29,50 @@ export class RideBookingService {
   private rideBookingDataSubject = new BehaviorSubject<RideBookingData>({
     pickup: null,
     stops: [],
-    destination: null
+    destination: null,
+
+    vehicleType: 'STANDARD',
+    babyTransport: false,
+    petTransport: false,
+    passengers: 1
   });
-  
+
   public rideBookingData$ = this.rideBookingDataSubject.asObservable();
-  
+
   private clearRouteSubject = new Subject<void>();
   public clearRoute$ = this.clearRouteSubject.asObservable();
-  
+
   private calculateRouteSubject = new Subject<void>();
   public calculateRoute$ = this.calculateRouteSubject.asObservable();
 
-  setPickupLocation(location: Location): void {
+
+  async setPickupLocation(location: Location): Promise<void> {
+    const address = await Util.reverseGeocode(location.lat, location.lng);
     const current = this.rideBookingDataSubject.value;
+
     this.rideBookingDataSubject.next({
       ...current,
-      pickup: location
+      pickup: { ...location, name: address }
     });
   }
 
-  addStopLocation(location: Location): void {
+  async addStopLocation(location: Location): Promise<void> {
+    const address = await Util.reverseGeocode(location.lat, location.lng);
     const current = this.rideBookingDataSubject.value;
+
     this.rideBookingDataSubject.next({
       ...current,
-      stops: [...current.stops, location]
+      stops: [...current.stops, { ...location, name: address }]
     });
   }
 
-  updateStopLocation(index: number, location: Location): void {
+  async updateStopLocation(index: number, location: Location): Promise<void> {
+    const address = await Util.reverseGeocode(location.lat, location.lng);
     const current = this.rideBookingDataSubject.value;
+
     const newStops = [...current.stops];
-    newStops[index] = location;
+    newStops[index] = { ...location, name: address };
+
     this.rideBookingDataSubject.next({
       ...current,
       stops: newStops
@@ -60,18 +82,42 @@ export class RideBookingService {
   removeStopLocation(index: number): void {
     const current = this.rideBookingDataSubject.value;
     const newStops = current.stops.filter((_, i) => i !== index);
+
     this.rideBookingDataSubject.next({
       ...current,
       stops: newStops
     });
   }
 
-  setDestinationLocation(location: Location): void {
+  async setDestinationLocation(location: Location): Promise<void> {
+    const address = await Util.reverseGeocode(location.lat, location.lng);
     const current = this.rideBookingDataSubject.value;
+
     this.rideBookingDataSubject.next({
       ...current,
-      destination: location
+      destination: { ...location, name: address }
     });
+  }
+
+  setVehicleType(vehicleType: VehicleType): void {
+    const current = this.rideBookingDataSubject.value;
+    this.rideBookingDataSubject.next({ ...current, vehicleType });
+  }
+
+  setBabyTransport(babyTransport: boolean): void {
+    const current = this.rideBookingDataSubject.value;
+    this.rideBookingDataSubject.next({ ...current, babyTransport });
+  }
+
+  setPetTransport(petTransport: boolean): void {
+    const current = this.rideBookingDataSubject.value;
+    this.rideBookingDataSubject.next({ ...current, petTransport });
+  }
+
+  setPassengers(passengers: number): void {
+    const current = this.rideBookingDataSubject.value;
+    const safe = Math.max(1, Math.min(8, passengers || 1));
+    this.rideBookingDataSubject.next({ ...current, passengers: safe });
   }
 
   getRideBookingData(): RideBookingData {
@@ -79,15 +125,63 @@ export class RideBookingService {
   }
 
   clearRoute(): void {
+    const current = this.rideBookingDataSubject.value;
+
     this.rideBookingDataSubject.next({
       pickup: null,
       stops: [],
-      destination: null
+      destination: null,
+
+      vehicleType: 'STANDARD',
+      babyTransport: false,
+      petTransport: false,
+      passengers: 1
     });
+
     this.clearRouteSubject.next();
   }
 
   calculateRoute(): void {
     this.calculateRouteSubject.next();
   }
+  setPickupLocationDirect(location: Location): void {
+    const current = this.rideBookingDataSubject.value;
+    this.rideBookingDataSubject.next({
+      ...current,
+      pickup: location
+    });
+  }
+  setDestinationLocationDirect(location: Location): void {
+    const current = this.rideBookingDataSubject.value;
+    this.rideBookingDataSubject.next({
+      ...current,
+      destination: location
+    });
+  }
+  clearStops(): void {
+    const current = this.rideBookingDataSubject.value;
+    this.rideBookingDataSubject.next({
+      ...current,
+      stops: []
+    });
+  }
+  addStopLocationDirect(location: Location): void {
+    const current = this.rideBookingDataSubject.value;
+    this.rideBookingDataSubject.next({
+      ...current,
+      stops: [...current.stops, location]
+    });
+  }
+
+  updateStopLocationDirect(index: number, location: Location): void {
+    const current = this.rideBookingDataSubject.value;
+    const newStops = [...current.stops];
+    newStops[index] = location;
+
+    this.rideBookingDataSubject.next({
+      ...current,
+      stops: newStops
+    });
+  }
+
 }

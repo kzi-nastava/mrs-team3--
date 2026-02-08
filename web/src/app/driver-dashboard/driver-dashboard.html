@@ -1,0 +1,229 @@
+<div class="driver-dashboard">
+  <div class="dashboard-header">
+    <h1>Driver Dashboard</h1>
+    <button class="btn-refresh" (click)="refreshRides()">🔄 Refresh</button>
+  </div>
+
+  <div *ngIf="loading()" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading...</p>
+  </div>
+
+  <div *ngIf="!loading()" class="dashboard-content">
+
+    <!-- Ride Cards -->
+    <div class="rides-column">
+      <h2>{{ myRides().length > 0 ? 'My Rides' : 'Available Rides' }}</h2>
+
+      <!-- My Rides -->
+      <div *ngIf="myRides().length > 0" class="ride-cards">
+        <div
+          *ngFor="let ride of myRides()"
+          class="ride-card"
+          [class.selected]="selectedRide()?.rideId === ride.rideId"
+          (click)="selectRide(ride)"
+        >
+          <div class="ride-header">
+            <span>Ride #{{ ride.rideId }}</span>
+            <span class="badge">{{ ride.status }}</span>
+          </div>
+
+          <div class="ride-body">
+            <div class="location">🟢 {{ ride.startLocation.address }}</div>
+
+            <div *ngFor="let stop of ride.stops; let i = index" class="location">
+              {{ ride.stopStatuses[i]?.reached ? '🟡' : '🔵' }}
+              Stop {{ i + 1 }}: {{ stop.address }}
+            </div>
+
+            <div class="location">🔴 {{ ride.endLocation.address }}</div>
+
+            <div class="meta">
+              <span>{{ ride.distance.toFixed(1) }} km</span>
+              <span>{{ ride.calculatedPrice.toFixed(2) }} RSD</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pending Rides -->
+      <div *ngIf="myRides().length === 0 && pendingRides().length > 0" class="ride-cards">
+        <div
+          *ngFor="let ride of pendingRides()"
+          class="ride-card pending"
+          [class.selected]="selectedRide()?.rideId === ride.rideId"
+          (click)="selectRide(ride)"
+        >
+          <div class="ride-header">
+            <span>Ride #{{ ride.rideId }}</span>
+            <span class="badge">Available</span>
+          </div>
+
+          <div class="ride-body">
+            <div class="location">🟢 {{ ride.startLocation.address }}</div>
+
+            <div *ngFor="let stop of ride.stops; let i = index" class="location">
+              🔵 Stop {{ i + 1 }}: {{ stop.address }}
+            </div>
+
+            <div class="location">🔴 {{ ride.endLocation.address }}</div>
+
+            <div class="meta">
+              <span>{{ ride.distance.toFixed(1) }} km</span>
+              <span>{{ ride.calculatedPrice.toFixed(2) }} RSD</span>
+            </div>
+
+            <button
+              class="btn-accept"
+              (click)="acceptRide(ride); $event.stopPropagation()"
+            >
+              Accept Ride
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="myRides().length === 0 && pendingRides().length === 0" class="empty-state">
+        <p>No rides available</p>
+      </div>
+    </div>
+
+    <!-- Map + Controls -->
+    <div class="map-column" *ngIf="selectedRide() as ride">
+      <div class="map-container">
+        <div id="driverMap" class="map"></div>
+      </div>
+
+      <!-- Controls only for DRIVER rides -->
+      <div class="controls" *ngIf="isDriverRide(ride)">
+        <h3>Ride Controls</h3>
+
+        <!-- ACCEPTED -->
+        <div *ngIf="ride.status === 'ACCEPTED'" class="control-buttons">
+          <button class="btn-primary" (click)="moveToStart()">📍 Go to Pickup</button>
+          <button class="btn-success" (click)="startRide()">▶️ Start Ride</button>
+          <button class="btn-danger" (click)="openCancelModal()">❌ Cancel Ride</button>
+        </div>
+
+        <!-- IN_PROGRESS -->
+        <div *ngIf="ride.status === 'IN_PROGRESS'" class="control-buttons">
+          <button
+            *ngIf="canShowPanicButton(ride)"
+            class="btn-danger panic-btn"
+            (click)="panicRide()"
+          >
+            🚨 PANIC
+          </button>
+          <p class="info">💡 Click on map to move car</p>
+
+          <div class="stop-buttons">
+            <h4>Mark Stops as Reached:</h4>
+            <button
+              *ngFor="let stop of ride.stopStatuses; let i = index"
+              class="btn-stop"
+              [class.reached]="stop.reached"
+              [disabled]="stop.reached"
+              (click)="markStopReached(i)"
+            >
+              {{ stop.reached ? '✓' : '○' }} Stop {{ i + 1 }}
+            </button>
+          </div>
+
+          <button class="btn-success" (click)="openFinishModal()">✓ Finish Ride</button>
+        </div>
+
+        <!-- Ride Info -->
+        <div class="ride-info">
+          <div class="info-row">
+            <span>Distance:</span>
+            <span>{{ ride.distance.toFixed(1) }} km</span>
+          </div>
+          <div class="info-row">
+            <span>Price:</span>
+            <span>{{ ride.calculatedPrice.toFixed(2) }} RSD</span>
+          </div>
+          <div class="info-row">
+            <span>Passengers:</span>
+            <span>{{ ride.passengerCount }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Finish Modal - CENTERED -->
+<div class="modal-overlay" *ngIf="showFinishModal()">
+  <div class="modal-container">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Finish Ride</h2>
+        <button class="close-btn" (click)="closeFinishModal()">×</button>
+      </div>
+
+      <div class="modal-body">
+        <p class="modal-text">Confirm ride completion. Has the customer paid and exited the vehicle?</p>
+        <div class="warning-box">
+          <span class="warning-icon">⚠️</span>
+          <span>This action cannot be undone</span>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeFinishModal()">Cancel</button>
+        <button class="btn-primary" (click)="finishRide()">✓ Confirm & Finish</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Notifications -->
+<div class="toast-container">
+  <div
+    *ngFor="let toast of toasts"
+    class="toast"
+    [ngClass]="'toast-' + toast.type"
+  >
+    <span class="toast-message">{{ toast.message }}</span>
+    <button class="toast-close" (click)="removeToast(toast.id)">×</button>
+  </div>
+</div>
+
+<!-- Cancel Modal -->
+<div class="modal-overlay" *ngIf="showCancelModal()">
+  <div class="modal-container">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Cancel Ride</h2>
+        <button class="close-btn" (click)="closeCancelModal()">×</button>
+      </div>
+
+      <div class="modal-body">
+        <p class="modal-text">Please provide a reason for cancelling this ride.</p>
+
+        <textarea
+          class="modal-textarea"
+          rows="4"
+          #reasonBox
+          [value]="cancelReason()"
+          (input)="cancelReason.set(reasonBox.value)"
+          placeholder="e.g. Passenger not at pickup, health issue, ...">
+        </textarea>
+
+
+        <div class="warning-box">
+          <span class="warning-icon">⚠️</span>
+          <span>This will cancel the ride immediately.</span>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeCancelModal()">Back</button>
+        <button class="btn-danger" (click)="confirmCancelRide()" [disabled]="!cancelReason().trim()">
+          ❌ Confirm Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
