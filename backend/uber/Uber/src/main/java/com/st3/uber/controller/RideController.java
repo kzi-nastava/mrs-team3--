@@ -440,5 +440,4 @@ public class RideController {
         AdminRideHistoryExtendedResponse res = rideTimelineService.adminRideHistoryDetails(rideId);
         return ResponseEntity.ok(res);
     }
-
 }

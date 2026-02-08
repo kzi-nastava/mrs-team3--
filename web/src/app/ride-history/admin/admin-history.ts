@@ -5,6 +5,7 @@ import * as L from 'leaflet';
 import { env } from '../../../env/env';
 import { Router } from '@angular/router';
 import { AdminHistoryService, AdminRideSummary, AdminRideDetails, Location } from '../../services/admin-history.service';
+import { RatingModule} from 'primeng/rating';
 
 
 type SortOption =
@@ -33,7 +34,7 @@ type RideForEndMillis = {
 @Component({
   selector: 'app-admin-history',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RatingModule],
   templateUrl: './admin-history.html',
   styleUrls: ['./admin-history.css'],
 })
@@ -43,14 +44,11 @@ export class AdminRideHistoryComponent implements OnInit, AfterViewInit {
 
   userId: number | null = null;
 
-  // Filter states
   startDate: string = '';
   endDate: string = '';
 
-  // Sort state
   sortOption: SortOption = 'startTime-desc';
 
-  // Map
   private detailMap: L.Map | null = null;
   private mapMarkers: L.Marker[] = [];
   private mapRouteLines: L.Polyline[] = [];
@@ -62,16 +60,11 @@ export class AdminRideHistoryComponent implements OnInit, AfterViewInit {
   ) {}
 
   ngOnInit(): void {
-    // admin ne mora automatski load, ali možeš ako želiš:
     this.loadRides();
   }
 
   ngAfterViewInit(): void {}
 
-  /**
-   * Computed list: filter + sort (client-side).
-   * Kasnije prebacuješ na backend sort ako hoćeš.
-   */
   protected filteredRides = computed(() => {
     let rides = this.rides();
 
@@ -124,11 +117,9 @@ export class AdminRideHistoryComponent implements OnInit, AfterViewInit {
         break;
 
       case 'panic-asc':
-        // false first, true last
         sorted.sort((a, b) => Number(Boolean(a.panic)) - Number(Boolean(b.panic)));
         break;
       case 'panic-desc':
-        // true first
         sorted.sort((a, b) => Number(Boolean(b.panic)) - Number(Boolean(a.panic)));
         break;
     }
@@ -168,15 +159,20 @@ export class AdminRideHistoryComponent implements OnInit, AfterViewInit {
       },
       error: (err: any) => {
         console.error('getAdminRideDetails failed:', err);
-
-        // fallback da template ne puca
-        this.selectedRide.set({
+        const fallback: AdminRideDetails = {
           ...ride,
-          stops: [],
-          cancelReason: null,
-        });
 
-        setTimeout(() => this.initDetailMap(this.selectedRide()!), 300);
+          stops: [],
+          driverName: '-',
+          passengerEmails: [],
+          driverReview: null,
+          rideReview: null,
+          inconsistencyReports: [],
+          cancellationReason: null,
+        };
+
+        this.selectedRide.set(fallback);
+        setTimeout(() => this.initDetailMap(fallback), 300);
       },
     });
   }
@@ -338,8 +334,6 @@ export class AdminRideHistoryComponent implements OnInit, AfterViewInit {
     });
   }
 
-  // ===== UI helpers =====
-
   protected getStatusText(status: string): string {
     switch (status) {
       case 'COMPLETED':
@@ -386,7 +380,6 @@ export class AdminRideHistoryComponent implements OnInit, AfterViewInit {
     console.log('Admin: View report clicked');
   }
 
-  // ===== mapping + sorting helpers =====
   private mapLoc(loc: any): Location {
     return {
       address: String(loc?.address ?? ''),
@@ -412,24 +405,32 @@ export class AdminRideHistoryComponent implements OnInit, AfterViewInit {
       price: Number(r?.price ?? 0),
       panic,
 
-      cancelledBy: r?.cancelledBy ?? null,
     };
   }
 
   private mergeDetails(base: AdminRideSummary, details: AdminRideDetails): AdminRideDetails {
     return {
       ...base,
+
       status: details.status ?? base.status,
       startLocation: details.startLocation ?? base.startLocation,
       endLocation: details.endLocation ?? base.endLocation,
       startTime: details.startTime ?? base.startTime,
       endTime: details.endTime ?? base.endTime,
-      price: details.price,
-      panic: details.panic,
+      price: Number((details as any)?.price ?? base.price),
+      panic: Boolean((details as any)?.panic ?? base.panic),
 
-      stops: details.stops ?? [],
-      cancelReason: details.cancelReason ?? null,
-      cancelledBy: details.cancelledBy ?? base.cancelledBy ?? null,
+      stops: (details.stops ?? []).map(s => this.mapLoc(s)),
+
+      driverName: (details as any)?.driverName ?? '-',
+      passengerEmails: (details as any)?.passengerEmails ?? [],
+
+      driverReview: (details as any)?.driverReview ?? null,
+      rideReview: (details as any)?.rideReview ?? null,
+
+      inconsistencyReports: (details as any)?.inconsistencyReports ?? [],
+
+      cancellationReason: (details as any)?.cancellationReason ?? null,
     };
   }
 
@@ -446,7 +447,6 @@ export class AdminRideHistoryComponent implements OnInit, AfterViewInit {
     this.endDate = '';
     this.sortOption = 'startTime-desc';
 
-    // trigger recompute
     this.rides.set([...this.rides()]);
   }
 }

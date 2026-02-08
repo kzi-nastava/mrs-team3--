@@ -2,14 +2,11 @@ package com.st3.uber.service;
 
 import com.st3.uber.domain.*;
 import com.st3.uber.dto.ride.*;
-import com.st3.uber.dto.rideHistory.AdminRideHistoryExtendedResponse;
-import com.st3.uber.dto.rideHistory.AdminRideHistoryResponse;
-import com.st3.uber.dto.rideHistory.PassengerRideSummaryExtendedResponse;
-import com.st3.uber.dto.rideHistory.PassengerRideSummaryResponse;
 import com.st3.uber.dto.route.RouteInfo;
 import com.st3.uber.enums.CancelledBy;
 import com.st3.uber.enums.NotificationType;
 import com.st3.uber.enums.RideStatus;
+import com.st3.uber.repository.DriverRepository;
 import com.st3.uber.repository.PassengerRepository;
 import com.st3.uber.repository.RideInviteRepository;
 import com.st3.uber.repository.RideRepository;
@@ -24,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 
 import java.time.LocalDateTime;
-import java.util.stream.Collectors;
 
 @Service
 public class RideService {
@@ -37,16 +33,16 @@ public class RideService {
     private final DriverService driverService;
     private final RideInviteMailService rideInviteMailService;
     private final NotificationService notificationService;
-
+    private final DriverRepository driverRepository;
     public RideService(
-            RideRepository rideRepository,
-            PassengerRepository passengerRepository,
-            RideInviteRepository rideInviteRepository,
-            RouteCalculationService routeCalculationService,
-            PriceCalculationService priceCalculationService,
-            DriverService driverService,
-            RideInviteMailService rideInviteMailService,
-            NotificationService notificationService) {
+        RideRepository rideRepository,
+        PassengerRepository passengerRepository,
+        RideInviteRepository rideInviteRepository,
+        RouteCalculationService routeCalculationService,
+        PriceCalculationService priceCalculationService,
+        DriverService driverService,
+        RideInviteMailService rideInviteMailService,
+        NotificationService notificationService, DriverRepository driverRepository) {
         this.rideRepository = rideRepository;
         this.passengerRepository = passengerRepository;
         this.rideInviteRepository = rideInviteRepository;
@@ -55,6 +51,7 @@ public class RideService {
         this.driverService = driverService;
         this.rideInviteMailService = rideInviteMailService;
         this.notificationService = notificationService;
+        this.driverRepository = driverRepository;
     }
 
     @Transactional
@@ -401,12 +398,22 @@ public class RideService {
                 .orElseThrow(() -> new IllegalArgumentException("Passenger not found"));
         Ride ride = rideRepository.findById(rideId)
                 .orElseThrow(() -> new IllegalArgumentException("Ride not found"));
+
+        if(ride.getDriver() != null){
+            Driver driver = ride.getDriver();
+            driver.setActive(true);
+            driver.setAvailable(true);
+            driver.setFree(true);
+            driver.setCurrentRide(null);
+            driverRepository.save(driver);
+        }
         if (!ride.getCreator().equals(passenger))
             return;
 
         ride.setStatus(RideStatus.CANCELLED_BY_PASSENGER);
         ride.setCancelledAt(LocalDateTime.now());
         ride.setCancelledBy(CancelledBy.PASSENGER);
+
         rideRepository.save(ride);
     }
 

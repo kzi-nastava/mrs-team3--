@@ -8,7 +8,6 @@
 
     <div class="filter">
 
-      <!-- Date range -->
       <label>
         From:
         <input
@@ -25,31 +24,25 @@
           (change)="onFilterChange()">
       </label>
 
-      <!-- Sort -->
       <div class="sort">
         <label class="sort-label">Sort by</label>
 
         <div class="select-wrap">
           <select class="select" [(ngModel)]="sortOption" (change)="onSortChange()">
-            <!-- dates -->
             <option value="startTime-desc">Start time (newest)</option>
             <option value="startTime-asc">Start time (oldest)</option>
             <option value="endTime-desc">End time (newest)</option>
             <option value="endTime-asc">End time (oldest)</option>
 
-            <!-- price -->
             <option value="price-desc">Price (high → low)</option>
             <option value="price-asc">Price (low → high)</option>
 
-            <!-- status -->
             <option value="status-asc">Status (A → Z)</option>
             <option value="status-desc">Status (Z → A)</option>
 
-            <!-- panic -->
             <option value="panic-desc">Panic first</option>
             <option value="panic-asc">No panic first</option>
 
-            <!-- route -->
             <option value="route-asc">Route (A → Z)</option>
             <option value="route-desc">Route (Z → A)</option>
           </select>
@@ -67,7 +60,6 @@
 
   </div>
 
-  <!-- Empty state -->
   @if (rides().length === 0) {
   <div class="empty-state">
     <div class="empty-state-icon">🗂️</div>
@@ -136,7 +128,6 @@
   </div>
   }
 
-  <!-- Modal (expanded details) -->
   @if (selectedRide()) {
   <div class="modal-overlay" (click)="closeModal($event)">
     <div class="modal-content" (click)="$event.stopPropagation()">
@@ -148,14 +139,12 @@
 
         <div class="modal-body">
 
-          <!-- Map -->
           <div class="detail-section">
             <div class="map-container" id="map-container">
               <div id="detailMap"></div>
             </div>
           </div>
 
-          <!-- Status + Panic + Cancel -->
           <div class="detail-section">
             <div class="badges-row">
 
@@ -171,18 +160,8 @@
   </span>
 
 </div>
-
-@if (selectedRide()!.status.includes('CANCELLED')) {
-  <div class="cancel-info">
-    <p><strong>Cancelled by:</strong> {{ selectedRide()!.cancelledBy ?? '-' }}</p>
-    @if (selectedRide()!.cancelReason) {
-    <p><strong>Reason:</strong> {{ selectedRide()!.cancelReason }}</p>
-    }
-  </div>
-  }
   </div>
 
-  <!-- Route -->
   <div class="detail-section">
     <h3 class="section-title">📍 Route</h3>
 
@@ -217,8 +196,7 @@
             </div>
           </div>
 
-          <!-- Basic info -->
-          <div class="detail-section">
+          <div class="detail-section section--info">
             <h3 class="section-title">ℹ️ Ride Information</h3>
 
             <div class="info-grid">
@@ -241,8 +219,70 @@
 
           </div>
 
-          <!-- NOTE: driver/passengers/reports/reviews can be loaded here after click.
-               You already said you don't need to send them now. -->
+          <div class="detail-section">
+  <h3 class="section-title">⭐ Reviews</h3>
+
+  <div class="info-grid">
+
+    <div class="detail-item">
+      <span class="detail-label">Driver review</span>
+
+      @if (selectedRide()?.driverReview != null) {
+  <p-rating
+    [ngModel]="selectedRide()!.driverReview"
+    [readonly]="true"
+    stars="5">
+  </p-rating>
+  } @else {
+  <span class="no-review">/</span>
+  }
+  </div>
+
+  <div class="detail-item">
+    <span class="detail-label">Ride review</span>
+
+    @if (selectedRide()?.rideReview != null) {
+  <p-rating
+    [ngModel]="selectedRide()!.rideReview"
+    [readonly]="true"
+    stars="5">
+  </p-rating>
+  } @else {
+  <span class="no-review">/</span>
+  }
+  </div>
+
+  @if (selectedRide()!.status == 'CANCELLED_BY_DRIVER') {
+  <div class="cancel-info">
+
+    @if (selectedRide()!.cancellationReason) {
+    <p><strong>Cancellation reason:</strong> {{ selectedRide()!.cancellationReason }}</p>
+    }
+  </div>
+  }
+
+  @if (selectedRide()!.inconsistencyReports.length) {
+  <div class="detail-section">
+    <h3 class="section-title">⚠️ Inconsistency reports</h3>
+
+    <div class="reports-list">
+      @for (rep of selectedRide()!.inconsistencyReports; track rep.id ?? $index) {
+      <div class="report-card">
+        <div class="report-header">
+          <div class="report-text">
+      <p>{{ rep.reportText ?? '-' }}</p>
+          </div>
+        </div>
+    </div>
+      }
+    </div>
+  </div>
+  }
+
+
+  </div>
+  </div>
+
 
         </div>
 

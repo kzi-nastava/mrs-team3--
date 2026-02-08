@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { DriverRideService, DriverRide, PendingRide, Location } from '../services/driver-ride.service';
+import { DriverRideService, DriverRide, PendingRide, Location, CancelRideRequest } from '../services/driver-ride.service';
 import * as L from 'leaflet';
 import { env } from '../../env/env';
 
@@ -410,7 +410,9 @@ export class DriverDashboardComponent implements OnInit, OnDestroy {
     const reason = this.cancelReason().trim();
     if (!reason) return;
 
-    this.service.cancelRide(ride.rideId, reason).subscribe({
+    const req: CancelRideRequest = { cancellationReason: reason };
+
+    this.service.cancelRide(ride.rideId, req).subscribe({
       next: () => {
         this.showToast('Ride cancelled successfully', 'success');
         this.showCancelModal.set(false);

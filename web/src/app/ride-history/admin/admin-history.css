@@ -74,11 +74,6 @@
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
-.filter .small-input {
-  min-width: 120px;
-}
-
-/* nicer select */
 .select-wrap {
   position: relative;
 }
@@ -117,16 +112,6 @@
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
-.actions button.secondary {
-  background: #111827;
-  box-shadow: 0 2px 8px rgba(17, 24, 39, 0.25);
-}
-
-.actions button.secondary:hover {
-  box-shadow: 0 4px 12px rgba(17, 24, 39, 0.35);
-}
-
-/* ===== Cards Grid ===== */
 .rides-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -134,7 +119,6 @@
   width: 100%;
 }
 
-/* ===== Ride Card ===== */
 .ride-card {
   background: white;
   border-radius: var(--radius-lg, 12px);
@@ -167,14 +151,6 @@
   color: #6b7280;
 }
 
-.badges {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-/* status badge same as driver */
 .status-badge {
   padding: 0.375rem 0.75rem;
   border-radius: 999px;
@@ -188,7 +164,6 @@
 .status-badge.cancelled { background: #fee2e2; color: #991b1b; }
 .status-badge.finished-early { background: #dbeafe; color: #1e40af; }
 
-/* admin panic badge */
 .panic-badge {
   padding: 0.375rem 0.75rem;
   border-radius: 999px;
@@ -205,7 +180,6 @@
   color: #991b1b;
 }
 
-/* ===== Route ===== */
 .ride-route {
   margin-bottom: var(--spacing-md, 1rem);
 }
@@ -235,7 +209,6 @@
   line-height: 1.4;
 }
 
-/* ===== Info ===== */
 .ride-info {
   display: flex;
   flex-wrap: wrap;
@@ -269,7 +242,6 @@
   font-size: 1rem;
 }
 
-/* ===== Modal ===== */
 .modal-overlay {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
@@ -375,7 +347,6 @@
   height: 100%;
 }
 
-/* route details block */
 .route-details {
   background: #f9fafb;
   border-radius: var(--radius-md, 8px);
@@ -451,7 +422,6 @@
   font-weight: 600;
 }
 
-/* cancellation */
 .cancel-info {
   background: #fef2f2;
   border: 1px solid #fecaca;
@@ -467,7 +437,6 @@
 
 .cancel-info p:last-child { margin-bottom: 0; }
 
-/* Empty state */
 .empty-state {
   text-align: center;
   padding: var(--spacing-2xl, 3rem);
@@ -493,7 +462,6 @@
   font-size: 0.875rem;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
   .admin-history-container { padding: var(--spacing-md, 1rem); }
   .admin-history-header h1 { font-size: 1.5rem; }

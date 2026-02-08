@@ -43,6 +43,7 @@ public class RideTimelineService {
     }).toList();
   }
 
+  @Transactional
   public AdminRideHistoryExtendedResponse adminRideHistoryDetails(Long rideId) {
     Ride ride = rideRepository.findById(rideId)
         .orElseThrow(() -> new IllegalArgumentException("Ride not found"));
@@ -71,7 +72,13 @@ public class RideTimelineService {
       res.setEndLocation(ride.getActualEndLocation());
     }
 
-    res.setStartTime(ride.getStartedAt());
+    if (ride.getStartedAt() != null)
+      res.setStartTime(ride.getStartedAt());
+    else if(ride.getScheduledAt() != null)
+      res.setStartTime(ride.getScheduledAt());
+    else
+      res.setStartTime(ride.getCreatedAt());
+
     res.setEndTime(ride.getFinishedAt());
   }
 
@@ -126,6 +133,9 @@ public class RideTimelineService {
             })
             .toList()
     );
+
+    res.setCancellationReason(ride.getTerminationReason());
+
   }
   private void validateRideForHistory(Ride ride) {
     if (ride.getStatus() != RideStatus.COMPLETED &&
@@ -200,7 +210,6 @@ public class RideTimelineService {
         .toList();
   }
 
-
   private static PassengerRideSummaryExtendedResponse detailsResponse(Ride ride, boolean favorite) {
     PassengerRideSummaryExtendedResponse res = new PassengerRideSummaryExtendedResponse();
 
@@ -245,6 +254,7 @@ public class RideTimelineService {
 
     return res;
   }
+
   private static Double calculateReview(List<Integer> values){
     if (values == null || values.isEmpty())
       return null;
@@ -254,5 +264,4 @@ public class RideTimelineService {
     int sum = values.stream().filter(Objects::nonNull).mapToInt(Integer::intValue).sum();
     return sum / (double) count;
   }
-
 }

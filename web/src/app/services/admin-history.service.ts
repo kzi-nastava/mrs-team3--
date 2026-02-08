@@ -3,7 +3,6 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { env } from '../../env/env';
 
-/** Shared types (match your backend DTO naming!) */
 type RideStatus = string;
 
 export type Location = {
@@ -22,24 +21,31 @@ export type AdminRideSummary = {
   startTime: string;
   endTime: string | null;
 
-  favorite: boolean; // inherited from PassengerRideSummaryResponse
+  favorite: boolean;
   price: number;
   panic: boolean;
+};
 
-  // optional if/when you add it:
-  cancelledBy?: string | null;
+export type InconsistencyReportItemResponse = {
+  id?: number;
+  reportText?: string;
+  createdAt?: string;
 };
 
 export type AdminRideDetails = AdminRideSummary & {
   stops: Location[];
-  cancelReason?: string | null;
 
-  // optional expansions for later:
-  // driver?: { id: number; name: string; email: string };
-  // passengers?: { id: number; name: string; email: string }[];
-  // inconsistencyReports?: ...
-  // reviews?: ...
+  driverName: string;
+  passengerEmails: string[];
+
+  driverReview: number | null;
+  rideReview: number | null;
+
+  inconsistencyReports: InconsistencyReportItemResponse[];
+
+  cancellationReason?: string | null;
 };
+
 
 export type AdminSortBy =
   | 'startTime'
@@ -75,12 +81,6 @@ export class AdminHistoryService {
     return this.http.get<AdminRideSummary[]>(this.apiUrl, { params });
   }
 
-  /**
-   * Expanded details for a ride (only on click)
-   *
-   * Example:
-   * GET /api/rides/history/admin/123
-   */
   getAdminRideDetails(rideId: number): Observable<AdminRideDetails> {
     return this.http.get<AdminRideDetails>(`${this.apiUrl}/${rideId}`);
   }

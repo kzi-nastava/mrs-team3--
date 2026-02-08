@@ -61,6 +61,10 @@ export interface FinishRideResponse {
   nextRideId: number | null;
 }
 
+export interface CancelRideRequest {
+  cancellationReason: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -123,11 +127,8 @@ export class DriverRideService {
     );
   }
 
-  cancelRide(rideId: number, reason: string): Observable<void> {
-    return this.http.post<void>(
-      `${this.apiUrl}/${rideId}/cancel`,
-      { reason }
-    );
+  cancelRide(rideId: number, reason: CancelRideRequest): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}/${rideId}/cancel`, reason);
   }
 
   panicRide(rideId: number): Observable<void> {
