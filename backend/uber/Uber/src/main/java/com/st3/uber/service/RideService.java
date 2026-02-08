@@ -37,6 +37,7 @@ public class RideService {
     private final DriverService driverService;
     private final RideInviteMailService rideInviteMailService;
     private final NotificationService notificationService;
+    private final MailService mailService;
 
     public RideService(
             RideRepository rideRepository,
@@ -46,7 +47,8 @@ public class RideService {
             PriceCalculationService priceCalculationService,
             DriverService driverService,
             RideInviteMailService rideInviteMailService,
-            NotificationService notificationService) {
+            NotificationService notificationService,
+            MailService mailService) {
         this.rideRepository = rideRepository;
         this.passengerRepository = passengerRepository;
         this.rideInviteRepository = rideInviteRepository;
@@ -55,6 +57,7 @@ public class RideService {
         this.driverService = driverService;
         this.rideInviteMailService = rideInviteMailService;
         this.notificationService = notificationService;
+        this.mailService = mailService;
     }
 
     @Transactional
@@ -424,6 +427,67 @@ public class RideService {
                     NotificationType.FINISHED_RIDE,
                     savedRide.getId()
             );
+        }
+
+        for (Passenger passenger : ride.getPassengers()) {
+            try {
+                String subject = "Ride Completed";
+                String body = String.format("""
+            Dear %s,
+            
+            Your ride has been completed.
+            
+            Ride Details:
+            - From: %s
+            - To: %s
+            - Distance: %.2f km
+            - Duration: %d minutes
+            - Total Cost: %.2f RSD
+            
+            Thank you for riding with us!
+            
+            Best regards,
+            Uber Team
+            """,
+                        passenger.getName(),
+                        ride.getStartLocation().getAddress(),
+                        ride.getActualEndLocation() != null ? ride.getActualEndLocation().getAddress() : ride.getEndLocation().getAddress(),
+                        ride.getDistance(),
+                        ride.getEstimatedTimeMinutes(),
+                        ride.getCalculatedPrice()
+                );
+                mailService.sendText(passenger.getEmail(), subject, body);
+            } catch (Exception e) {
+                System.err.println("Failed to send completion email to passenger: " + e.getMessage());
+            }
+        }
+
+        for (RideInvite invite : ride.getInvites()) {
+            try {
+                String subject = "Ride Completed - Tracking Update";
+                String body = String.format("""
+            Hello,
+            
+            The ride you were tracking has been completed.
+            
+            Ride Details:
+            - From: %s
+            - To: %s
+            - Distance: %.2f km
+            
+            Thank you for your interest!
+            
+            Best regards,
+            Uber Team
+            """,
+                        ride.getStartLocation().getAddress(),
+                        ride.getActualEndLocation() != null ? ride.getActualEndLocation().getAddress() : ride.getEndLocation().getAddress(),
+                        ride.getDistance()
+                );
+                mailService.sendText(invite.getEmail(), subject, body);
+            } catch (Exception e) {
+                System.err.println("Failed to send completion email to invite: " + e.getMessage());
+            }
         }
 
         return savedRide;
