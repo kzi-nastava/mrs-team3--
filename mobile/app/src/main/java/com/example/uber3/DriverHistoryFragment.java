@@ -18,6 +18,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -342,15 +343,15 @@ public class DriverHistoryFragment extends Fragment implements RideHistoryAdapte
         List<GeoPoint> allRoutePoints = new ArrayList<>();
         allRoutePoints.add(startPoint);
 
-        // Add start marker (green)
+        // Add start marker (green with custom drawable)
         Marker startMarker = new Marker(mapView);
         startMarker.setPosition(startPoint);
         startMarker.setTitle("Start: " + (ride.startAddress != null ? ride.startAddress : ""));
-        startMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-        startMarker.setIcon(null); // Use default marker
+        startMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
+        startMarker.setIcon(ContextCompat.getDrawable(requireContext(), R.drawable.circle_start));
         mapView.getOverlays().add(startMarker);
 
-        // Add planned stops (blue markers)
+        // Add planned stops (blue markers with numbers)
         if (ride.plannedStops != null && !ride.plannedStops.isEmpty()) {
             for (int i = 0; i < ride.plannedStops.size(); i++) {
                 LocationDto stop = ride.plannedStops.get(i);
@@ -362,14 +363,14 @@ public class DriverHistoryFragment extends Fragment implements RideHistoryAdapte
                     stopMarker.setPosition(stopPoint);
                     stopMarker.setTitle("Planned Stop " + (i + 1) + ": " +
                             (stop.address != null ? stop.address : ""));
-                    stopMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-                    stopMarker.setTextIcon("P" + (i + 1)); // Planned stop label
+                    stopMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
+                    stopMarker.setIcon(ContextCompat.getDrawable(requireContext(), R.drawable.circle_stop));
                     mapView.getOverlays().add(stopMarker);
                 }
             }
         }
 
-        // Add actual stops (orange markers) - overlay on planned if same
+        // Add actual stops (orange/yellow markers with numbers)
         if (ride.actualStops != null && !ride.actualStops.isEmpty()) {
             for (int i = 0; i < ride.actualStops.size(); i++) {
                 LocationDto stop = ride.actualStops.get(i);
@@ -393,14 +394,14 @@ public class DriverHistoryFragment extends Fragment implements RideHistoryAdapte
                     stopMarker.setPosition(stopPoint);
                     stopMarker.setTitle("Actual Stop " + (i + 1) + ": " +
                             (stop.address != null ? stop.address : ""));
-                    stopMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-                    stopMarker.setTextIcon("A" + (i + 1)); // Actual stop label
+                    stopMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
+                    stopMarker.setIcon(ContextCompat.getDrawable(requireContext(), R.drawable.circle_stop));
                     mapView.getOverlays().add(stopMarker);
                 }
             }
         }
 
-        // Add end marker if available (red)
+        // Add end marker if available (red with custom drawable)
         if (ride.endLatitude != null && ride.endLongitude != null) {
             GeoPoint endPoint = new GeoPoint(ride.endLatitude, ride.endLongitude);
             allRoutePoints.add(endPoint);
@@ -408,7 +409,8 @@ public class DriverHistoryFragment extends Fragment implements RideHistoryAdapte
             Marker endMarker = new Marker(mapView);
             endMarker.setPosition(endPoint);
             endMarker.setTitle("End: " + (ride.endAddress != null ? ride.endAddress : ""));
-            endMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+            endMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
+            endMarker.setIcon(ContextCompat.getDrawable(requireContext(), R.drawable.circle_end));
             mapView.getOverlays().add(endMarker);
         }
 
