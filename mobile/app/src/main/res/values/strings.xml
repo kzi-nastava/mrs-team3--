@@ -181,6 +181,10 @@
     <string name="favorite">★ FAVORITE</string>
     <string name="start_b">Start: -</string>
     <string name="end_b">End: -</string>
+    <string name="heart_a">❤️</string>
+    <string name="favorites">❤️ Favorites</string>
+    <string name="invite_passengers">Invite passengers</string>
+    <string name="passenger_email">Passenger email</string>
 
     <string-array name="vehicle_types">
         <item>STANDARD</item>

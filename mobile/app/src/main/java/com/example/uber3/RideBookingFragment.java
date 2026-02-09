@@ -21,9 +21,11 @@ import android.text.Editable;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.example.uber3.adapter.FavoriteRoutesAdapter;
 import com.example.uber3.helpers.GeocodingHelper;
 import com.example.uber3.network.api.ApiClient;
 import com.example.uber3.network.api.ApiService;
+import com.example.uber3.network.model.favorite.FavoriteRouteResponse;
 import com.example.uber3.network.model.location.LocationRequest;
 import com.example.uber3.network.model.ride.CreateRideRequest;
 import com.example.uber3.network.model.ride.RideResponse;
@@ -63,8 +65,13 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
     private MaterialButton bookRideButton;
     private MaterialButton resetButton;
     private int stopCount = 0;
+    private boolean isAutoFilling = false;
+
 
     private ApiService apiService;
+
+    MaterialButton btnFavorites;
+
 
 
     private EditText etPassengerEmail;
@@ -102,6 +109,11 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
         bookRideButton = view.findViewById(R.id.bookRideButton);
         resetButton = view.findViewById(R.id.resetButton);
         etScheduledAt = view.findViewById(R.id.etScheduledAt);
+
+        btnFavorites = view.findViewById(R.id.btnFavorites);
+
+        btnFavorites.setOnClickListener(v -> loadFavorites());
+
 
         etScheduledAt.setOnLongClickListener(v -> {
             scheduledIso = null;
@@ -214,13 +226,132 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
         etPassengerEmail.setText("");
     }
 
+    private void loadFavorites() {
+
+        apiService.getFavorites().enqueue(new Callback<List<FavoriteRouteResponse>>() {
+            @Override
+            public void onResponse(
+                    @NonNull Call<List<FavoriteRouteResponse>> call,
+                    @NonNull Response<List<FavoriteRouteResponse>> response
+            ) {
+
+                if (response.isSuccessful() && response.body() != null) {
+                    showFavoritesDialog(response.body());
+                }
+            }
+
+            @Override
+            public void onFailure(
+                    @NonNull Call<List<FavoriteRouteResponse>> call,
+                    @NonNull Throwable t
+            ) {
+                Toast.makeText(requireContext(),
+                        "Failed to load favorites",
+                        Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void showFavoritesDialog(List<FavoriteRouteResponse> favorites) {
+
+        if (favorites.isEmpty()) {
+            Toast.makeText(requireContext(),
+                    "No favorites",
+                    Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        androidx.recyclerview.widget.RecyclerView rv =
+                new androidx.recyclerview.widget.RecyclerView(requireContext());
+
+        rv.setLayoutManager(
+                new androidx.recyclerview.widget.LinearLayoutManager(requireContext())
+        );
+
+        rv.setPadding(24, 24, 24, 24);
+        rv.setClipToPadding(false);
+
+        androidx.appcompat.app.AlertDialog dialog =
+                new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                        .setTitle("Favorite routes")
+                        .setView(rv)
+                        .setNegativeButton("Close", null)
+                        .create();
+
+        FavoriteRoutesAdapter adapter =
+                new FavoriteRoutesAdapter(
+                        favorites,
+                        route -> {
+                            applyFavorite(route);
+                            dialog.dismiss();
+                        }
+                );
+
+        rv.setAdapter(adapter);
+
+        dialog.show();
+    }
+
+
+    private void applyFavorite(FavoriteRouteResponse f) {
+
+        isAutoFilling = true;
+        pickupInput.setText(f.from.address);
+        destinationInput.setText(f.to.address);
+
+        pickupInput.dismissDropDown();
+        destinationInput.dismissDropDown();
+
+        isAutoFilling = false;
+
+
+        MapFragment.selectedPoints.clear();
+
+        MapFragment.selectedPoints.add(
+                new GeoPoint(f.from.latitude, f.from.longitude));
+
+        for (var s : f.stops) {
+            MapFragment.selectedPoints.add(
+                    new GeoPoint(s.latitude, s.longitude));
+        }
+
+        MapFragment.selectedPoints.add(
+                new GeoPoint(f.to.latitude, f.to.longitude));
+
+        stopsContainer.removeAllViews();
+        stopCount = 0;
+
+        for (var s : f.stops) {
+            addStop();
+
+            LinearLayout row =
+                    (LinearLayout) stopsContainer.getChildAt(
+                            stopsContainer.getChildCount() - 1);
+
+            TextInputLayout til = (TextInputLayout) row.getChildAt(0);
+            AutoCompleteTextView et =
+                    (AutoCompleteTextView) til.getEditText();
+
+            if (et != null) {
+                et.setText(s.address);
+            }
+        }
+
+        if (MapFragment.instance != null) {
+            MapFragment.instance.redrawMarkers();
+        }
+    }
+
+
+
+
+
 
     @SuppressLint("SetTextI18n")
     private void fillFromMapPoints() {
 
         if (MapFragment.selectedPoints.isEmpty()) return;
 
-        // ---------- PICKUP ----------
         GeoPoint first = MapFragment.selectedPoints.get(0);
 
         new Thread(() -> {
@@ -234,7 +365,10 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
             if (isAdded()) {
                 requireActivity().runOnUiThread(() -> {
                     if (pickupInput != null) {
+                        isAutoFilling = true;
                         pickupInput.setText(addr);
+                        pickupInput.dismissDropDown();
+                        isAutoFilling = false;
                     }
                 });
             }
@@ -243,7 +377,6 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
         }).start();
 
 
-        // ---------- DESTINATION ----------
         if (MapFragment.selectedPoints.size() > 1) {
 
             GeoPoint last = MapFragment.selectedPoints.get(
@@ -261,7 +394,10 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
                 if (isAdded()) {
                     requireActivity().runOnUiThread(() -> {
                         if (destinationInput != null) {
+                            isAutoFilling = true;
                             destinationInput.setText(addr);
+                            destinationInput.dismissDropDown();
+                            isAutoFilling = false;
                         }
                     });
                 }
@@ -449,13 +585,10 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
 
         behavior.setPeekHeight(600);
 
-        // OMOGUĆAVA full expand
         behavior.setFitToContents(true);
 
-        // DOZVOLJAVA više stanja
         behavior.setSkipCollapsed(false);
 
-        // početno stanje
         behavior.setState(com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_COLLAPSED);
     }
 
@@ -482,7 +615,6 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
 
         pickupInput.setText("Loading address...");
 
-        // uzmi context dok je fragment živ
         final android.content.Context ctx = getContext();
 
         new Thread(() -> {
@@ -500,7 +632,10 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
 
             requireActivity().runOnUiThread(() -> {
                 if (pickupInput != null) {
+                    isAutoFilling = true;
                     pickupInput.setText(address);
+                    pickupInput.dismissDropDown();
+                    isAutoFilling = false;
                 }
             });
 
@@ -525,11 +660,14 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
 
             @Override
             public void onTextChanged(
+
+
                     CharSequence s,
                     int start,
                     int before,
                     int count
             ) {
+                if (isAutoFilling) return;
 
                 String query = s.toString();
 
@@ -577,8 +715,26 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
             double lat = Double.parseDouble(parts[1]);
             double lon = Double.parseDouble(parts[2]);
 
+            isAutoFilling = true;
+
             field.setText(label);
             field.setSelection(label.length());
+
+            field.dismissDropDown();
+
+            field.clearFocus();
+
+            android.view.inputmethod.InputMethodManager imm =
+                    (android.view.inputmethod.InputMethodManager)
+                            requireContext().getSystemService(
+                                    android.content.Context.INPUT_METHOD_SERVICE);
+
+            if (imm != null) {
+                imm.hideSoftInputFromWindow(field.getWindowToken(), 0);
+            }
+
+
+            isAutoFilling = false;
 
             if (MapFragment.instance != null) {
 
@@ -834,7 +990,6 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
                             @NonNull Response<RideResponse> response
                     ) {
 
-                                       // други error-и
              if (response.isSuccessful()) {
 
                             Toast.makeText(
@@ -909,7 +1064,6 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
             int month = cal.get(Calendar.MONTH);
             int day = cal.get(Calendar.DAY_OF_MONTH);
 
-            // TIME PICKER
             MaterialTimePicker timePicker =
                     new MaterialTimePicker.Builder()
                             .setTimeFormat(TimeFormat.CLOCK_24H)

@@ -22,6 +22,7 @@ import com.example.uber3.network.model.LoginResponse;
 import com.example.uber3.network.model.auth.RegisterRequest;
 import com.example.uber3.network.model.auth.RegisterResponse;
 import com.example.uber3.network.model.favorite.FavoriteRouteRequest;
+import com.example.uber3.network.model.favorite.FavoriteRouteResponse;
 import com.example.uber3.network.model.mails.ForgotPasswordRequest;
 import com.example.uber3.network.model.mails.ResetPasswordRequest;
 import com.example.uber3.network.model.ride.CreateRideRequest;
@@ -116,6 +117,11 @@ public interface ApiService {
 
     @HTTP(method = "DELETE", path = "api/favorites", hasBody = true)
     Call<Void> removeFavorite(@Body FavoriteRouteRequest request);
+
+
+    @GET("api/favorites")
+    Call<List<FavoriteRouteResponse>> getFavorites();
+
 
 
 

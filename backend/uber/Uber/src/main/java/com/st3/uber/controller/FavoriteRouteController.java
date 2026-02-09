@@ -37,7 +37,7 @@ public class FavoriteRouteController {
     @RolesAllowed("PASSENGER")
     public ResponseEntity<Void> add(
             @AuthenticationPrincipal Jwt jwt,
-            @RequestBody FavoriteRodocker exec -it uber-mysql mysql -u uberuser -puteRequest request
+            @RequestBody FavoriteRouteRequest request
     ) {
         String email = jwt.getSubject();
         favoriteRouteService.addByEmail(email, request);
