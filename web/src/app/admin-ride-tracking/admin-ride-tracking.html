@@ -1,0 +1,245 @@
+<div class="admin-ride-tracking-container">
+  <!-- Header with Back Button -->
+  <div class="tracking-header">
+    <button class="btn-back" (click)="goBack()">
+      ← Back to Drivers
+    </button>
+    <div class="header-right">
+      <h1>Admin - Ride Tracking</h1>
+      <button class="btn-refresh" (click)="refreshRide()">
+        🔄 Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading ride information...</p>
+    </div>
+  }
+
+  <!-- Error State -->
+  @else if (error()) {
+    <div class="error-state">
+      <div class="error-icon">⚠️</div>
+      <h3>Unable to Load Ride</h3>
+      <p>{{ error() }}</p>
+      <button class="btn-primary" (click)="refreshRide()">Try Again</button>
+    </div>
+  }
+
+  <!-- No Active Ride -->
+  @else if (!rideData()) {
+    <div class="empty-state">
+      <div class="empty-icon">🚗</div>
+      <h3>No Active Ride</h3>
+      <p>This driver doesn't have any rides in progress at the moment.</p>
+      <button class="btn-primary" (click)="goBack()">Back to Drivers</button>
+    </div>
+  }
+
+  <!-- Ride Tracking Display -->
+  @else {
+    <div class="tracking-content">
+      <!-- Status Badge -->
+      <div class="status-section">
+        <span class="status-badge" [ngClass]="getStatusClass(rideData()!.status)">
+          {{ getStatusText(rideData()!.status) }}
+        </span>
+        @if (rideData()!.panic) {
+          <span class="panic-badge">🚨 PANIC ALERT</span>
+        }
+      </div>
+
+      <!-- Map -->
+      <div class="map-section">
+        <div id="adminTrackingMap" class="tracking-map"></div>
+      </div>
+
+      <!-- Info Grid -->
+      <div class="info-grid">
+        <!-- Driver Info -->
+        <div class="info-card">
+          <h3>Driver Information</h3>
+          <div class="info-row">
+            <span class="label">Name:</span>
+            <span class="value">{{ rideData()!.driverName }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Email:</span>
+            <span class="value">{{ rideData()!.driverEmail }}</span>
+          </div>
+          @if (rideData()!.driverPhone) {
+            <div class="info-row">
+              <span class="label">Phone:</span>
+              <span class="value">{{ rideData()!.driverPhone }}</span>
+            </div>
+          }
+          @if (rideData()!.vehicleModel) {
+            <div class="info-row">
+              <span class="label">Vehicle:</span>
+              <span class="value">{{ rideData()!.vehicleModel }}</span>
+            </div>
+          }
+          @if (rideData()!.vehicleRegistration) {
+            <div class="info-row">
+              <span class="label">Registration:</span>
+              <span class="value">{{ rideData()!.vehicleRegistration }}</span>
+            </div>
+          }
+        </div>
+
+        <!-- Ride Creator -->
+        <div class="info-card">
+          <h3>Ride Creator</h3>
+          <div class="info-row">
+            <span class="label">Name:</span>
+            <span class="value">{{ rideData()!.creatorName }}</span>
+          </div>
+        </div>
+
+        <!-- Passengers -->
+        <div class="info-card">
+          <h3>Passengers ({{ rideData()!.passengers.length }})</h3>
+          @for (passenger of rideData()!.passengers; track passenger.id) {
+            <div class="info-row">
+              <span class="label">{{ passenger.name }} {{ passenger.surname }}</span>
+              <span class="value">{{ passenger.email }}</span>
+            </div>
+          }
+        </div>
+
+        <!-- Invites -->
+        @if (rideData()!.invites.length > 0) {
+          <div class="info-card">
+            <h3>Email Invites ({{ rideData()!.invites.length }})</h3>
+            @for (invite of rideData()!.invites; track invite.id) {
+              <div class="info-row">
+                <span class="label">{{ invite.email }}</span>
+                <span class="value">Sent: {{ formatDate(invite.createdAt) }}</span>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Time & Distance -->
+        <div class="info-card">
+          <h3>Ride Details</h3>
+          <div class="info-row">
+            <span class="label">Distance:</span>
+            <span class="value">{{ rideData()!.distanceKm.toFixed(1) }} km</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Estimated Time:</span>
+            <span class="value">{{ rideData()!.estimatedTimeMinutes }} min</span>
+          </div>
+          @if (rideData()!.status === 'IN_PROGRESS' && rideData()!.remainingMinutes < 999999) {
+            <div class="info-row highlight">
+              <span class="label">Time Remaining:</span>
+              <span class="value time-remaining">{{ formatTime(rideData()!.remainingMinutes) }}</span>
+            </div>
+          }
+          <div class="info-row">
+            <span class="label">Price:</span>
+            <span class="value">{{ rideData()!.calculatedPrice.toFixed(2) }} RSD</span>
+          </div>
+        </div>
+
+        <!-- Special Features -->
+        @if (rideData()!.babyTransport || rideData()!.petTransport) {
+          <div class="info-card">
+            <h3>Special Requirements</h3>
+            @if (rideData()!.babyTransport) {
+              <div class="info-row">
+                <span class="label">👶 Baby Transport:</span>
+                <span class="value">Yes</span>
+              </div>
+            }
+            @if (rideData()!.petTransport) {
+              <div class="info-row">
+                <span class="label">🐾 Pet Transport:</span>
+                <span class="value">Yes</span>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Route Info -->
+        <div class="info-card full-width">
+          <h3>Route</h3>
+          <div class="route-details">
+            <div class="route-point">
+              <div class="route-icon start">S</div>
+              <div class="route-text">
+                <span class="route-label">Pickup</span>
+                <span class="route-address">{{ rideData()!.startLocation.address }}</span>
+              </div>
+            </div>
+
+            @for (stop of rideData()!.stopStatuses; track stop.stopIndex) {
+              <div class="route-point" [class.reached]="stop.reached">
+                <div class="route-icon stop" [class.reached]="stop.reached">
+                  {{ stop.reached ? '✓' : (stop.stopIndex + 1) }}
+                </div>
+                <div class="route-text">
+                  <span class="route-label">
+                    Stop {{ stop.stopIndex + 1 }}
+                    {{ stop.reached ? '(Reached)' : '' }}
+                  </span>
+                  <span class="route-address">{{ stop.location.address }}</span>
+                </div>
+              </div>
+            }
+
+            <div class="route-point">
+              <div class="route-icon end">E</div>
+              <div class="route-text">
+                <span class="route-label">Destination</span>
+                <span class="route-address">{{ rideData()!.endLocation.address }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Timestamps -->
+        <div class="info-card full-width">
+          <h3>Timeline</h3>
+          <div class="info-row">
+            <span class="label">Created:</span>
+            <span class="value">{{ formatDateTime(rideData()!.createdAt) }}</span>
+          </div>
+          @if (rideData()!.scheduledAt) {
+            <div class="info-row">
+              <span class="label">Scheduled:</span>
+              <span class="value">{{ formatDateTime(rideData()!.scheduledAt) }}</span>
+            </div>
+          }
+          @if (rideData()!.startedAt) {
+            <div class="info-row">
+              <span class="label">Started:</span>
+              <span class="value">{{ formatDateTime(rideData()!.startedAt) }}</span>
+            </div>
+          }
+          @if (rideData()!.finishedAt) {
+            <div class="info-row">
+              <span class="label">Finished:</span>
+              <span class="value">{{ formatDateTime(rideData()!.finishedAt) }}</span>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Toast Notifications -->
+  <div class="toast-container">
+    @for (toast of toasts; track toast.id) {
+      <div class="toast" [ngClass]="'toast-' + toast.type">
+        <span class="toast-message">{{ toast.message }}</span>
+        <button class="toast-close" (click)="removeToast(toast.id)">×</button>
+      </div>
+    }
+  </div>
+</div>
