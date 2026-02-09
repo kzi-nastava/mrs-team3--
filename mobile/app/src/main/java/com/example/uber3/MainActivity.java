@@ -58,10 +58,15 @@ public class MainActivity extends AppCompatActivity {
             int id = item.getItemId();
 
             if (id == R.id.nav_home) {
-                topAppBar.setTitle("Home");
-                loadFragment(HomeFragment.newInstance(currentUserRole));
-
-            }else if (id == R.id.nav_chat) {
+                if ("ADMIN".equals(currentUserRole)) {
+                    topAppBar.setTitle("Ride History");
+                    loadFragment(AdminRideHistoryFragment.newInstance());
+                } else {
+                    topAppBar.setTitle("Home");
+                    loadFragment(HomeFragment.newInstance(currentUserRole));
+                }
+            }
+            else if (id == R.id.nav_chat) {
                 topAppBar.setTitle("Chat");
 
                 if(currentUserRole.equals("ADMIN")){
@@ -104,12 +109,18 @@ public class MainActivity extends AppCompatActivity {
         if (savedInstanceState == null) {
 
             if (TokenManager.getToken(this) != null) {
-                topAppBar.setTitle("Home");
-                loadFragment(HomeFragment.newInstance(currentUserRole));
+                if ("ADMIN".equals(currentUserRole)) {
+                    topAppBar.setTitle("Ride History");
+                    loadFragment(AdminRideHistoryFragment.newInstance());
+                } else {
+                    topAppBar.setTitle("Home");
+                    loadFragment(HomeFragment.newInstance(currentUserRole));
+                }
             } else {
                 topAppBar.setTitle("Login");
                 loadFragment(new LoginFragment());
             }
+
         }
 
         handleDeepLink(getIntent());

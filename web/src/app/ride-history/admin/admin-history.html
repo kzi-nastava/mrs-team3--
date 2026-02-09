@@ -220,14 +220,42 @@
           </div>
 
           <div class="detail-section">
-  <h3 class="section-title">⭐ Reviews</h3>
+  <h3 class="section-title">👤 People</h3>
 
   <div class="info-grid">
-
     <div class="detail-item">
-      <span class="detail-label">Driver review</span>
+      <span class="detail-label">Driver</span>
+      <span class="detail-value">
+  {{ selectedRide()!.driverName }}
+  </span>
+</div>
 
-      @if (selectedRide()?.driverReview != null) {
+<div class="detail-item">
+  <span class="detail-label">Passengers</span>
+
+  @if (selectedRide()!.passengerEmails.length) {
+  <div class="detail-value">
+    @for (email of selectedRide()!.passengerEmails; track email) {
+    <div>{{ email }}</div>
+    }
+  </div>
+  } @else {
+  <span class="detail-value">-</span>
+  }
+  </div>
+</div>
+</div>
+
+
+        <div class="detail-section">
+<h3 class="section-title">⭐ Reviews</h3>
+
+<div class="info-grid">
+
+  <div class="detail-item">
+    <span class="detail-label">Driver review</span>
+
+    @if (selectedRide()?.driverReview != null) {
   <p-rating
     [ngModel]="selectedRide()!.driverReview"
     [readonly]="true"
