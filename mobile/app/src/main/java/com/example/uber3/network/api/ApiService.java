@@ -26,6 +26,7 @@ import com.example.uber3.network.model.ride.RideResponse;
 import com.example.uber3.network.model.ride.RouteEstimateRequest;
 import com.example.uber3.network.model.ride.RouteEstimateResponse;
 import com.example.uber3.network.model.report.RideReportResponse;
+import com.example.uber3.network.model.user.BlockStatusDto;
 import com.example.uber3.network.model.user.BlockUserRequest;
 import com.example.uber3.network.model.user.UserDto;
 import com.example.uber3.network.model.user.admin.ActiveDriverDto;
@@ -103,6 +104,10 @@ public interface ApiService {
             @Path("id") Long userId,
             @Body BlockUserRequest request
     );
+
+    @GET("api/profile/me/block-status")
+    Call<BlockStatusDto> getBlockStatus();
+
 
 
 }

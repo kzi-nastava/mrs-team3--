@@ -245,11 +245,15 @@ public class MainActivity extends AppCompatActivity {
         navigationView.getMenu().findItem(R.id.nav_profile).setVisible(false);
         navigationView.getMenu().findItem(R.id.nav_register_driver).setVisible(false);
         navigationView.getMenu().findItem(R.id.nav_admin_users).setVisible(false);
+        navigationView.getMenu().findItem(R.id.nav_report).setVisible(false);
+
 
         if (role.equals("PASSENGER")) {
             navigationView.getMenu().findItem(R.id.nav_chat).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_ride).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_profile).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_report).setVisible(true);
+
 
         }
 
@@ -257,6 +261,7 @@ public class MainActivity extends AppCompatActivity {
             navigationView.getMenu().findItem(R.id.nav_chat).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_ride).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_profile).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_report).setVisible(true);
 
         }
 
@@ -266,6 +271,8 @@ public class MainActivity extends AppCompatActivity {
             navigationView.getMenu().findItem(R.id.nav_profile).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_register_driver).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_admin_users).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_report).setVisible(true);
+
 
         }
     }

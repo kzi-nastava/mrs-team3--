@@ -7,6 +7,7 @@ import com.example.uber3.network.api.ApiClient;
 import com.example.uber3.network.api.ApiService;
 import com.example.uber3.network.model.ProfileResponse;
 import com.example.uber3.network.model.UpdateProfileRequest;
+import com.example.uber3.network.model.user.BlockStatusDto;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -99,5 +100,9 @@ public class ProfileService {
             Callback<Void> callback
     ) {
         api.submitDriverChangeRequest(dto).enqueue(callback);
+    }
+
+    public void getBlockStatus(Callback<BlockStatusDto> cb) {
+        api.getBlockStatus().enqueue(cb);
     }
 }

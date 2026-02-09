@@ -32,8 +32,8 @@ import com.example.uber3.network.model.ride.RouteEstimateResponse;
 import com.example.uber3.repository.ORSRepository;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.datepicker.MaterialDatePicker;
-import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
+import com.example.uber3.network.model.user.BlockStatusDto;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.android.material.timepicker.MaterialTimePicker;
@@ -132,9 +132,8 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
                 v -> addStop()
         );
 
-        bookRideButton.setOnClickListener(
-                v -> bookRide()
-        );
+        bookRideButton.setOnClickListener(v -> checkBlockAndBook());
+
 
         resetButton.setOnClickListener(
                 v -> resetForm()
@@ -835,7 +834,8 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
                             @NonNull Response<RideResponse> response
                     ) {
 
-                        if (response.isSuccessful()) {
+                                       // други error-и
+             if (response.isSuccessful()) {
 
                             Toast.makeText(
                                     requireContext(),
@@ -847,13 +847,29 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
                             etScheduledAt.setText("");
                             resetForm();
                         }
-                        else {
-                            Toast.makeText(
-                                    requireContext(),
-                                    "Error: " + response.code(),
-                                    Toast.LENGTH_LONG
-                            ).show();
-                        }
+             else {
+                 String msg = "Ride failed";
+
+                 try {
+                     if (response.errorBody() != null) {
+                         String json = response.errorBody().string();
+
+                         com.google.gson.JsonObject obj =
+                                 com.google.gson.JsonParser.parseString(json).getAsJsonObject();
+
+                         if (obj.has("message")) {
+                             msg = obj.get("message").getAsString();
+                         }
+                     }
+                 } catch (Exception ignored) {}
+
+                 Toast.makeText(
+                         requireContext(),
+                         msg,
+                         Toast.LENGTH_LONG
+                 ).show();
+             }
+
                     }
 
                     @Override
@@ -875,7 +891,6 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
     @SuppressLint({"SetTextI18n", "DefaultLocale"})
     private void openDateTimePicker() {
 
-        // DATE PICKER
         MaterialDatePicker<Long> datePicker =
                 MaterialDatePicker.Builder.datePicker()
                         .setTitleText("Select date")
@@ -947,6 +962,89 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
                 );
             });
         });
+    }
+
+
+    private void checkBlockAndBook() {
+
+        apiService.getBlockStatus()
+                .enqueue(new Callback<BlockStatusDto>() {
+
+                    @Override
+                    public void onResponse(
+                            @NonNull Call<BlockStatusDto> call,
+                            @NonNull Response<BlockStatusDto> response
+                    ) {
+
+                        android.util.Log.d("BLOCK", "CODE = " + response.code());
+                        if (response.code() == 403) {
+                            String reason = null;
+
+                            try {
+                                if (response.errorBody() != null) {
+                                    String json = response.errorBody().string();
+
+                                    BlockStatusDto err =
+                                            new com.google.gson.Gson().fromJson(json, BlockStatusDto.class);
+
+                                    if (err != null && err.reason != null && !err.reason.trim().isEmpty()) {
+                                        reason = err.reason;
+                                    }
+
+                                    if (reason == null) {
+                                        com.google.gson.JsonObject obj =
+                                                com.google.gson.JsonParser.parseString(json).getAsJsonObject();
+                                        if (obj.has("message")) reason = obj.get("message").getAsString();
+                                        else if (obj.has("reason")) reason = obj.get("reason").getAsString();
+                                    }
+                                }
+                            } catch (Exception ignored) {}
+
+                            Toast.makeText(
+                                    requireContext(),
+                                    (reason != null && !reason.trim().isEmpty())
+                                            ? reason
+                                            : "Your account is blocked.",
+                                    Toast.LENGTH_LONG
+                            ).show();
+                            return;
+                        }
+
+                        if (!response.isSuccessful()) {
+                            Toast.makeText(
+                                    requireContext(),
+                                    "Block checking error!",
+                                    Toast.LENGTH_SHORT
+                            ).show();
+                            return;
+                        }
+
+                        BlockStatusDto dto = response.body();
+
+                        if (dto != null && dto.blocked) {
+                            Toast.makeText(
+                                    requireContext(),
+                                    dto.reason != null ? dto.reason : "Your account is blocked.",
+                                    Toast.LENGTH_LONG
+                            ).show();
+                            return;
+                        }
+
+                        bookRide();
+                    }
+
+                    @Override
+                    public void onFailure(
+                            @NonNull Call<BlockStatusDto> call,
+                            @NonNull Throwable t
+                    ) {
+                        Toast.makeText(
+                                requireContext(),
+                                "Network error",
+                                Toast.LENGTH_SHORT
+                        ).show();
+                    }
+                });
     }
 
 
