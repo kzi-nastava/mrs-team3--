@@ -388,7 +388,7 @@ public class DriverService {
         Ride startedRide = rideService.startRide(rideId);
 
         driver.setAvailable(false);
-        driver.setFree(false);
+//        driver.setFree(false);
 
         driverRepository.save(driver);
 
