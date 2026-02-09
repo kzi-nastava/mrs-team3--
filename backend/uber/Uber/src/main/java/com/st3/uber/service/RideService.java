@@ -26,6 +26,7 @@ import java.time.LocalDate;
 import java.util.*;
 
 import java.time.LocalDateTime;
+import java.util.stream.Collectors;
 
 @Service
 public class RideService {
