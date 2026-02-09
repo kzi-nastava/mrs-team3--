@@ -1,0 +1,340 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="#FFFFFF">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <!-- Header -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/ride_details"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="#111827"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- Date and Status -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:id="@+id/tvDialogDate"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Jan 15, 2024 10:30"
+                android:textSize="14sp"
+                android:textColor="#6B7280"/>
+
+            <TextView
+                android:id="@+id/tvDialogStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="COMPLETED"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="6dp"
+                android:textAllCaps="true"/>
+        </LinearLayout>
+
+        <!-- Admin quick info: Driver + Panic -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:id="@+id/tvDialogDriverName"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Driver: Petar Petrovic"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="#111827"
+                android:maxLines="1"
+                android:ellipsize="end"/>
+
+            <TextView
+                android:id="@+id/tvDialogPanicBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="PANIC"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="6dp"
+                android:textAllCaps="true"
+                android:visibility="gone"/>
+        </LinearLayout>
+
+        <!-- Addresses -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/from"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="#6B7280"
+                android:letterSpacing="0.05"
+                android:layout_marginBottom="4dp"/>
+
+            <TextView
+                android:id="@+id/tvDialogStartAddress"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="123 Main Street"
+                android:textSize="14sp"
+                android:textColor="#111827"
+                android:layout_marginBottom="12dp"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/to"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="#6B7280"
+                android:letterSpacing="0.05"
+                android:layout_marginBottom="4dp"/>
+
+            <TextView
+                android:id="@+id/tvDialogEndAddress"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="456 University Ave"
+                android:textSize="14sp"
+                android:textColor="#111827"/>
+        </LinearLayout>
+
+        <!-- Ride Info Grid (price + times for admin DTO) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/price"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:textColor="#6B7280"
+                    android:letterSpacing="0.05"
+                    android:layout_marginBottom="4dp"/>
+
+                <TextView
+                    android:id="@+id/tvDialogPrice"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="1250 din"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="#059669"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/start_time"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:textColor="#6B7280"
+                    android:letterSpacing="0.05"
+                    android:layout_marginBottom="4dp"/>
+
+                <TextView
+                    android:id="@+id/tvDialogStartTime"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="10:30"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="#111827"/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/end_time"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:textColor="#6B7280"
+                    android:letterSpacing="0.05"
+                    android:layout_marginBottom="4dp"/>
+
+                <TextView
+                    android:id="@+id/tvDialogEndTime"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="10:55"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="#111827"/>
+            </LinearLayout>
+
+            <!-- Empty spacer to keep grid feel consistent -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical" />
+        </LinearLayout>
+
+        <!-- Map -->
+        <org.osmdroid.views.MapView
+            android:id="@+id/mapView"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- Stops Section (from AdminRideHistoryExtendedResponse.stops) -->
+        <TextView
+            android:id="@+id/tvStopsLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/stops"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="#6B7280"
+            android:letterSpacing="0.05"
+            android:layout_marginBottom="8dp"/>
+
+        <LinearLayout
+            android:id="@+id/layoutStops"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- Passengers Section -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/passengers"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="#6B7280"
+            android:letterSpacing="0.05"
+            android:layout_marginBottom="8dp"/>
+
+        <LinearLayout
+            android:id="@+id/layoutPassengers"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- Reviews Section -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/reviews"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="#6B7280"
+            android:letterSpacing="0.05"
+            android:layout_marginBottom="8dp"/>
+
+        <LinearLayout
+            android:id="@+id/layoutReviews"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- Reports Section -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/inconsistency_reports"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="#6B7280"
+            android:letterSpacing="0.05"
+            android:layout_marginBottom="8dp"/>
+
+        <LinearLayout
+            android:id="@+id/layoutReports"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- Cancellation Section -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/cancellation_info"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="#6B7280"
+            android:letterSpacing="0.05"
+            android:layout_marginBottom="8dp"/>
+
+        <LinearLayout
+            android:id="@+id/layoutCancellation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="24dp"/>
+
+        <!-- Close Button -->
+        <Button
+            android:id="@+id/btnClose"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/close"
+            android:textSize="15sp"
+            android:textAllCaps="false"
+            android:paddingVertical="12dp"
+            app:backgroundTint="#6366F1"
+            app:cornerRadius="8dp"/>
+    </LinearLayout>
+
+</ScrollView>
