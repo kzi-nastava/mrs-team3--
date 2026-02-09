@@ -30,6 +30,7 @@ import com.example.uber3.network.enums.VehicleType;
 
 
 import com.example.uber3.network.model.UpdateProfileRequest;
+import com.example.uber3.network.model.user.BlockStatusDto;
 import com.example.uber3.network.service.ProfileService;
 import com.google.android.material.button.MaterialButton;
 
@@ -70,6 +71,8 @@ public class ProfileFragment extends Fragment {
     private EditText etVehicleModel, etLicensePlate, etSeats;
     private View changeRequestCard;
     private TextView tvChangeField, tvChangeValues, tvChangeStatus;
+
+    private TextView tvBlockedBanner;
 
     public static ProfileFragment newInstance(String role) {
         ProfileFragment fragment = new ProfileFragment();
@@ -113,13 +116,14 @@ public class ProfileFragment extends Fragment {
         setupChangePasswordButton();
 
         loadProfile();
+        loadBlockStatus();
     }
 
 
     private void initializeViews(View view) {
         btnEdit = view.findViewById(R.id.btnEdit);
         btnChangePassword = view.findViewById(R.id.btnChangePassword);
-
+        tvBlockedBanner = view.findViewById(R.id.tvBlockedBanner);
         tvFirstName = view.findViewById(R.id.tvFirstName);
         etFirstName = view.findViewById(R.id.etFirstName);
         tvLastName = view.findViewById(R.id.tvLastName);
@@ -350,7 +354,7 @@ public class ProfileFragment extends Fragment {
                 dto,
                 new Callback<Void>() {
                     @Override
-                    public void onResponse(Call<Void> call, Response<Void> response) {
+                    public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
 
                         if (response.isSuccessful()) {
 
@@ -384,8 +388,8 @@ public class ProfileFragment extends Fragment {
 
 
                     @Override
-                    public void onFailure(Call<Void> call,
-                                          Throwable t) {
+                    public void onFailure(@NonNull Call<Void> call,
+                                          @NonNull Throwable t) {
 
                         Toast.makeText(getContext(),
                                 "Network error",
@@ -466,8 +470,8 @@ public class ProfileFragment extends Fragment {
         profileService.loadProfile(new Callback<ProfileResponse>() {
 
             @Override
-            public void onResponse(Call<ProfileResponse> call,
-                                   Response<ProfileResponse> response) {
+            public void onResponse(@NonNull Call<ProfileResponse> call,
+                                   @NonNull Response<ProfileResponse> response) {
 
                 if (!response.isSuccessful() || response.body() == null) {
                     Toast.makeText(getContext(),
@@ -535,8 +539,8 @@ public class ProfileFragment extends Fragment {
             }
 
             @Override
-            public void onFailure(Call<ProfileResponse> call,
-                                  Throwable t) {
+            public void onFailure(@NonNull Call<ProfileResponse> call,
+                                  @NonNull Throwable t) {
 
                 Toast.makeText(getContext(),
                         "FAILURE: " + t.getMessage(),
@@ -550,8 +554,8 @@ public class ProfileFragment extends Fragment {
                 new Callback<Void>() {
 
                     @Override
-                    public void onResponse(Call<Void> call,
-                                           Response<Void> response) {
+                    public void onResponse(@NonNull Call<Void> call,
+                                           @NonNull Response<Void> response) {
 
                         if (response.isSuccessful()) {
                             Toast.makeText(getContext(),
@@ -569,8 +573,8 @@ public class ProfileFragment extends Fragment {
                     }
 
                     @Override
-                    public void onFailure(Call<Void> call,
-                                          Throwable t) {
+                    public void onFailure(@NonNull Call<Void> call,
+                                          @NonNull Throwable t) {
 
                         Toast.makeText(getContext(),
                                 "Network error",
@@ -587,8 +591,8 @@ public class ProfileFragment extends Fragment {
                 new Callback<String>() {
 
                     @Override
-                    public void onResponse(Call<String> call,
-                                           Response<String> response) {
+                    public void onResponse(@NonNull Call<String> call,
+                                           @NonNull Response<String> response) {
 
                         if (response.isSuccessful()) {
                             Toast.makeText(getContext(),
@@ -604,8 +608,8 @@ public class ProfileFragment extends Fragment {
                     }
 
                     @Override
-                    public void onFailure(Call<String> call,
-                                          Throwable t) {
+                    public void onFailure(@NonNull Call<String> call,
+                                          @NonNull Throwable t) {
 
                         Toast.makeText(getContext(),
                                 "Network error",
@@ -618,6 +622,43 @@ public class ProfileFragment extends Fragment {
         btnEdit.setEnabled(false);
         btnEdit.setAlpha(0.5f);
     }
+
+    private void loadBlockStatus() {
+
+        profileService.getBlockStatus(new Callback<BlockStatusDto>() {
+            @Override
+            public void onResponse(@NonNull Call<BlockStatusDto> call,
+                                   @NonNull Response<BlockStatusDto> response) {
+
+                if (!response.isSuccessful() || response.body() == null)
+                    return;
+
+                BlockStatusDto dto = response.body();
+
+                if (dto.blocked) {
+                    tvBlockedBanner.setVisibility(View.VISIBLE);
+
+                    String reason = dto.reason != null
+                            ? dto.reason
+                            : "Your account is blocked.";
+
+                    tvBlockedBanner.setText("🚫 ACCOUNT BLOCKED:\n" + reason);
+
+                    btnEdit.setEnabled(false);
+                    btnEdit.setAlpha(0.5f);
+                }
+                else {
+                    tvBlockedBanner.setVisibility(View.GONE);
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<BlockStatusDto> call,
+                                  @NonNull Throwable t) {
+            }
+        });
+    }
+
 
 
 

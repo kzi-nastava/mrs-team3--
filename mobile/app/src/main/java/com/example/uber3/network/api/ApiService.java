@@ -12,6 +12,7 @@ import okhttp3.MultipartBody;
 import retrofit2.http.Multipart;
 import retrofit2.http.POST;
 import retrofit2.http.Part;
+import retrofit2.http.Path;
 import retrofit2.http.Query;
 
 import com.example.uber3.network.model.LoginRequest;
@@ -25,7 +26,11 @@ import com.example.uber3.network.model.ride.RideResponse;
 import com.example.uber3.network.model.ride.RouteEstimateRequest;
 import com.example.uber3.network.model.ride.RouteEstimateResponse;
 import com.example.uber3.network.model.report.RideReportResponse;
+import com.example.uber3.network.model.user.BlockStatusDto;
+import com.example.uber3.network.model.user.BlockUserRequest;
 import com.example.uber3.network.model.user.UserDto;
+import com.example.uber3.network.model.user.admin.ActiveDriverDto;
+import com.example.uber3.network.model.user.admin.AdminUserDetailsDto;
 
 import java.util.List;
 
@@ -87,6 +92,21 @@ public interface ApiService {
     Call<Void> verifyEmail(@Query("token") String token);
 
 
+
+    @GET("api/admin/users/details")
+    Call<List<AdminUserDetailsDto>> getAdminUsersDetails();
+
+    @GET("api/admin/drivers/active")
+    Call<List<ActiveDriverDto>> getActiveDrivers();
+
+    @PUT("api/admin/users/{id}/block")
+    Call<Void> blockUser(
+            @Path("id") Long userId,
+            @Body BlockUserRequest request
+    );
+
+    @GET("api/profile/me/block-status")
+    Call<BlockStatusDto> getBlockStatus();
 
 
 
