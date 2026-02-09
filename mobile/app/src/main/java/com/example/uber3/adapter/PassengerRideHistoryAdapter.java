@@ -25,6 +25,7 @@ public class PassengerRideHistoryAdapter extends RecyclerView.Adapter<PassengerR
 
     public interface OnRideClickListener {
         void onRideClick(PassengerRideSummaryResponse ride);
+        void onFavoriteToggle(PassengerRideSummaryResponse ride);
     }
 
     public PassengerRideHistoryAdapter(OnRideClickListener listener) {
@@ -56,7 +57,7 @@ public class PassengerRideHistoryAdapter extends RecyclerView.Adapter<PassengerR
 
     static class VH extends RecyclerView.ViewHolder {
         CardView card;
-        TextView tvRoute, tvStart, tvEnd, tvFav;
+        TextView tvRoute, tvStart, tvEnd, tvFav, tvHeart;
 
         VH(@NonNull View itemView) {
             super(itemView);
@@ -65,6 +66,7 @@ public class PassengerRideHistoryAdapter extends RecyclerView.Adapter<PassengerR
             tvStart = itemView.findViewById(R.id.tvStartDate);
             tvEnd = itemView.findViewById(R.id.tvEndDate);
             tvFav = itemView.findViewById(R.id.tvFavoriteBadge);
+            tvHeart = itemView.findViewById(R.id.tvHeart);
         }
 
         void bind(PassengerRideSummaryResponse r, OnRideClickListener listener) {
@@ -81,6 +83,15 @@ public class PassengerRideHistoryAdapter extends RecyclerView.Adapter<PassengerR
             } else {
                 tvFav.setVisibility(View.GONE);
             }
+
+            tvHeart.setText(r.favorite ? "❤️" : "🤍");
+
+            tvHeart.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onFavoriteToggle(r);
+                }
+            });
+
 
             card.setOnClickListener(v -> { if (listener != null) listener.onRideClick(r); });
         }

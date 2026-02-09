@@ -175,6 +175,12 @@
     <string name="block_user">Block user</string>
     <string name="order_now">Order now</string>
     <string name="order_later">Order later</string>
+    <string name="add_to_favorite">add to favorite ❤️</string>
+    <string name="heart">🤍</string>
+    <string name="start_end">Start → End</string>
+    <string name="favorite">★ FAVORITE</string>
+    <string name="start_b">Start: -</string>
+    <string name="end_b">End: -</string>
 
     <string-array name="vehicle_types">
         <item>STANDARD</item>

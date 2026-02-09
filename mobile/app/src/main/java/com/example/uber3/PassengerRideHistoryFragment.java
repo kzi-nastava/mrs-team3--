@@ -2,6 +2,7 @@ package com.example.uber3;
 
 import static android.text.format.DateUtils.formatDateTime;
 
+import android.annotation.SuppressLint;
 import android.app.DatePickerDialog;
 import android.app.Dialog;
 import android.graphics.Color;
@@ -31,8 +32,12 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.uber3.adapter.PassengerRideHistoryAdapter;
+import com.example.uber3.network.api.ApiClient;
+import com.example.uber3.network.api.ApiService;
+import com.example.uber3.network.model.favorite.FavoriteRouteRequest;
 import com.example.uber3.network.model.history.PassengerRideSummaryExtendedResponse;
 import com.example.uber3.network.model.history.PassengerRideSummaryResponse;
+import com.example.uber3.network.model.location.LocationRequest;
 import com.example.uber3.network.model.ride.InconsistencyReportDto;
 import com.example.uber3.network.service.PassengerHistoryService;
 import com.example.uber3.repository.ORSRepository;
@@ -53,6 +58,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
+import retrofit2.Call;
+
 public class PassengerRideHistoryFragment extends Fragment implements PassengerRideHistoryAdapter.OnRideClickListener {
 
     // UI
@@ -72,6 +79,8 @@ public class PassengerRideHistoryFragment extends Fragment implements PassengerR
     // Data
     private Date startDate = null;
     private Date endDate = null;
+
+
 
     private enum SortOption {START_TIME_DESC, START_TIME_ASC, END_TIME_DESC, END_TIME_ASC, ROUTE_ASC, ROUTE_DESC}
 
@@ -471,7 +480,17 @@ public class PassengerRideHistoryFragment extends Fragment implements PassengerR
         TextView tvDialogEndTime = dialog.findViewById(R.id.tvDialogEndTime);
 
         MapView mapView = dialog.findViewById(R.id.mapView);
+
+        Button btnAddFavorite = dialog.findViewById(R.id.btnAddFavorite);
+        updateFavoriteButton(btnAddFavorite, ride.favorite);
+
+        btnAddFavorite.setOnClickListener(v -> {
+            toggleFavorite(ride, btnAddFavorite);
+        });
+
         Button btnClose = dialog.findViewById(R.id.btnClose);
+
+
 
         LinearLayout layoutStops = dialog.findViewById(R.id.layoutStops);
         LinearLayout layoutReviews = dialog.findViewById(R.id.layoutReviews);
@@ -646,5 +665,225 @@ public class PassengerRideHistoryFragment extends Fragment implements PassengerR
             layout.addView(tv);
         }
     }
+
+    private void addToFavorites(PassengerRideSummaryExtendedResponse ride) {
+
+        if (ride.startLocation == null || ride.endLocation == null) {
+            Toast.makeText(requireContext(), "Invalid route", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        FavoriteRouteRequest req = new FavoriteRouteRequest();
+        req.rideId = ride.id;
+
+        req.from = new LocationRequest(
+                ride.startLocation.latitude,
+                ride.startLocation.longitude,
+                ride.startLocation.address
+        );
+
+        req.to = new LocationRequest(
+                ride.endLocation.latitude,
+                ride.endLocation.longitude,
+                ride.endLocation.address
+        );
+
+        req.stops = new ArrayList<>();
+        if (ride.stops != null) {
+            for (var s : ride.stops) {
+                req.stops.add(new LocationRequest(
+                        s.latitude,
+                        s.longitude,
+                        s.address
+                ));
+            }
+        }
+
+        req.vehicleType = "STANDARD";
+        req.babyTransport = false;
+        req.petTransport = false;
+
+        ApiService api = ApiClient.getClient(requireContext()).create(ApiService.class);
+
+        api.addFavorite(req).enqueue(new retrofit2.Callback<Void>() {
+            @Override
+            public void onResponse(@NonNull retrofit2.Call<Void> call,
+                                   @NonNull retrofit2.Response<Void> response) {
+
+                if (response.isSuccessful()) {
+                    Toast.makeText(requireContext(),
+                            "❤️ Added to favorites",
+                            Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(requireContext(),
+                            "Failed to add favorite",
+                            Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(retrofit2.Call<Void> call, Throwable t) {
+                Toast.makeText(requireContext(),
+                        "Network error",
+                        Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    @SuppressLint("SetTextI18n")
+    private void updateFavoriteButton(Button btn, boolean isFavorite) {
+        if (isFavorite) {
+            btn.setText("💔 Remove from favorites");
+        } else {
+            btn.setText("❤️ Add to favorites");
+        }
+    }
+
+    private void toggleFavorite(PassengerRideSummaryExtendedResponse ride,
+                                Button btn) {
+
+        FavoriteRouteRequest req = new FavoriteRouteRequest();
+        req.rideId = ride.id;
+
+        req.from = new LocationRequest(
+                ride.startLocation.latitude,
+                ride.startLocation.longitude,
+                ride.startLocation.address
+        );
+
+        req.to = new LocationRequest(
+                ride.endLocation.latitude,
+                ride.endLocation.longitude,
+                ride.endLocation.address
+        );
+
+        req.stops = new ArrayList<>();
+        if (ride.stops != null) {
+            for (var s : ride.stops) {
+                req.stops.add(new LocationRequest(
+                        s.latitude,
+                        s.longitude,
+                        s.address
+                ));
+            }
+        }
+
+        req.vehicleType = "STANDARD";
+        req.babyTransport = false;
+        req.petTransport = false;
+
+        ApiService api = ApiClient.getClient(requireContext()).create(ApiService.class);
+
+        Call<Void> call = ride.favorite
+                ? api.removeFavorite(req)
+                : api.addFavorite(req);
+
+        call.enqueue(new retrofit2.Callback<Void>() {
+            @Override
+            public void onResponse(@NonNull Call<Void> call,
+                                   @NonNull retrofit2.Response<Void> response) {
+
+                if (response.isSuccessful()) {
+
+                    ride.favorite = !ride.favorite;
+
+                    updateFavoriteButton(btn, ride.favorite);
+                    syncFavoriteToList(ride);
+
+
+                    Toast.makeText(requireContext(),
+                            ride.favorite
+                                    ? "❤️ Added to favorites"
+                                    : "Removed from favorites",
+                            Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
+                Toast.makeText(requireContext(),
+                        "Network error",
+                        Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+
+    @Override
+    public void onFavoriteToggle(PassengerRideSummaryResponse ride) {
+        toggleFavoriteFromList(ride);
+    }
+
+    private void toggleFavoriteFromList(PassengerRideSummaryResponse ride) {
+
+        FavoriteRouteRequest req = new FavoriteRouteRequest();
+        req.rideId = ride.id;
+
+        req.from = new LocationRequest(
+                ride.startLocation.latitude,
+                ride.startLocation.longitude,
+                ride.startLocation.address
+        );
+
+        req.to = new LocationRequest(
+                ride.endLocation.latitude,
+                ride.endLocation.longitude,
+                ride.endLocation.address
+        );
+
+        req.stops = new ArrayList<>();
+
+        req.vehicleType = "STANDARD";
+        req.babyTransport = false;
+        req.petTransport = false;
+
+        ApiService api = ApiClient.getClient(requireContext()).create(ApiService.class);
+
+        Call<Void> call = ride.favorite
+                ? api.removeFavorite(req)
+                : api.addFavorite(req);
+
+        call.enqueue(new retrofit2.Callback<Void>() {
+            @SuppressLint("NotifyDataSetChanged")
+            @Override
+            public void onResponse(@NonNull Call<Void> call,
+                                   @NonNull retrofit2.Response<Void> response) {
+
+                if (response.isSuccessful()) {
+                    ride.favorite = !ride.favorite;
+                    adapter.notifyDataSetChanged();
+
+                    Toast.makeText(requireContext(),
+                            ride.favorite ? "❤️ Added" : "Removed",
+                            Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
+                Toast.makeText(requireContext(),
+                        "Network error",
+                        Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
+    private void syncFavoriteToList(PassengerRideSummaryExtendedResponse detailRide) {
+
+        for (PassengerRideSummaryResponse r : allRides) {
+            if (r.id.equals(detailRide.id)) {
+                r.favorite = detailRide.favorite;
+                break;
+            }
+        }
+
+        adapter.notifyDataSetChanged();
+    }
+
+
+
+
+
 
 }
