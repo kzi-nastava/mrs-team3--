@@ -27,6 +27,10 @@
             android:title="@string/reports"
             android:icon="@drawable/ic_uber"/>
 
+        <item
+            android:id="@+id/nav_admin_users"
+            android:title="@string/users_management"
+            android:icon="@drawable/ic_person" />
 
         <item
             android:id="@+id/nav_requests"

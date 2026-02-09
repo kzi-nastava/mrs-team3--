@@ -99,7 +99,11 @@ public class MainActivity extends AppCompatActivity {
             } else if (id == R.id.nav_report) {
                 topAppBar.setTitle("Reports");
                 loadFragment(new ReportFragment());
+            } else if (id == R.id.nav_admin_users) {
+                topAppBar.setTitle("Users Management");
+                loadFragment(AdminUsersFragment.newInstance());
             }
+
 
 
             drawerLayout.close();
@@ -240,6 +244,7 @@ public class MainActivity extends AppCompatActivity {
         navigationView.getMenu().findItem(R.id.nav_chat).setVisible(false);
         navigationView.getMenu().findItem(R.id.nav_profile).setVisible(false);
         navigationView.getMenu().findItem(R.id.nav_register_driver).setVisible(false);
+        navigationView.getMenu().findItem(R.id.nav_admin_users).setVisible(false);
 
         if (role.equals("PASSENGER")) {
             navigationView.getMenu().findItem(R.id.nav_chat).setVisible(true);
@@ -260,6 +265,7 @@ public class MainActivity extends AppCompatActivity {
             navigationView.getMenu().findItem(R.id.nav_chat).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_profile).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_register_driver).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_admin_users).setVisible(true);
 
         }
     }
