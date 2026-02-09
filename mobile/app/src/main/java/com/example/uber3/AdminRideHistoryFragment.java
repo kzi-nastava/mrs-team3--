@@ -9,6 +9,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -23,8 +25,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.uber3.adapter.AdminRideHistoryAdapter;
-import com.example.uber3.network.model.history.AdminRideHistoryResponse;
 import com.example.uber3.network.model.history.AdminRideHistoryExtendedResponse;
+import com.example.uber3.network.model.history.AdminRideHistoryResponse;
 import com.example.uber3.network.model.location.LocationDto;
 import com.example.uber3.network.model.ride.InconsistencyReportDto;
 import com.example.uber3.network.service.AdminHistoryService;
@@ -49,21 +51,43 @@ import java.util.Locale;
 
 public class AdminRideHistoryFragment extends Fragment implements AdminRideHistoryAdapter.OnRideClickListener {
 
-    // UI Components
     private RecyclerView recyclerView;
     private AdminRideHistoryAdapter adapter;
     private ProgressBar progressBar;
     private LinearLayout tvEmptyState;
+    private TextView tvAdminHistoryTitle;
+
     private TextInputEditText etStartDate;
     private TextInputEditText etEndDate;
     private Button btnViewReport;
 
-    // Service Layer
+    private AutoCompleteTextView actSort;
+
     private AdminHistoryService historyService;
 
-    // Data
     private Date startDate = null;
     private Date endDate = null;
+
+    private String statusFilter = "All";
+    private String panicFilter = "All";
+
+    private enum SortOption {
+        START_TIME_DESC,
+        START_TIME_ASC,
+        END_TIME_DESC,
+        END_TIME_ASC,
+        ROUTE_ASC,
+        ROUTE_DESC,
+        PRICE_ASC,
+        PRICE_DESC,
+        STATUS_ASC,
+        STATUS_DESC,
+        PANIC_ASC,
+        PANIC_DESC
+    }
+
+    private SortOption sortOption = SortOption.START_TIME_DESC;
+
     private List<AdminRideHistoryResponse> allRides = new ArrayList<>();
 
     public AdminRideHistoryFragment() {}
@@ -83,6 +107,8 @@ public class AdminRideHistoryFragment extends Fragment implements AdminRideHisto
         setupRecyclerView();
         setupDatePickers();
         setupService();
+        setupDropdowns();
+
         loadRideHistory();
 
         return view;
@@ -92,9 +118,13 @@ public class AdminRideHistoryFragment extends Fragment implements AdminRideHisto
         recyclerView = view.findViewById(R.id.recyclerViewRides);
         progressBar = view.findViewById(R.id.progressBar);
         tvEmptyState = view.findViewById(R.id.tvEmptyState);
+        tvAdminHistoryTitle = view.findViewById(R.id.tvAdminHistoryTitle);
+
         etStartDate = view.findViewById(R.id.etStartDate);
         etEndDate = view.findViewById(R.id.etEndDate);
         btnViewReport = view.findViewById(R.id.btnViewReport);
+
+        actSort = view.findViewById(R.id.actSort);
 
         btnViewReport.setOnClickListener(v -> showReportDialog());
     }
@@ -112,6 +142,58 @@ public class AdminRideHistoryFragment extends Fragment implements AdminRideHisto
 
     private void setupService() {
         historyService = new AdminHistoryService(requireContext());
+    }
+
+    private void setupDropdowns() {
+        setupSortDropdown();
+    }
+
+    private void setupSortDropdown() {
+        String[] items = new String[] {
+                "Start time ↓",
+                "Start time ↑",
+                "End time ↓",
+                "End time ↑",
+                "Route A→Z",
+                "Route Z→A",
+                "Price ↑",
+                "Price ↓",
+                "Status A→Z",
+                "Status Z→A",
+                "No panic",
+                "Panic"
+        };
+
+        ArrayAdapter<String> a = new ArrayAdapter<>(
+                requireContext(),
+                android.R.layout.simple_dropdown_item_1line,
+                items
+        );
+
+        actSort.setAdapter(a);
+        actSort.setText(items[0], false);
+
+        actSort.setOnClickListener(v -> actSort.showDropDown());
+        actSort.setOnFocusChangeListener((v, hasFocus) -> { if (hasFocus) actSort.showDropDown(); });
+
+        actSort.setOnItemClickListener((parent, view, position, id) -> {
+            switch (position) {
+                case 0: sortOption = SortOption.START_TIME_DESC; break;
+                case 1: sortOption = SortOption.START_TIME_ASC; break;
+                case 2: sortOption = SortOption.END_TIME_DESC; break;
+                case 3: sortOption = SortOption.END_TIME_ASC; break;
+                case 4: sortOption = SortOption.ROUTE_ASC; break;
+                case 5: sortOption = SortOption.ROUTE_DESC; break;
+                case 6: sortOption = SortOption.PRICE_ASC; break;
+                case 7: sortOption = SortOption.PRICE_DESC; break;
+                case 8: sortOption = SortOption.STATUS_ASC; break;
+                case 9: sortOption = SortOption.STATUS_DESC; break;
+                case 10: sortOption = SortOption.PANIC_ASC; break;
+                case 11: sortOption = SortOption.PANIC_DESC; break;
+                default: sortOption = SortOption.START_TIME_DESC; break;
+            }
+            applyFiltersAndSort();
+        });
     }
 
     private void showDatePicker(boolean isStartDate) {
@@ -132,8 +214,7 @@ public class AdminRideHistoryFragment extends Fragment implements AdminRideHisto
                         endDate = calendar.getTime();
                     }
 
-                    // Backend endpoint nema filtere trenutno, pa filtriramo lokalno
-                    loadRideHistory();
+                    applyFiltersAndSort();
                 },
                 calendar.get(Calendar.YEAR),
                 calendar.get(Calendar.MONTH),
@@ -150,37 +231,126 @@ public class AdminRideHistoryFragment extends Fragment implements AdminRideHisto
             @Override
             public void onSuccess(List<AdminRideHistoryResponse> rides) {
                 showLoading(false);
-                allRides = rides;
-
-                // Lokalno filtriranje po datumu (jer backend /history/admin ne prima from/to)
-                List<AdminRideHistoryResponse> filtered = filterByDate(rides, startDate, endDate);
-
-                updateUI(filtered);
+                allRides = rides != null ? rides : new ArrayList<>();
+                applyFiltersAndSort();
             }
 
             @Override
             public void onError(String errorMessage) {
                 showLoading(false);
                 Toast.makeText(requireContext(), errorMessage, Toast.LENGTH_LONG).show();
-                updateUI(new ArrayList<>());
+                allRides = new ArrayList<>();
+                applyFiltersAndSort();
             }
         });
     }
 
+    private void applyFiltersAndSort() {
+        List<AdminRideHistoryResponse> filtered = filterByDate(allRides, startDate, endDate);
+        filtered = filterByStatus(filtered, statusFilter);
+        filtered = filterByPanic(filtered, panicFilter);
+        List<AdminRideHistoryResponse> sorted = sortRides(filtered);
+        updateUI(sorted);
+    }
+
     private List<AdminRideHistoryResponse> filterByDate(List<AdminRideHistoryResponse> rides, Date from, Date to) {
-        if (from == null && to == null) return rides;
+        if ((from == null) && (to == null)) return new ArrayList<>(rides);
 
         List<AdminRideHistoryResponse> out = new ArrayList<>();
         for (AdminRideHistoryResponse r : rides) {
             Date rideStart = parseIsoToDate(r.startTime);
             if (rideStart == null) continue;
 
-            boolean okFrom = from == null || !rideStart.before(stripTime(from));
-            boolean okTo = to == null || !rideStart.after(endOfDay(to));
+            boolean okFrom = (from == null) || !rideStart.before(stripTime(from));
+            boolean okTo = (to == null) || !rideStart.after(endOfDay(to));
 
             if (okFrom && okTo) out.add(r);
         }
         return out;
+    }
+
+    private List<AdminRideHistoryResponse> filterByStatus(List<AdminRideHistoryResponse> rides, String status) {
+        if (status == null || status.equalsIgnoreCase("All")) return rides;
+
+        List<AdminRideHistoryResponse> out = new ArrayList<>();
+        for (AdminRideHistoryResponse r : rides) {
+            String s = r.status != null ? r.status : "";
+            if (s.equalsIgnoreCase(status)) out.add(r);
+        }
+        return out;
+    }
+
+    private List<AdminRideHistoryResponse> filterByPanic(List<AdminRideHistoryResponse> rides, String panic) {
+        if (panic == null || panic.equalsIgnoreCase("All")) return rides;
+
+        boolean wantPanic = panic.equalsIgnoreCase("Yes");
+
+        List<AdminRideHistoryResponse> out = new ArrayList<>();
+        for (AdminRideHistoryResponse r : rides) {
+            if (r.panic == wantPanic) out.add(r);
+        }
+        return out;
+    }
+
+    private List<AdminRideHistoryResponse> sortRides(List<AdminRideHistoryResponse> rides) {
+        List<AdminRideHistoryResponse> out = new ArrayList<>(rides);
+
+        out.sort((a, b) -> {
+            switch (sortOption) {
+                case START_TIME_ASC:
+                    return Long.compare(safeMillis(a.startTime), safeMillis(b.startTime));
+                case START_TIME_DESC:
+                    return Long.compare(safeMillis(b.startTime), safeMillis(a.startTime));
+
+                case END_TIME_ASC:
+                    return Long.compare(safeEndMillis(a.endTime), safeEndMillis(b.endTime));
+                case END_TIME_DESC:
+                    return Long.compare(safeEndMillis(b.endTime), safeEndMillis(a.endTime));
+
+                case ROUTE_ASC:
+                    return routeText(a).compareToIgnoreCase(routeText(b));
+                case ROUTE_DESC:
+                    return routeText(b).compareToIgnoreCase(routeText(a));
+
+                case PRICE_ASC:
+                    return Double.compare(a.price, b.price);
+                case PRICE_DESC:
+                    return Double.compare(b.price, a.price);
+
+                case STATUS_ASC:
+                    return safeStr(a.status).compareToIgnoreCase(safeStr(b.status));
+                case STATUS_DESC:
+                    return safeStr(b.status).compareToIgnoreCase(safeStr(a.status));
+
+                case PANIC_ASC:
+                    return Boolean.compare(a.panic, b.panic);
+                case PANIC_DESC:
+                    return Boolean.compare(b.panic, a.panic);
+            }
+            return 0;
+        });
+
+        return out;
+    }
+
+    private long safeMillis(String iso) {
+        Date d = parseIsoToDate(iso);
+        return d != null ? d.getTime() : 0L;
+    }
+
+    private long safeEndMillis(String iso) {
+        Date d = parseIsoToDate(iso);
+        return d != null ? d.getTime() : Long.MAX_VALUE;
+    }
+
+    private String routeText(AdminRideHistoryResponse r) {
+        String s = (r.startLocation != null && r.startLocation.address != null) ? r.startLocation.address : "";
+        String e = (r.endLocation != null && r.endLocation.address != null) ? r.endLocation.address : "";
+        return s + " -> " + e;
+    }
+
+    private String safeStr(String s) {
+        return s == null ? "" : s;
     }
 
     private Date stripTime(Date d) {
@@ -219,9 +389,10 @@ public class AdminRideHistoryFragment extends Fragment implements AdminRideHisto
     }
 
     private void updateUI(List<AdminRideHistoryResponse> rides) {
-        if (rides.isEmpty()) {
+        if (rides == null || rides.isEmpty()) {
             tvEmptyState.setVisibility(View.VISIBLE);
             recyclerView.setVisibility(View.GONE);
+            adapter.setRides(new ArrayList<>());
         } else {
             tvEmptyState.setVisibility(View.GONE);
             recyclerView.setVisibility(View.VISIBLE);
@@ -261,7 +432,7 @@ public class AdminRideHistoryFragment extends Fragment implements AdminRideHisto
     private void showAdminRideDetailDialog(AdminRideHistoryExtendedResponse ride) {
         Dialog dialog = new Dialog(requireContext());
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        dialog.setContentView(R.layout.dialog_admin_ride_details); // admin dialog layout
+        dialog.setContentView(R.layout.dialog_admin_ride_details);
         dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
 
@@ -282,13 +453,12 @@ public class AdminRideHistoryFragment extends Fragment implements AdminRideHisto
         LinearLayout layoutReports = dialog.findViewById(R.id.layoutReports);
         LinearLayout layoutCancellation = dialog.findViewById(R.id.layoutCancellation);
 
-        // Basic info
         tvDialogDate.setText(formatDateTime(ride.startTime));
         tvDialogStatus.setText(ride.status != null ? ride.status : "");
         tvDialogDriverName.setText(ride.driverName != null ? ("Driver: " + ride.driverName) : "Driver: N/A");
 
-        String startAddr = ride.startLocation != null ? ride.startLocation.address : "N/A";
-        String endAddr = ride.endLocation != null ? ride.endLocation.address : "N/A";
+        String startAddr = (ride.startLocation != null && ride.startLocation.address != null) ? ride.startLocation.address : "N/A";
+        String endAddr = (ride.endLocation != null && ride.endLocation.address != null) ? ride.endLocation.address : "N/A";
         tvDialogStartAddress.setText(startAddr);
         tvDialogEndAddress.setText(endAddr);
 
@@ -301,25 +471,16 @@ public class AdminRideHistoryFragment extends Fragment implements AdminRideHisto
             tvDialogPanicBadge.setVisibility(View.GONE);
         }
 
-        // Map
         Configuration.getInstance().setUserAgentValue(requireContext().getPackageName());
         mapView.setTileSource(TileSourceFactory.MAPNIK);
         mapView.setMultiTouchControls(true);
+
         displayAdminRouteOnMap(mapView, ride);
 
-        // Stops
         displayStops(layoutStops, ride.stops);
-
-        // Passengers
         displayPassengerEmails(layoutPassengers, ride.passengerEmails);
-
-        // Reviews
         displayReviews(layoutReviews, ride.driverReview, ride.rideReview);
-
-        // Reports
         displayReports(layoutReports, ride.inconsistencyReports);
-
-        // Cancellation
         displayCancellation(layoutCancellation, ride.cancellationReason);
 
         btnClose.setOnClickListener(v -> dialog.dismiss());
@@ -328,10 +489,9 @@ public class AdminRideHistoryFragment extends Fragment implements AdminRideHisto
 
     private void displayAdminRouteOnMap(MapView mapView, AdminRideHistoryExtendedResponse ride) {
         if (ride.startLocation == null || ride.startLocation.latitude == null || ride.startLocation.longitude == null) return;
-        mapView.getOverlays().clear();
 
         IMapController mapController = mapView.getController();
-        mapController.setZoom(13.0);
+        mapController.setZoom(15.0);
 
         GeoPoint startPoint = new GeoPoint(ride.startLocation.latitude, ride.startLocation.longitude);
         List<GeoPoint> points = new ArrayList<>();
@@ -343,19 +503,18 @@ public class AdminRideHistoryFragment extends Fragment implements AdminRideHisto
         startMarker.setIcon(ContextCompat.getDrawable(requireContext(), R.drawable.circle_start));
         mapView.getOverlays().add(startMarker);
 
-
         if (ride.stops != null) {
             for (LocationDto s : ride.stops) {
                 if (s != null && s.latitude != null && s.longitude != null) {
                     GeoPoint p = new GeoPoint(s.latitude, s.longitude);
                     points.add(p);
+
                     Marker m = new Marker(mapView);
                     m.setPosition(p);
                     m.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
                     m.setIcon(ContextCompat.getDrawable(requireContext(), R.drawable.circle_stop));
                     m.setTitle("Stop " + (points.size() - 1));
                     mapView.getOverlays().add(m);
-
                 }
             }
         }
@@ -363,12 +522,12 @@ public class AdminRideHistoryFragment extends Fragment implements AdminRideHisto
         if (ride.endLocation != null && ride.endLocation.latitude != null && ride.endLocation.longitude != null) {
             GeoPoint endPoint = new GeoPoint(ride.endLocation.latitude, ride.endLocation.longitude);
             points.add(endPoint);
+
             Marker endMarker = new Marker(mapView);
             endMarker.setPosition(endPoint);
             endMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
             endMarker.setIcon(ContextCompat.getDrawable(requireContext(), R.drawable.circle_end));
             mapView.getOverlays().add(endMarker);
-
         }
 
         if (points.size() >= 2) {

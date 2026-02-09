@@ -84,15 +84,12 @@ public class AdminRideHistoryAdapter extends RecyclerView.Adapter<AdminRideHisto
         }
 
         void bind(AdminRideHistoryResponse ride, OnRideClickListener listener) {
-            // date (from startTime)
             tvRideDate.setText(formatDate(ride.startTime));
 
-            // status
             String status = ride.status != null ? ride.status : "";
             tvStatusBadge.setText(getStatusText(status));
             setStatusBadgeStyle(tvStatusBadge, status);
 
-            // panic badge
             if (ride.panic) {
                 tvPanicBadge.setVisibility(View.VISIBLE);
                 tvPanicBadge.setText("PANIC");
@@ -102,7 +99,6 @@ public class AdminRideHistoryAdapter extends RecyclerView.Adapter<AdminRideHisto
                 tvPanicBadge.setVisibility(View.GONE);
             }
 
-            // addresses
             String startAddr = (ride.startLocation != null && ride.startLocation.address != null)
                     ? ride.startLocation.address : "N/A";
             String endAddr = (ride.endLocation != null && ride.endLocation.address != null)
@@ -111,10 +107,8 @@ public class AdminRideHistoryAdapter extends RecyclerView.Adapter<AdminRideHisto
             tvStartAddress.setText(startAddr);
             tvEndAddress.setText(endAddr);
 
-            // price
             tvPrice.setText(String.format(Locale.getDefault(), "%.0f din", ride.price));
 
-            // times (HH:mm)
             tvStartTime.setText(formatTime(ride.startTime));
             tvEndTime.setText(formatTime(ride.endTime));
 

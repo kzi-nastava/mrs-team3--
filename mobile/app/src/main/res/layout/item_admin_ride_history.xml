@@ -18,7 +18,6 @@
         android:orientation="vertical"
         android:padding="24dp">
 
-        <!-- Header: Date and Status -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -50,14 +49,12 @@
 
         </LinearLayout>
 
-        <!-- Route Information -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:layout_marginBottom="16dp">
 
-            <!-- Start Location -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -85,7 +82,6 @@
 
             </LinearLayout>
 
-            <!-- Stops (optional) -->
             <TextView
                 android:id="@+id/tvStops"
                 android:layout_width="match_parent"
@@ -100,7 +96,6 @@
                 android:maxLines="2"
                 android:ellipsize="end"/>
 
-            <!-- End Location -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -129,7 +124,6 @@
 
         </LinearLayout>
 
-        <!-- Admin Info (driver + passengers + flags) -->
         <LinearLayout
             android:id="@+id/adminInfoContainer"
             android:layout_width="match_parent"
@@ -137,29 +131,6 @@
             android:orientation="vertical"
             android:layout_marginBottom="16dp">
 
-            <TextView
-                android:id="@+id/tvDriverName"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Driver: Petar Petrovic"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:textColor="#111827"
-                android:maxLines="1"
-                android:ellipsize="end"/>
-
-            <TextView
-                android:id="@+id/tvPassengers"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Passengers: a@mail.com, b@mail.com"
-                android:textSize="12sp"
-                android:textColor="#6B7280"
-                android:maxLines="2"
-                android:ellipsize="end"
-                android:layout_marginTop="4dp"/>
-
-            <!-- Panic badge (optional) -->
             <TextView
                 android:id="@+id/tvPanicBadge"
                 android:layout_width="wrap_content"
@@ -175,7 +146,6 @@
                 android:letterSpacing="0.05"
                 android:visibility="gone"/>
 
-            <!-- Cancellation reason (optional) -->
             <TextView
                 android:id="@+id/tvCancellationReason"
                 android:layout_width="match_parent"
@@ -189,7 +159,6 @@
                 android:maxLines="2"
                 android:ellipsize="end"/>
 
-            <!-- Reviews (optional) -->
             <LinearLayout
                 android:id="@+id/reviewsContainer"
                 android:layout_width="match_parent"
@@ -221,20 +190,17 @@
 
         </LinearLayout>
 
-        <!-- Divider -->
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:background="#F3F4F6"
             android:layout_marginBottom="16dp"/>
 
-        <!-- Ride Info (same pattern as driver item) -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal">
 
-            <!-- Price -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -261,7 +227,6 @@
                     android:textColor="#059669"/>
             </LinearLayout>
 
-            <!-- Start time -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -288,7 +253,6 @@
                     android:textColor="#111827"/>
             </LinearLayout>
 
-            <!-- End time -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -317,7 +281,6 @@
 
         </LinearLayout>
 
-        <!-- Inconsistency reports indicator (optional) -->
         <TextView
             android:id="@+id/tvInconsistency"
             android:layout_width="match_parent"

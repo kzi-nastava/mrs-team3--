@@ -11,7 +11,6 @@
         android:orientation="vertical"
         android:padding="24dp">
 
-        <!-- Header -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -21,7 +20,6 @@
             android:textColor="#111827"
             android:layout_marginBottom="16dp"/>
 
-        <!-- Date and Status -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -49,7 +47,6 @@
                 android:textAllCaps="true"/>
         </LinearLayout>
 
-        <!-- Admin quick info: Driver + Panic -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -81,7 +78,6 @@
                 android:visibility="gone"/>
         </LinearLayout>
 
-        <!-- Addresses -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -126,7 +122,6 @@
                 android:textColor="#111827"/>
         </LinearLayout>
 
-        <!-- Ride Info Grid (price + times for admin DTO) -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -218,7 +213,6 @@
                     android:textColor="#111827"/>
             </LinearLayout>
 
-            <!-- Empty spacer to keep grid feel consistent -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -226,14 +220,12 @@
                 android:orientation="vertical" />
         </LinearLayout>
 
-        <!-- Map -->
         <org.osmdroid.views.MapView
             android:id="@+id/mapView"
             android:layout_width="match_parent"
             android:layout_height="200dp"
             android:layout_marginBottom="16dp"/>
 
-        <!-- Stops Section (from AdminRideHistoryExtendedResponse.stops) -->
         <TextView
             android:id="@+id/tvStopsLabel"
             android:layout_width="wrap_content"
@@ -252,7 +244,6 @@
             android:orientation="vertical"
             android:layout_marginBottom="16dp"/>
 
-        <!-- Passengers Section -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -270,7 +261,6 @@
             android:orientation="vertical"
             android:layout_marginBottom="16dp"/>
 
-        <!-- Reviews Section -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -288,7 +278,6 @@
             android:orientation="vertical"
             android:layout_marginBottom="16dp"/>
 
-        <!-- Reports Section -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -306,7 +295,6 @@
             android:orientation="vertical"
             android:layout_marginBottom="16dp"/>
 
-        <!-- Cancellation Section -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -324,7 +312,6 @@
             android:orientation="vertical"
             android:layout_marginBottom="24dp"/>
 
-        <!-- Close Button -->
         <Button
             android:id="@+id/btnClose"
             android:layout_width="match_parent"
