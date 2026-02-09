@@ -18,6 +18,7 @@ import { RideTrackingComponent } from './ride-tracking/ride-tracking';
 import { DriverDashboardComponent } from './driver-dashboard/driver-dashboard';
 import { IncomingRides } from './incoming-rides/incoming-rides';
 import { Report } from './report/report';
+import { AdminRideTrackingComponent } from './admin-ride-tracking/admin-ride-tracking';
 
 
 
@@ -81,6 +82,7 @@ export const routes: Routes = [
     component: Report,
     canActivate: [authGuard]
   },
+  { path: 'admin/ride-tracking/:driverId', component: AdminRideTrackingComponent, canActivate: [adminGuard] },
 
   { path: '**', component: ErrorComponent }
 
