@@ -40,14 +40,65 @@
   color: white;
 }
 
+/* Search Container */
+.search-container {
+  position: relative;
+  margin-bottom: 1.5rem;
+  width: 100%;
+  max-width: 500px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.875rem 2.5rem 0.875rem 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 1rem;
+  background: white;
+  transition: all 0.2s;
+  box-sizing: border-box;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.search-input::placeholder {
+  color: #9ca3af;
+}
+
+.clear-search {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #f3f4f6;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  color: #6b7280;
+  transition: all 0.2s;
+}
+
+.clear-search:hover {
+  background: #e5e7eb;
+  color: #111827;
+}
+
 .list {
   display: flex;
   flex-direction: column;
   gap: 16px;
   width: 100%;
 }
-
-
 
 .card {
   background: #fff;
@@ -78,6 +129,47 @@
   color: #6b7280;
 }
 
+/* Driver Card Specific Styles */
+.driver-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: default;
+}
+
+.driver-card:hover {
+  transform: none;
+  border-color: #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
+}
+
+.driver-info {
+  flex: 1;
+}
+
+.btn-track {
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  white-space: nowrap;
+}
+
+.btn-track:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-track:active {
+  transform: translateY(0);
+}
+
 .badge {
   display: inline-block;
   margin-top: 12px;
@@ -86,6 +178,9 @@
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.3px;
+}
+
+.badge.active {
   background: #dcfce7;
   color: #166534;
 }
@@ -95,6 +190,21 @@
   color: #991b1b;
 }
 
+.empty-state {
+  background: white;
+  padding: 3rem 2rem;
+  border-radius: 12px;
+  text-align: center;
+  color: #6b7280;
+  border: 2px dashed #e5e7eb;
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 1rem;
+}
+
+/* Modal Styles */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -119,7 +229,6 @@
     transform: scale(.95);
     opacity: .5;
   }
-
   to {
     transform: scale(1);
     opacity: 1;
@@ -146,6 +255,11 @@
   cursor: pointer;
   padding: 4px 10px;
   font-size: 14px;
+  transition: 0.2s;
+}
+
+.modal-header button:hover {
+  background: #e5e7eb;
 }
 
 .modal-body {
@@ -157,94 +271,19 @@
   font-size: 0.95rem;
 }
 
-@media (max-width: 600px) {
-  .list {
-    grid-template-columns: 1fr;
+/* Responsive */
+@media (max-width: 768px) {
+  .page {
+    padding: 1rem;
   }
-}
 
-.page {
-  min-height: 100vh;
-  padding: 2rem;
-  background: linear-gradient(180deg, #ede9fe, #f5f3ff);
-}
+  .driver-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
 
-.tabs {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-.tabs button {
-  padding: 8px 16px;
-  border-radius: 8px;
-  border: 2px solid #e5e7eb;
-  background: white;
-  cursor: pointer;
-}
-
-.tabs button.active {
-  background: #6366f1;
-  color: white;
-  border-color: #6366f1;
-}
-
-
-
-.card {
-  background: white;
-  padding: 20px;
-  border-radius: 12px;
-  border: 2px solid #e5e7eb;
-  cursor: pointer;
-  transition: .2s;
-}
-
-.card:hover {
-  transform: translateY(-4px);
-  border-color: #6366f1;
-}
-
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, .5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.modal-box {
-  background: white;
-  border-radius: 12px;
-  width: 420px;
-  max-width: 95%;
-}
-
-.modal-header {
-  padding: 16px;
-  border-bottom: 1px solid #e5e7eb;
-  display: flex;
-  justify-content: space-between;
-}
-
-.modal-body {
-  padding: 16px;
-}
-
-.block-btn {
-  margin-top: 20px;
-  width: 100%;
-  padding: 12px;
-  border: none;
-  border-radius: 10px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: .2s;
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.block-btn:hover {
-  background: #fecaca;
+  .btn-track {
+    width: 100%;
+  }
 }
