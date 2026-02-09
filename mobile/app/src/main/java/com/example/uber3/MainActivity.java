@@ -77,7 +77,14 @@ public class MainActivity extends AppCompatActivity {
             }
             else if (id == R.id.nav_ride) {
                 topAppBar.setTitle("Ride History");
-                loadFragment(DriverHistoryFragment.newInstance());
+
+                if ("PASSENGER".equals(currentUserRole)) {
+                    loadFragment(new PassengerRideHistoryFragment());
+                } else if ("DRIVER".equals(currentUserRole)) {
+                    loadFragment(DriverHistoryFragment.newInstance());
+                } else if ("ADMIN".equals(currentUserRole)) {
+                    loadFragment(AdminRideHistoryFragment.newInstance());
+                }
 
             } else if (id == R.id.nav_profile) {
                 topAppBar.setTitle("Profile");

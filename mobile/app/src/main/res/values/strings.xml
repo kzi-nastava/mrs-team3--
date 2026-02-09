@@ -173,6 +173,8 @@
     <string name="inconsistencies_reported">Inconsistencies reported</string>
     <string name="enter_reason">Enter reason...</string>
     <string name="block_user">Block user</string>
+    <string name="order_now">Order now</string>
+    <string name="order_later">Order later</string>
 
     <string-array name="vehicle_types">
         <item>STANDARD</item>
