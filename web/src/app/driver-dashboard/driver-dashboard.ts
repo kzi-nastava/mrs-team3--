@@ -22,6 +22,7 @@ export class DriverDashboardComponent implements OnInit, OnDestroy {
   protected pendingRides = signal<PendingRide[]>([]);
   protected selectedRide = signal<DriverRide | PendingRide | null>(null);
   protected loading = signal<boolean>(true);
+  private pollingInterval: any = null;
 
   // Map
   private map: any = null;
@@ -44,9 +45,11 @@ export class DriverDashboardComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadData();
+    this.startPolling();
   }
 
   ngOnDestroy(): void {
+    this.stopPolling();
     this.clearMap();
   }
 
@@ -259,17 +262,29 @@ export class DriverDashboardComponent implements OnInit, OnDestroy {
     }).addTo(this.map).bindPopup('Destination: ' + ride.endLocation.address);
     this.markers.push(endMarker);
 
-    // Driver marker for IN_PROGRESS
-    if (this.isDriverRide(ride) && ride.status === 'IN_PROGRESS') {
-      this.driverMarker = L.marker([ride.startLocation.lat, ride.startLocation.lng], {
-        icon: L.divIcon({
-          className: 'car-marker',
-          html: '<div style="font-size: 30px;">🚗</div>',
-          iconSize: [30, 30],
-          iconAnchor: [15, 15]
-        })
-      }).addTo(this.map).bindPopup('You are here');
-    }
+   // Driver marker for IN_PROGRESS
+if (this.isDriverRide(ride) && ride.status === 'IN_PROGRESS') {
+  // Remove old driver marker first
+  if (this.driverMarker) {
+    this.map.removeLayer(this.driverMarker);
+    this.driverMarker = null;
+  }
+
+  // Use actual driver current location from backend if available
+  // Otherwise fall back to start location
+  const driverLocation = ride.driverCurrentLocation 
+    ? { lat: ride.driverCurrentLocation.lat, lng: ride.driverCurrentLocation.lng }
+    : { lat: ride.startLocation.lat, lng: ride.startLocation.lng };
+
+  this.driverMarker = L.marker([driverLocation.lat, driverLocation.lng], {
+    icon: L.divIcon({
+      className: 'car-marker',
+      html: '<div style="font-size: 30px;">🚗</div>',
+      iconSize: [30, 30],
+      iconAnchor: [15, 15]
+    })
+  }).addTo(this.map).bindPopup('You are here');
+}
 
     if (this.markers.length > 0) {
       const group = L.featureGroup(this.markers);
@@ -471,5 +486,43 @@ export class DriverDashboardComponent implements OnInit, OnDestroy {
       }
     });
   }
+
+  private startPolling(): void {
+  this.pollingInterval = setInterval(() => {
+    const currentRide = this.selectedRide();
+    if (currentRide && this.isDriverRide(currentRide) && 
+        (currentRide.status === 'ACCEPTED' || currentRide.status === 'IN_PROGRESS')) {
+      this.loadDataSilently();
+    }
+  }, 20000);
+}
+
+private stopPolling(): void {
+  if (this.pollingInterval) {
+    clearInterval(this.pollingInterval);
+    this.pollingInterval = null;
+  }
+}
+
+private loadDataSilently(): void {
+  this.service.getMyRides().subscribe({
+    next: (rides) => {
+      this.myRides.set(rides);
+      
+      const currentRide = this.selectedRide();
+      if (currentRide && this.isDriverRide(currentRide)) {
+        const updatedRide = rides.find(r => r.rideId === currentRide.rideId);
+        if (updatedRide) {
+          this.selectedRide.set(updatedRide);
+          this.addMarkers(updatedRide);
+          this.drawRoute(updatedRide);
+        }
+      }
+    },
+    error: (err) => {
+      console.error('Polling error:', err);
+    }
+  });
+}
 
 }

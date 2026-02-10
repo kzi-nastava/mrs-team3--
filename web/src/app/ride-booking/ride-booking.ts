@@ -41,7 +41,7 @@ interface Stop {
   styleUrl: './ride-booking.css'
 })
 export class RideBookingComponent implements OnInit, OnDestroy {
-
+  private vehiclePollingInterval: any = null;
   private destroy$ = new Subject<void>();
 
   rideForm!: FormGroup;
@@ -87,6 +87,7 @@ export class RideBookingComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.favorites = this.favoriteService.getFavorites();
     this.favoriteService.loadFromBackend();
+    this.startVehiclePolling();
 
 
     this.rideBookingService.rideBookingData$
@@ -137,6 +138,7 @@ export class RideBookingComponent implements OnInit, OnDestroy {
 
 
   ngOnDestroy(): void {
+    this.stopVehiclePolling();
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -632,6 +634,20 @@ export class RideBookingComponent implements OnInit, OnDestroy {
         });
     }
   }
+
+  private startVehiclePolling(): void {
+  this.vehiclePollingInterval = setInterval(() => {
+    this.driverLocationService.getActiveVehicles().subscribe();
+  }, 20000);
+}
+
+private stopVehiclePolling(): void {
+  if (this.vehiclePollingInterval) {
+    clearInterval(this.vehiclePollingInterval);
+    this.vehiclePollingInterval = null;
+  }
+}
+
 
 }
 

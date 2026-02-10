@@ -23,6 +23,7 @@ export interface DriverRide {
   endLocation: Location;
   stops: Location[];
   stopStatuses: StopStatus[];
+  driverCurrentLocation: Location | null;
   estimatedTimeMinutes: number;
   remainingMinutes: number;
   scheduledAt: string | null;
