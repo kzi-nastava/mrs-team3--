@@ -14,6 +14,7 @@ import { DriverLocationService } from '../services/driver-location.service';
 })
 export class RideFormComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
+  private vehiclePollingInterval: any = null;
 
   rideForm!: FormGroup;
 
@@ -44,6 +45,7 @@ export class RideFormComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.startVehiclePolling();
     this.rideService.estimatedTime$
       .pipe(takeUntil(this.destroy$))
       .subscribe(t => this.modalEstimatedTime = t);
@@ -75,6 +77,7 @@ export class RideFormComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.stopVehiclePolling();
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -187,5 +190,18 @@ export class RideFormComponent implements OnInit, OnDestroy {
     this.rideForm.reset();
     this.showRideInfo = false;
     this.rideService.clearRoute();
+  }
+
+  private startVehiclePolling(): void {
+  this.vehiclePollingInterval = setInterval(() => {
+    this.driverLocationService.getActiveVehicles().subscribe();
+  }, 20000);
+}
+
+  private stopVehiclePolling(): void {
+    if (this.vehiclePollingInterval) {
+      clearInterval(this.vehiclePollingInterval);
+      this.vehiclePollingInterval = null;
+    }
   }
 }

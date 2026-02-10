@@ -67,7 +67,11 @@ export class PassengerSidebarComponent implements OnInit, OnDestroy {
 
 
   goMessages() {
-    this.chatPopup.toggle();
+    if (this.chatPopup) {
+      this.chatPopup.toggle();
+    } else {
+      console.warn('Chat popup not yet initialized');
+    }
   }
 
   goProfile() {

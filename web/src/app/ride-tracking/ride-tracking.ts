@@ -24,6 +24,7 @@ export class RideTrackingComponent implements OnInit, OnDestroy {
   protected rideData = signal<RideTrackingData | null>(null);
   protected loading = signal<boolean>(true);
   protected error = signal<string | null>(null);
+  private pollingInterval: any = null;
 
   // For guest mode
   protected trackingToken: string | null = null;
@@ -59,13 +60,16 @@ export class RideTrackingComponent implements OnInit, OnDestroy {
 
       if (this.isGuestMode) {
         this.validateAndLoadGuestRide();
+        this.startPolling();
       } else {
         this.loadCurrentRide();
+        this.startPolling();
       }
     });
   }
 
   ngOnDestroy(): void {
+    this.stopPolling();
     if (this.map) {
       this.map.remove();
     }
@@ -424,4 +428,37 @@ export class RideTrackingComponent implements OnInit, OnDestroy {
     const mins = minutes % 60;
     return `${hours}h ${mins}m`;
   }
+
+  private startPolling(): void {
+  this.pollingInterval = setInterval(() => {
+    this.loadRideDataSilently();
+  }, 15000);
+}
+
+private stopPolling(): void {
+  if (this.pollingInterval) {
+    clearInterval(this.pollingInterval);
+    this.pollingInterval = null;
+  }
+}
+
+private loadRideDataSilently(): void {
+  const loadObservable = this.isGuestMode && this.trackingToken
+    ? this.rideTrackingService.getRideByToken(this.trackingToken)
+    : this.rideTrackingService.getCurrentRide();
+
+  loadObservable.subscribe({
+    next: (data) => {
+      this.rideData.set(data);
+      if (this.map) {
+        this.addMarkers(data);
+        this.drawRoute(data);
+      }
+    },
+    error: (err) => {
+      console.error('Polling error:', err);
+    }
+  });
+}
+
 }

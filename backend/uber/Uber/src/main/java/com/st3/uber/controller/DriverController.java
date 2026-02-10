@@ -1,5 +1,6 @@
 package com.st3.uber.controller;
 
+import com.st3.uber.domain.Location;
 import com.st3.uber.domain.Ride;
 import com.st3.uber.dto.register.RegisterDriverRequest;
 import com.st3.uber.dto.register.RegisterDriverResponse;
@@ -336,6 +337,11 @@ public class DriverController {
                 })
                 .toList();
 
+        Location driverCurrentLocation = null;
+        if (ride.getDriver() != null && ride.getDriver().getCurrentLocation() != null) {
+            driverCurrentLocation = ride.getDriver().getCurrentLocation();
+        }
+
         return new DriverRideResponse(
                 ride.getId(),
                 ride.getStatus(),
@@ -343,6 +349,7 @@ public class DriverController {
                 ride.getEndLocation(),
                 ride.getRideStops(),
                 stopStatuses,
+                driverCurrentLocation,
                 ride.getEstimatedTimeMinutes(),
                 ride.getRemainingMinutes(),
                 ride.getScheduledAt(),
