@@ -1,7 +1,5 @@
 package com.example.uber3;
 
-import static android.text.format.DateUtils.formatDateTime;
-
 import android.annotation.SuppressLint;
 import android.app.DatePickerDialog;
 import android.app.Dialog;
@@ -62,25 +60,16 @@ import retrofit2.Call;
 
 public class PassengerRideHistoryFragment extends Fragment implements PassengerRideHistoryAdapter.OnRideClickListener {
 
-    // UI
     private RecyclerView recyclerView;
     private PassengerRideHistoryAdapter adapter;
     private ProgressBar progressBar;
     private LinearLayout tvEmptyState;
-
     private TextInputEditText etStartDate;
     private TextInputEditText etEndDate;
-
     private AutoCompleteTextView actSort;
-
-    // Service
     private PassengerHistoryService historyService;
-
-    // Data
     private Date startDate = null;
     private Date endDate = null;
-
-
 
     private enum SortOption {START_TIME_DESC, START_TIME_ASC, END_TIME_DESC, END_TIME_ASC, ROUTE_ASC, ROUTE_DESC}
 
@@ -88,7 +77,6 @@ public class PassengerRideHistoryFragment extends Fragment implements PassengerR
 
     private List<PassengerRideSummaryResponse> allRides = new ArrayList<>();
 
-    // Shake
     private SensorManager sensorManager;
     private Sensor accelerometer;
     private SensorEventListener shakeListener;
@@ -125,7 +113,6 @@ public class PassengerRideHistoryFragment extends Fragment implements PassengerR
 
         actSort = view.findViewById(R.id.actSort);
 
-        // ako je ekran u Scroll/NestedScroll
         recyclerView.setNestedScrollingEnabled(false);
     }
 
@@ -222,7 +209,6 @@ public class PassengerRideHistoryFragment extends Fragment implements PassengerR
             public void onSuccess(List<PassengerRideSummaryResponse> rides) {
                 showLoading(false);
                 allRides = rides != null ? rides : new ArrayList<>();
-                // default: newest first
                 sortOption = SortOption.START_TIME_DESC;
                 applyFiltersAndSort();
             }
@@ -356,8 +342,6 @@ public class PassengerRideHistoryFragment extends Fragment implements PassengerR
         }
     }
 
-    // =================== SHAKE (toggle sort by date) ===================
-
     private void setupShake() {
         sensorManager = ContextCompat.getSystemService(requireContext(), SensorManager.class);
         if (sensorManager == null) return;
@@ -391,7 +375,6 @@ public class PassengerRideHistoryFragment extends Fragment implements PassengerR
                 float delta = dx + dy + dz;
 
                 long now = System.currentTimeMillis();
-                // prag + debounce
                 if (delta > 15f && (now - lastShakeMs) > 800) {
                     lastShakeMs = now;
                     toggleDateSort();
@@ -432,8 +415,6 @@ public class PassengerRideHistoryFragment extends Fragment implements PassengerR
         }
     }
 
-    // =================== DETAILS ===================
-
     @Override
     public void onRideClick(PassengerRideSummaryResponse ride) {
         if (ride == null || ride.id == null) {
@@ -469,13 +450,11 @@ public class PassengerRideHistoryFragment extends Fragment implements PassengerR
         dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
 
         TextView tvDialogDate = dialog.findViewById(R.id.tvDialogDate);
-        TextView tvDialogStatus = dialog.findViewById(R.id.tvDialogStatus);
         TextView tvDialogDriverName = dialog.findViewById(R.id.tvDialogDriverName);
 
         TextView tvDialogStartAddress = dialog.findViewById(R.id.tvDialogStartAddress);
         TextView tvDialogEndAddress = dialog.findViewById(R.id.tvDialogEndAddress);
 
-        TextView tvDialogPrice = dialog.findViewById(R.id.tvDialogPrice);
         TextView tvDialogStartTime = dialog.findViewById(R.id.tvDialogStartTime);
         TextView tvDialogEndTime = dialog.findViewById(R.id.tvDialogEndTime);
 
@@ -496,53 +475,36 @@ public class PassengerRideHistoryFragment extends Fragment implements PassengerR
         LinearLayout layoutReviews = dialog.findViewById(R.id.layoutReviews);
         LinearLayout layoutReports = dialog.findViewById(R.id.layoutReports);
 
-        // (Optional) ako postoje u tvom XML-u
         LinearLayout layoutPassengers = dialog.findViewById(R.id.layoutPassengers);
         LinearLayout layoutCancellation = dialog.findViewById(R.id.layoutCancellation);
-        TextView tvPanic = dialog.findViewById(R.id.tvDialogPanicBadge);
         if (layoutPassengers != null) layoutPassengers.setVisibility(View.GONE);
         if (layoutCancellation != null) layoutCancellation.setVisibility(View.GONE);
-        if (tvPanic != null) tvPanic.setVisibility(View.GONE);
 
-        // Header
         tvDialogDate.setText(formatDateTime(ride.startTime));
-        tvDialogStatus.setText(ride.status != null ? ride.status : "");
         tvDialogDriverName.setText(ride.driverName != null ? ("Driver: " + ride.driverName) : "Driver: N/A");
 
-        // Addresses
         String startAddr = (ride.startLocation != null && ride.startLocation.address != null) ? ride.startLocation.address : "N/A";
         String endAddr = (ride.endLocation != null && ride.endLocation.address != null) ? ride.endLocation.address : "N/A";
         tvDialogStartAddress.setText(startAddr);
         tvDialogEndAddress.setText(endAddr);
 
-        // Times
         tvDialogStartTime.setText(formatOnlyTime(ride.startTime));
         tvDialogEndTime.setText(ride.endTime != null ? formatOnlyTime(ride.endTime) : "-");
 
-        // Price: ako ti passenger detail NE vraća cenu, samo sakrij
-        if (tvDialogPrice != null) {
-            tvDialogPrice.setVisibility(View.GONE);
-        }
-
-        // Map
         Configuration.getInstance().setUserAgentValue(requireContext().getPackageName());
         mapView.setTileSource(TileSourceFactory.MAPNIK);
         mapView.setMultiTouchControls(true);
         displayRouteOnMap(mapView, ride);
 
-        // Stops
         displayStops(layoutStops, ride.stops);
 
-        // Reviews
         displayReviews(layoutReviews, ride.driverReview, ride.rideReview);
 
-        // Reports
         displayReports(layoutReports, ride.inconsistencyReports);
 
         btnClose.setOnClickListener(v -> dialog.dismiss());
         dialog.show();
     }
-
 
     private void displayRouteOnMap(MapView mapView, PassengerRideSummaryExtendedResponse ride) {
         if (ride.startLocation == null || ride.startLocation.latitude == null || ride.startLocation.longitude == null)
@@ -602,7 +564,7 @@ public class PassengerRideHistoryFragment extends Fragment implements PassengerR
         }
         for (InconsistencyReportDto r : reports) {
             TextView tv = new TextView(requireContext());
-            tv.setText("⚠️ " + (r.message != null ? r.message : "Report"));
+            tv.setText("⚠️ " + (r.reportText != null ? r.reportText : "Report"));
             tv.setPadding(16, 8, 16, 8);
             tv.setTextSize(14);
             layout.addView(tv);
@@ -624,46 +586,67 @@ public class PassengerRideHistoryFragment extends Fragment implements PassengerR
     }
 
     private void displayStops(LinearLayout layout, List<com.example.uber3.network.model.location.LocationDto> stops) {
+
         layout.removeAllViews();
+        layout.setVisibility(View.VISIBLE);
+
         if (stops == null || stops.isEmpty()) {
-            layout.setVisibility(View.GONE);
+
+            TextView tv = new TextView(requireContext());
+            tv.setText("/");
+            tv.setPadding(16, 8, 16, 8);
+            tv.setTextSize(14);
+
+            layout.addView(tv);
             return;
         }
-        layout.setVisibility(View.VISIBLE);
 
         for (int i = 0; i < stops.size(); i++) {
             com.example.uber3.network.model.location.LocationDto s = stops.get(i);
+
             TextView tv = new TextView(requireContext());
-            String addr = (s != null && s.address != null) ? s.address : "N/A";
+
+            String addr = (s != null && s.address != null && !s.address.trim().isEmpty())
+                    ? s.address
+                    : "/";
+
             tv.setText((i + 1) + ". " + addr);
             tv.setPadding(16, 8, 16, 8);
             tv.setTextSize(14);
+
             layout.addView(tv);
         }
     }
 
     private void displayReviews(LinearLayout layout, Double driverReview, Double rideReview) {
+
         layout.removeAllViews();
-        if (driverReview == null && rideReview == null) {
-            layout.setVisibility(View.GONE);
-            return;
-        }
         layout.setVisibility(View.VISIBLE);
 
-        if (driverReview != null) {
-            TextView tv = new TextView(requireContext());
-            tv.setText("Driver ⭐ " + String.format(Locale.getDefault(), "%.1f", driverReview));
-            tv.setPadding(16, 8, 16, 8);
-            tv.setTextSize(14);
-            layout.addView(tv);
+        TextView tv = new TextView(requireContext());
+
+        if (driverReview == null && rideReview == null) {
+            tv.setText("Driver: /");
         }
-        if (rideReview != null) {
-            TextView tv = new TextView(requireContext());
-            tv.setText("Ride ⭐ " + String.format(Locale.getDefault(), "%.1f", rideReview));
-            tv.setPadding(16, 8, 16, 8);
-            tv.setTextSize(14);
-            layout.addView(tv);
+        else{
+            tv.setText("Driver: ⭐ " + String.format(Locale.getDefault(), "%.1f", driverReview));
         }
+        tv.setPadding(16, 8, 16, 8);
+        tv.setTextSize(14);
+
+        layout.addView(tv);
+        TextView tvRide = new TextView(requireContext());
+
+        if (rideReview == null) {
+            tvRide.setText("Ride: /");
+        }
+        else {
+            tvRide.setText("Ride: ⭐ " + String.format(Locale.getDefault(), "%.1f", rideReview));
+        }
+        tvRide.setPadding(16, 8, 16, 8);
+        tvRide.setTextSize(14);
+
+        layout.addView(tvRide);
     }
 
     private void addToFavorites(PassengerRideSummaryExtendedResponse ride) {
@@ -880,10 +863,4 @@ public class PassengerRideHistoryFragment extends Fragment implements PassengerR
 
         adapter.notifyDataSetChanged();
     }
-
-
-
-
-
-
 }

@@ -185,6 +185,13 @@
     <string name="favorites">❤️ Favorites</string>
     <string name="invite_passengers">Invite passengers</string>
     <string name="passenger_email">Passenger email</string>
+    <string name="end_date_">END</string>
+    <string name="start_date">START</string>
+    <string name="end_time_">END TIME</string>
+    <string name="favorite_main">FAVORITE</string>
+    <string name="start_time_">START TIME</string>
+    <string name="end_address_">End address...</string>
+    <string name="start_address_">Start address...</string>
 
     <string-array name="vehicle_types">
         <item>STANDARD</item>

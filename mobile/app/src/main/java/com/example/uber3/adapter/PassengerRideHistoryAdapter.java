@@ -57,49 +57,65 @@ public class PassengerRideHistoryAdapter extends RecyclerView.Adapter<PassengerR
 
     static class VH extends RecyclerView.ViewHolder {
         CardView card;
-        TextView tvRoute, tvStart, tvEnd, tvFav, tvHeart;
+        TextView tvRideDate;
+        TextView tvStartAddress, tvEndAddress;
+        TextView tvStart, tvEnd;
+        TextView tvFav, tvHeart;
 
         VH(@NonNull View itemView) {
             super(itemView);
+
             card = itemView.findViewById(R.id.cardRide);
-            tvRoute = itemView.findViewById(R.id.tvRoute);
+
+            tvRideDate = itemView.findViewById(R.id.tvRideDate);
+
+            tvStartAddress = itemView.findViewById(R.id.tvStartAddress);
+            tvEndAddress = itemView.findViewById(R.id.tvEndAddress);
+
             tvStart = itemView.findViewById(R.id.tvStartDate);
             tvEnd = itemView.findViewById(R.id.tvEndDate);
+
             tvFav = itemView.findViewById(R.id.tvFavoriteBadge);
             tvHeart = itemView.findViewById(R.id.tvHeart);
         }
 
         void bind(PassengerRideSummaryResponse r, OnRideClickListener listener) {
+
+            tvRideDate.setText(formatOnlyDate(r.startTime));
+
             String s = (r.startLocation != null && r.startLocation.address != null) ? r.startLocation.address : "N/A";
             String e = (r.endLocation != null && r.endLocation.address != null) ? r.endLocation.address : "N/A";
-            tvRoute.setText(s + " → " + e);
+            tvStartAddress.setText(s);
+            tvEndAddress.setText(e);
 
-            tvStart.setText("Start: " + formatDateTime(r.startTime));
-            tvEnd.setText("End: " + (r.endTime != null ? formatDateTime(r.endTime) : "-"));
+            tvStart.setText(formatDateTime(r.startTime));
+            tvEnd.setText(r.endTime != null ? formatDateTime(r.endTime) : "-");
 
             if (r.favorite) {
                 tvFav.setVisibility(View.VISIBLE);
-                tvFav.setText("★ FAVORITE");
+                tvFav.setText("FAVORITE");
             } else {
                 tvFav.setVisibility(View.GONE);
             }
 
             tvHeart.setText(r.favorite ? "❤️" : "🤍");
-
             tvHeart.setOnClickListener(v -> {
-                if (listener != null) {
-                    listener.onFavoriteToggle(r);
-                }
+                if (listener != null) listener.onFavoriteToggle(r);
             });
-
 
             card.setOnClickListener(v -> { if (listener != null) listener.onRideClick(r); });
         }
 
+        private String formatOnlyDate(String iso) {
+            Date d = parseIso(iso);
+            if (d == null) return "-";
+            return new SimpleDateFormat("dd. MMM yyyy.", Locale.getDefault()).format(d);
+        }
+
         private String formatDateTime(String iso) {
             Date d = parseIso(iso);
-            if (d == null) return iso != null ? iso : "-";
-            return new SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault()).format(d);
+            if (d == null) return "-";
+            return new SimpleDateFormat("dd. MMM yyyy, HH:mm", Locale.getDefault()).format(d);
         }
 
         private Date parseIso(String iso) {
