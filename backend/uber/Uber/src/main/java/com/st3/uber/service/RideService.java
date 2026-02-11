@@ -89,6 +89,20 @@ public class RideService {
         return savedRide;
     }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     public Ride createRide(Long passengerId, CreateRideRequest request) {
         Passenger creator = passengerRepository.findById(passengerId)
                 .orElseThrow(() -> new IllegalArgumentException("Passenger not found"));
@@ -124,6 +138,8 @@ public class RideService {
             throw new IllegalStateException("You already have an active or pending ride");
         }
 
+
+
         Ride ride = new Ride();
         ride.setCreator(creator);
         ride.getPassengers().add(creator);
@@ -152,6 +168,8 @@ public class RideService {
             );
         }
 
+        List<Passenger> newlyAddedPassengers = new ArrayList<>();
+
         if (request.passengerEmails() != null && !request.passengerEmails().isEmpty()) {
             for (String email : request.passengerEmails()) {
                 if (email.equalsIgnoreCase(creator.getEmail())) {
@@ -163,8 +181,10 @@ public class RideService {
                                 passenger -> {
                                     if (!ride.getPassengers().contains(passenger)) {
                                         ride.getPassengers().add(passenger);
+                                        newlyAddedPassengers.add(passenger);
                                     }
                                 },
+
                                 () -> {
                                     RideInvite invite = new RideInvite();
                                     invite.setRide(ride);
@@ -185,7 +205,7 @@ public class RideService {
 
         if (request.scheduledAt() == null) {
 
-            // ✅ PRIORITY CHECK ZA SCHEDULED RIDES
+            // PRIORITY CHECK FOR SCHEDULED RIDES
             boolean scheduledSoon = rideRepository
                     .existsByStatusAndScheduledAtBetween(
                             RideStatus.PENDING,
@@ -240,6 +260,21 @@ public class RideService {
             rideInviteMailService.sendInvite(invite, creator, savedRide);
         }
 
+        for (Passenger p : newlyAddedPassengers) {
+            notificationService.createNotification(
+                    p.getId(),
+                    String.format("%s invited you to a ride from %s to %s.",
+                            creator.getName(),
+                            savedRide.getStartLocation().getAddress(),
+                            savedRide.getEndLocation().getAddress()),
+                    NotificationType.RIDE_REMINDER,
+                    savedRide.getId()
+            );
+        }
+
+
+
+
         if (driver != null) {
             notificationService.createNotification(
                     creator.getId(),
@@ -270,6 +305,24 @@ public class RideService {
         }
         return savedRide;
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     public RouteEstimateResponse estimateRoute(RouteEstimateRequest request) {
         Location start = new Location(
