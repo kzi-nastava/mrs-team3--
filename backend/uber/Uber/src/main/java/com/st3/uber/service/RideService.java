@@ -263,13 +263,12 @@ public class RideService {
         for (Passenger p : newlyAddedPassengers) {
             notificationService.createNotification(
                     p.getId(),
-                    String.format("%s invited you to a ride from %s to %s.",
-                            creator.getName(),
-                            savedRide.getStartLocation().getAddress(),
-                            savedRide.getEndLocation().getAddress()),
+                    String.format("%s invited you to a ride",
+                            creator.getName()),
                     NotificationType.RIDE_REMINDER,
                     savedRide.getId()
             );
+
         }
 
 

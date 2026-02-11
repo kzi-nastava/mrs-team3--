@@ -18,6 +18,7 @@ import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -27,6 +28,7 @@ import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.AssertJUnit.assertFalse;
@@ -82,7 +84,76 @@ public class RideServiceTest {
             LocalDateTime.now().plusHours(6);
 
 
-    @BeforeMethod
+    //HELPER FUNCTIONS
+    private Passenger buildValidPassenger() {
+        Passenger p = new Passenger();
+        p.setId(PASSENGER_ID);
+        p.setEmail(PASSENGER_EMAIL);
+        p.setName(PASSENGER_NAME);
+        p.setBlocked(false);
+        return p;
+    }
+
+    private void stubRouteAndPrice() {
+        RouteInfo routeInfo = new RouteInfo(DISTANCE_KM, DURATION_MIN);
+
+        Mockito.when(routeCalculationService.calculateRoute(
+                Mockito.any(),
+                Mockito.any(),
+                Mockito.anyList()
+        )).thenReturn(routeInfo);
+
+        Mockito.when(priceCalculationService.getBasePrice(Mockito.any()))
+                .thenReturn(BASE_PRICE);
+
+        Mockito.when(priceCalculationService.calculatePrice(
+                Mockito.any(),
+                Mockito.anyDouble()
+        )).thenReturn(CALCULATED_PRICE);
+    }
+
+    private void stubRideSave() {
+        Mockito.when(rideRepository.save(Mockito.any()))
+                .thenAnswer(inv -> {
+                    Ride r = inv.getArgument(0);
+                    r.setId(100L);
+                    return r;
+                });
+    }
+
+    private Driver stubInstantRideCommon(Passenger passenger) {
+
+        Mockito.when(passengerRepository.findById(PASSENGER_ID))
+                .thenReturn(Optional.of(passenger));
+
+        Mockito.when(rideRepository.existsByCreatorAndStatusIn(
+                Mockito.eq(passenger),
+                Mockito.anyList()
+        )).thenReturn(false);
+
+        Mockito.when(rideRepository.existsByStatusAndScheduledAtBetween(
+                Mockito.any(),
+                Mockito.any(),
+                Mockito.any()
+        )).thenReturn(false);
+
+        Driver driver = new Driver();
+        driver.setId(DRIVER_ID);
+        driver.setName(DRIVER_NAME);
+        driver.setSurname(DRIVER_SURNAME);
+
+        Mockito.when(driverService.findDriverForRide(Mockito.any()))
+                .thenReturn(driver);
+
+        stubRouteAndPrice();
+        stubRideSave();
+
+        return driver;
+    }
+
+
+
+    @BeforeSuite
     public void setup() {
         rideRepository = Mockito.mock(RideRepository.class);
         passengerRepository = Mockito.mock(PassengerRepository.class);
@@ -110,6 +181,21 @@ public class RideServiceTest {
     }
 
 
+    @BeforeMethod
+    public void resetMock() {
+        Mockito.reset(rideRepository);
+        Mockito.reset(passengerRepository);
+        Mockito.reset(rideInviteRepository);
+        Mockito.reset(routeCalculationService);
+        Mockito.reset(priceCalculationService);
+        Mockito.reset(driverService);
+        Mockito.reset(rideInviteMailService);
+        Mockito.reset(notificationService);
+        Mockito.reset(mailService);
+        Mockito.reset(driverRepository);
+    }
+
+
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testWhenPassengerNotFound() {
 
@@ -122,6 +208,9 @@ public class RideServiceTest {
 
         assertNull(createdRide);
         Mockito.verify(passengerRepository).findById(PASSENGER_ID);
+        Mockito.verifyNoInteractions(driverService);
+        Mockito.verifyNoInteractions(routeCalculationService);
+
     }
 
 
@@ -129,10 +218,7 @@ public class RideServiceTest {
     public void testWhenPassengerIsBlocked() {
 
         //Setting test passenger
-        Passenger passenger = new Passenger();
-        passenger.setId(PASSENGER_ID);
-        passenger.setEmail(PASSENGER_EMAIL);
-        passenger.setName(PASSENGER_NAME);
+        Passenger passenger = buildValidPassenger();
         passenger.setBlocked(true);
         passenger.setBlockReason("Blocked by admin");
 
@@ -144,17 +230,16 @@ public class RideServiceTest {
 
         assertNull(createdRide);
         Mockito.verify(passengerRepository).findById(PASSENGER_ID);
+        Mockito.verifyNoInteractions(driverService);
+        Mockito.verifyNoInteractions(routeCalculationService);
+
 
     }
 
     @Test(expectedExceptions = IllegalStateException.class)
     public void testScheduledInPast() {
         //Setting test passenger
-        Passenger passenger = new Passenger();
-        passenger.setId(PASSENGER_ID);
-        passenger.setEmail(PASSENGER_EMAIL);
-        passenger.setName(PASSENGER_NAME);
-        passenger.setBlocked(false);
+        Passenger passenger = buildValidPassenger();
 
 
         //Passenger is not blocked
@@ -168,17 +253,13 @@ public class RideServiceTest {
 
         assertNull(createdRide);
         Mockito.verify(passengerRepository).findById(PASSENGER_ID);
+        Mockito.verifyNoInteractions(driverService);
     }
 
     @Test(expectedExceptions = IllegalStateException.class)
     public void testScheduledAfterFiveHours() {
         //Setting test passenger
-        Passenger passenger = new Passenger();
-        passenger.setId(PASSENGER_ID);
-        passenger.setEmail(PASSENGER_EMAIL);
-        passenger.setName(PASSENGER_NAME);
-        passenger.setBlocked(false);
-
+        Passenger passenger = buildValidPassenger();
 
         //Passenger is not blocked
         Mockito.when(passengerRepository.findById(PASSENGER_ID)).thenReturn(Optional.of(passenger));
@@ -191,24 +272,18 @@ public class RideServiceTest {
 
         assertNull(createdRide);
         Mockito.verify(passengerRepository).findById(PASSENGER_ID);
+        Mockito.verifyNoInteractions(driverService);
     }
 
     //ADD ALSO HAPPY PATH FOR NOT NULL SCHEDULED AT
     @Test(expectedExceptions = IllegalStateException.class)
     public void testHasActiveRide() {
         //Setting test passenger
-        Passenger passenger = new Passenger();
-        passenger.setId(PASSENGER_ID);
-        passenger.setEmail(PASSENGER_EMAIL);
-        passenger.setName(PASSENGER_NAME);
-        passenger.setBlocked(false);
-
+        Passenger passenger = buildValidPassenger();
 
         //Passenger is not blocked
         Mockito.when(passengerRepository.findById(PASSENGER_ID)).thenReturn(Optional.of(passenger));
         CreateRideRequest request = Mockito.mock(CreateRideRequest.class);
-
-
         Mockito.when(request.scheduledAt()).thenReturn(null);
 
         //Return like the ride exists
@@ -220,17 +295,13 @@ public class RideServiceTest {
         InOrder inOrder = Mockito.inOrder(passengerRepository,rideRepository);
         inOrder.verify(passengerRepository).findById(PASSENGER_ID);
         inOrder.verify(rideRepository).existsByCreatorAndStatusIn(Mockito.eq(passenger), Mockito.anyList());
+        Mockito.verify(driverService, never()).findDriverForRide(Mockito.any());
     }
-
 
     @Test(expectedExceptions = IllegalStateException.class)
     public void testDriversReservedForScheduledRides() {
         //Setting test passenger
-        Passenger passenger = new Passenger();
-        passenger.setId(PASSENGER_ID);
-        passenger.setEmail(PASSENGER_EMAIL);
-        passenger.setName(PASSENGER_NAME);
-        passenger.setBlocked(false);
+        Passenger passenger = buildValidPassenger();
 
 
         //Passenger is not blocked
@@ -268,94 +339,55 @@ public class RideServiceTest {
         inOrder.verify(passengerRepository).findById(PASSENGER_ID);
         inOrder.verify(rideRepository).existsByCreatorAndStatusIn(Mockito.eq(passenger), Mockito.anyList());
         inOrder.verify(rideRepository).existsByStatusAndScheduledAtBetween(Mockito.any(),Mockito.any(),Mockito.any());
-
+        Mockito.verify(driverService, never()).findDriverForRide(Mockito.any());
 
     }
-
-
 
     //Test happy path case:
     // 1. No other passengers
     // 2. Not scheduled
     @Test(dataProvider = "validInstantRequests")
     public void testHappyPath1(CreateRideRequest request) {
-        //Setting test passenger
-        Passenger passenger = new Passenger();
-        passenger.setId(PASSENGER_ID);
-        passenger.setEmail(PASSENGER_EMAIL);
-        passenger.setName(PASSENGER_NAME);
-        passenger.setBlocked(false);
 
-
-        //Passenger is not blocked
-        Mockito.when(passengerRepository.findById(PASSENGER_ID)).thenReturn(Optional.of(passenger));
-
-
-
-        //Doesnt have active ride
-        Mockito.when(rideRepository.existsByCreatorAndStatusIn(eq(passenger),Mockito.anyList())).thenReturn(false);
-
-
-        Mockito.when(rideRepository.existsByStatusAndScheduledAtBetween(Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(false);
-
-
-        //Mock driver
-        Driver driver = new Driver();
-        driver.setId(DRIVER_ID);
-        driver.setName(DRIVER_NAME);
-        driver.setSurname(DRIVER_SURNAME);
-
-        Mockito.when(driverService.findDriverForRide(Mockito.any())).thenReturn(driver);
-
-
-        //Route calculation
-        RouteInfo routeInfo = new RouteInfo(DISTANCE_KM,DURATION_MIN);
-        Mockito.when(routeCalculationService.calculateRoute(
-                Mockito.any(),
-                Mockito.any(),
-                Mockito.anyList()
-        )).thenReturn(routeInfo);
-
-        //Getting base price
-        Mockito.when(priceCalculationService.getBasePrice(Mockito.any())).thenReturn(BASE_PRICE);
-
-        //Price calculation
-        Mockito.when(priceCalculationService.calculatePrice(Mockito.any(), Mockito.anyDouble())).thenReturn(CALCULATED_PRICE);
-
-
-        //Save ride
-        Mockito.when(rideRepository.save(Mockito.any()))
-                .thenAnswer(invocation -> {
-                    Ride r = invocation.getArgument(0);
-                    r.setId(100L);
-                    return r;
-                });
-
-        Ride createdRide = rideService.createRide(PASSENGER_ID,request);
-
+        Passenger passenger = buildValidPassenger();
+        Driver driver = stubInstantRideCommon(passenger);
+        Ride createdRide = rideService.createRide(PASSENGER_ID, request);
         assertNotNull(createdRide);
-        InOrder inOrder = Mockito.inOrder(passengerRepository,rideRepository, driverService, routeCalculationService,
-                priceCalculationService, notificationService);
+
+        InOrder inOrder = Mockito.inOrder(
+                passengerRepository,
+                rideRepository,
+                driverService,
+                routeCalculationService,
+                priceCalculationService,
+                notificationService
+        );
 
         inOrder.verify(passengerRepository).findById(PASSENGER_ID);
-        inOrder.verify(rideRepository).existsByCreatorAndStatusIn(Mockito.eq(passenger), Mockito.anyList());
-        inOrder.verify(rideRepository).existsByStatusAndScheduledAtBetween(Mockito.any(),Mockito.any(),Mockito.any());
+        inOrder.verify(rideRepository)
+                .existsByCreatorAndStatusIn(eq(passenger), Mockito.anyList());
+        inOrder.verify(rideRepository)
+                .existsByStatusAndScheduledAtBetween(Mockito.any(), Mockito.any(), Mockito.any());
+
         inOrder.verify(driverService).findDriverForRide(Mockito.any());
-        inOrder.verify(routeCalculationService).calculateRoute(Mockito.any(), Mockito.any(), Mockito.anyList());
+        inOrder.verify(routeCalculationService)
+                .calculateRoute(Mockito.any(), Mockito.any(), Mockito.anyList());
+
         inOrder.verify(priceCalculationService).getBasePrice(Mockito.any());
-        inOrder.verify(priceCalculationService).calculatePrice(Mockito.any(), Mockito.anyDouble());
+        inOrder.verify(priceCalculationService)
+                .calculatePrice(Mockito.any(), Mockito.anyDouble());
+
         inOrder.verify(rideRepository).save(Mockito.any());
-        inOrder.verify(notificationService).createNotification(eq(PASSENGER_ID), Mockito.anyString(),
-                        eq(NotificationType.ACCEPTED_RIDE),
-                        anyLong()
-        );
-        inOrder.verify(notificationService).createNotification(eq(DRIVER_ID), Mockito.anyString(),
-                        eq(NotificationType.RIDE_REMINDER),
-                        anyLong()
-        );
 
+        // notifications
+        inOrder.verify(notificationService)
+                .createNotification(eq(PASSENGER_ID), Mockito.anyString(),
+                        eq(NotificationType.ACCEPTED_RIDE), anyLong());
+
+        inOrder.verify(notificationService)
+                .createNotification(eq(driver.getId()), Mockito.anyString(),
+                        eq(NotificationType.RIDE_REMINDER), anyLong());
     }
-
 
     @DataProvider
     public Object[][] validInstantRequests() {
@@ -391,94 +423,44 @@ public class RideServiceTest {
         };
     }
 
-
-
-
     //Test happy path case:
     // 1. With passengers
     // 2. Not scheduled
     @Test(dataProvider = "validEmailRequests")
     public void testHappyPath2(CreateRideRequest request) {
-        //Setting test passenger
-        Passenger passenger = new Passenger();
-        passenger.setId(PASSENGER_ID);
-        passenger.setEmail(PASSENGER_EMAIL);
-        passenger.setName(PASSENGER_NAME);
-        passenger.setBlocked(false);
 
+        Passenger passenger = buildValidPassenger();
 
-        //Passenger is not blocked
-        Mockito.when(passengerRepository.findById(PASSENGER_ID)).thenReturn(Optional.of(passenger));
-
-
-
-        //Doesnt have active ride
-        Mockito.when(rideRepository.existsByCreatorAndStatusIn(eq(passenger),Mockito.anyList())).thenReturn(false);
-
+        Driver driver = stubInstantRideCommon(passenger);
 
         Mockito.when(passengerRepository.findByEmail(Mockito.anyString()))
                 .thenAnswer(invocation -> {
-
                     String email = invocation.getArgument(0);
 
-                    if(email.equals("a@gmail.com")) {
+                    if (email.equals("a@gmail.com")) {
                         Passenger existing = new Passenger();
                         existing.setId(2L);
                         existing.setEmail(email);
                         return Optional.of(existing);
                     }
-
                     return Optional.empty();
                 });
 
-
-
-        Mockito.when(rideRepository.existsByStatusAndScheduledAtBetween(Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(false);
-
-
-        //Mock driver
-        Driver driver = new Driver();
-        driver.setId(DRIVER_ID);
-        driver.setName(DRIVER_NAME);
-        driver.setSurname(DRIVER_SURNAME);
-
-        Mockito.when(driverService.findDriverForRide(Mockito.any())).thenReturn(driver);
-
-
-        //Route calculation
-        RouteInfo routeInfo = new RouteInfo(DISTANCE_KM,DURATION_MIN);
-        Mockito.when(routeCalculationService.calculateRoute(
-                Mockito.any(),
-                Mockito.any(),
-                Mockito.anyList()
-        )).thenReturn(routeInfo);
-
-        //Getting base price
-        Mockito.when(priceCalculationService.getBasePrice(Mockito.any())).thenReturn(BASE_PRICE);
-
-        //Price calculation
-        Mockito.when(priceCalculationService.calculatePrice(Mockito.any(), Mockito.anyDouble())).thenReturn(CALCULATED_PRICE);
-
-
-        //Save ride
-        Mockito.when(rideRepository.save(Mockito.any()))
-                .thenAnswer(invocation -> {
-                    Ride r = invocation.getArgument(0);
-                    r.setId(100L);
-                    return r;
-                });
-
-
-
-        Ride createdRide = rideService.createRide(PASSENGER_ID,request);
+        Ride createdRide = rideService.createRide(PASSENGER_ID, request);
 
         assertNotNull(createdRide);
-        InOrder inOrder = Mockito.inOrder(passengerRepository, rideRepository, driverService, routeCalculationService,
-                priceCalculationService, rideInviteMailService, notificationService);
+
+        InOrder inOrder = Mockito.inOrder(
+                passengerRepository,
+                rideRepository,
+                driverService,
+                routeCalculationService,
+                priceCalculationService,
+                rideInviteMailService,
+                notificationService
+        );
 
         inOrder.verify(passengerRepository).findById(PASSENGER_ID);
-        inOrder.verify(rideRepository).existsByCreatorAndStatusIn(Mockito.eq(passenger), Mockito.anyList());
-        inOrder.verify(rideRepository).existsByStatusAndScheduledAtBetween(Mockito.any(),Mockito.any(),Mockito.any());
         inOrder.verify(driverService).findDriverForRide(Mockito.any());
         inOrder.verify(routeCalculationService).calculateRoute(Mockito.any(), Mockito.any(), Mockito.anyList());
         inOrder.verify(priceCalculationService).getBasePrice(Mockito.any());
@@ -486,24 +468,22 @@ public class RideServiceTest {
         inOrder.verify(rideRepository).save(Mockito.any());
         inOrder.verify(rideInviteMailService).sendInvite(
                 Mockito.argThat(inv -> inv.getEmail().equals("b@gmail.com")),
-                Mockito.eq(passenger),
+                eq(passenger),
                 Mockito.any()
         );
-        inOrder.verify(notificationService).createNotification(eq(PASSENGER_ID), Mockito.anyString(),
+        inOrder.verify(notificationService).createNotification(
+                eq(PASSENGER_ID),
+                Mockito.anyString(),
                 eq(NotificationType.ACCEPTED_RIDE),
                 anyLong()
         );
-        inOrder.verify(notificationService).createNotification(eq(DRIVER_ID), Mockito.anyString(),
+        inOrder.verify(notificationService).createNotification(
+                eq(driver.getId()),
+                Mockito.anyString(),
                 eq(NotificationType.RIDE_REMINDER),
                 anyLong()
         );
-
-
-
-
-
     }
-
 
     @DataProvider
     public Object[][] validEmailRequests() {
@@ -539,72 +519,35 @@ public class RideServiceTest {
         };
     }
 
-
-
-
     //Test happy path case:
     // 1. With passengers
     // 2. Scheduled
-
     @Test(dataProvider = "validScheduledEmailRequests")
     public void testHappyPath3(CreateRideRequest request) {
-        //Setting test passenger
-        Passenger passenger = new Passenger();
-        passenger.setId(PASSENGER_ID);
-        passenger.setEmail(PASSENGER_EMAIL);
-        passenger.setName(PASSENGER_NAME);
-        passenger.setBlocked(false);
+        Passenger passenger = buildValidPassenger();
 
-
-        //Passenger is not blocked
         Mockito.when(passengerRepository.findById(PASSENGER_ID)).thenReturn(Optional.of(passenger));
 
-
-
-        //Doesnt have active ride
-        Mockito.when(rideRepository.existsByCreatorAndStatusIn(eq(passenger),Mockito.anyList())).thenReturn(false);
-
+        Mockito.when(rideRepository.existsByCreatorAndStatusIn(
+                eq(passenger),
+                Mockito.anyList()
+        )).thenReturn(false);
 
         Mockito.when(passengerRepository.findByEmail(Mockito.anyString()))
                 .thenAnswer(invocation -> {
-
                     String email = invocation.getArgument(0);
 
-                    if(email.equals("a@gmail.com")) {
+                    if (email.equals("a@gmail.com")) {
                         Passenger existing = new Passenger();
                         existing.setId(2L);
                         existing.setEmail(email);
                         return Optional.of(existing);
                     }
-
                     return Optional.empty();
                 });
 
-
-        //Route calculation
-        RouteInfo routeInfo = new RouteInfo(DISTANCE_KM,DURATION_MIN);
-        Mockito.when(routeCalculationService.calculateRoute(
-                Mockito.any(),
-                Mockito.any(),
-                Mockito.anyList()
-        )).thenReturn(routeInfo);
-
-        //Getting base price
-        Mockito.when(priceCalculationService.getBasePrice(Mockito.any())).thenReturn(BASE_PRICE);
-
-        //Price calculation
-        Mockito.when(priceCalculationService.calculatePrice(Mockito.any(), Mockito.anyDouble())).thenReturn(CALCULATED_PRICE);
-
-
-        //Save ride
-        Mockito.when(rideRepository.save(Mockito.any()))
-                .thenAnswer(invocation -> {
-                    Ride r = invocation.getArgument(0);
-                    r.setId(100L);
-                    return r;
-                });
-
-
+        stubRouteAndPrice();
+        stubRideSave();
 
         Ride createdRide = rideService.createRide(PASSENGER_ID, request);
 
@@ -621,41 +564,24 @@ public class RideServiceTest {
         );
 
         inOrder.verify(passengerRepository).findById(PASSENGER_ID);
-        inOrder.verify(rideRepository)
-                .existsByCreatorAndStatusIn(eq(passenger), Mockito.anyList());
-
-        Mockito.verify(rideRepository, Mockito.never())
-                .existsByStatusAndScheduledAtBetween(Mockito.any(), Mockito.any(), Mockito.any());
-
-        Mockito.verify(driverService, Mockito.never())
-                .findDriverForRide(Mockito.any());
-
-        inOrder.verify(routeCalculationService)
-                .calculateRoute(Mockito.any(), Mockito.any(), Mockito.anyList());
-
-        inOrder.verify(priceCalculationService)
-                .getBasePrice(Mockito.any());
-
-        inOrder.verify(priceCalculationService)
-                .calculatePrice(Mockito.any(), Mockito.anyDouble());
-
+        Mockito.verify(rideRepository, never()).existsByStatusAndScheduledAtBetween(Mockito.any(), Mockito.any(), Mockito.any());
+        Mockito.verify(driverService, never()).findDriverForRide(Mockito.any());
+        inOrder.verify(routeCalculationService).calculateRoute(Mockito.any(), Mockito.any(), Mockito.anyList());
+        inOrder.verify(priceCalculationService).getBasePrice(Mockito.any());
+        inOrder.verify(priceCalculationService).calculatePrice(Mockito.any(), Mockito.anyDouble());
         inOrder.verify(rideRepository).save(Mockito.any());
-
         inOrder.verify(rideInviteMailService).sendInvite(
                 Mockito.argThat(inv -> inv.getEmail().equals("b@gmail.com")),
                 eq(passenger),
                 Mockito.any()
         );
-
         inOrder.verify(notificationService).createNotification(
                 eq(PASSENGER_ID),
                 eq("Your ride has been scheduled successfully."),
                 eq(NotificationType.RIDE_REMINDER),
                 anyLong()
         );
-
-        Mockito.verify(notificationService, Mockito.never())
-                .createNotification(eq(DRIVER_ID), Mockito.anyString(), Mockito.any(), anyLong());
+        Mockito.verify(notificationService, never()).createNotification(eq(DRIVER_ID), Mockito.anyString(), Mockito.any(), anyLong());
     }
 
     @DataProvider
@@ -699,43 +625,17 @@ public class RideServiceTest {
     @Test(dataProvider = "validScheduledNoEmailRequests")
     public void testScheduledHappyPathNoEmails(CreateRideRequest request) {
 
-        // Passenger
-        Passenger passenger = new Passenger();
-        passenger.setId(PASSENGER_ID);
-        passenger.setEmail(PASSENGER_EMAIL);
-        passenger.setName(PASSENGER_NAME);
-        passenger.setBlocked(false);
+        Passenger passenger = buildValidPassenger();
 
-        Mockito.when(passengerRepository.findById(PASSENGER_ID))
-                .thenReturn(Optional.of(passenger));
+        Mockito.when(passengerRepository.findById(PASSENGER_ID)).thenReturn(Optional.of(passenger));
 
         Mockito.when(rideRepository.existsByCreatorAndStatusIn(
-                        Mockito.eq(passenger),
-                        Mockito.anyList()))
-                .thenReturn(false);
+                eq(passenger),
+                Mockito.anyList()
+        )).thenReturn(false);
 
-        RouteInfo routeInfo = new RouteInfo(DISTANCE_KM, DURATION_MIN);
-
-        Mockito.when(routeCalculationService.calculateRoute(
-                        Mockito.any(),
-                        Mockito.any(),
-                        Mockito.anyList()))
-                .thenReturn(routeInfo);
-
-        Mockito.when(priceCalculationService.getBasePrice(Mockito.any()))
-                .thenReturn(BASE_PRICE);
-
-        Mockito.when(priceCalculationService.calculatePrice(
-                        Mockito.any(),
-                        Mockito.anyDouble()))
-                .thenReturn(CALCULATED_PRICE);
-
-        Mockito.when(rideRepository.save(Mockito.any()))
-                .thenAnswer(invocation -> {
-                    Ride r = invocation.getArgument(0);
-                    r.setId(100L);
-                    return r;
-                });
+        stubRouteAndPrice();
+        stubRideSave();
 
         Ride createdRide = rideService.createRide(PASSENGER_ID, request);
 
@@ -750,68 +650,23 @@ public class RideServiceTest {
                 notificationService
         );
 
-        inOrder.verify(passengerRepository)
-                .findById(PASSENGER_ID);
+        inOrder.verify(passengerRepository).findById(PASSENGER_ID);
 
-        inOrder.verify(rideRepository)
-                .existsByCreatorAndStatusIn(
-                        Mockito.eq(passenger),
-                        Mockito.anyList()
-                );
-
-        Mockito.verify(rideRepository, Mockito.never())
-                .existsByStatusAndScheduledAtBetween(
-                        Mockito.any(),
-                        Mockito.any(),
-                        Mockito.any()
-                );
-
-        Mockito.verify(driverService, Mockito.never())
-                .findDriverForRide(Mockito.any());
-
-        inOrder.verify(routeCalculationService)
-                .calculateRoute(
-                        Mockito.any(),
-                        Mockito.any(),
-                        Mockito.anyList()
-                );
-
-        inOrder.verify(priceCalculationService)
-                .getBasePrice(Mockito.any());
-
-        inOrder.verify(priceCalculationService)
-                .calculatePrice(
-                        Mockito.any(),
-                        Mockito.anyDouble()
-                );
-
-        inOrder.verify(rideRepository)
-                .save(Mockito.any());
-
-        Mockito.verify(rideInviteMailService, Mockito.never())
-                .sendInvite(
-                        Mockito.any(),
-                        Mockito.any(),
-                        Mockito.any()
-                );
-
-        inOrder.verify(notificationService)
-                .createNotification(
-                        Mockito.eq(PASSENGER_ID),
-                        Mockito.eq("Your ride has been scheduled successfully."),
-                        Mockito.eq(NotificationType.RIDE_REMINDER),
-                        Mockito.anyLong()
-                );
-
-        Mockito.verify(notificationService, Mockito.never())
-                .createNotification(
-                        Mockito.eq(DRIVER_ID),
-                        Mockito.anyString(),
-                        Mockito.any(),
-                        Mockito.anyLong()
-                );
+        Mockito.verify(rideRepository, never()).existsByStatusAndScheduledAtBetween(Mockito.any(), Mockito.any(), Mockito.any());
+        Mockito.verify(driverService, never()).findDriverForRide(Mockito.any());
+        inOrder.verify(routeCalculationService).calculateRoute(Mockito.any(), Mockito.any(), Mockito.anyList());
+        inOrder.verify(priceCalculationService).getBasePrice(Mockito.any());
+        inOrder.verify(priceCalculationService).calculatePrice(Mockito.any(), Mockito.anyDouble());
+        inOrder.verify(rideRepository).save(Mockito.any());
+        Mockito.verify(rideInviteMailService, never()).sendInvite(Mockito.any(), Mockito.any(), Mockito.any());
+        inOrder.verify(notificationService).createNotification(
+                eq(PASSENGER_ID),
+                eq("Your ride has been scheduled successfully."),
+                eq(NotificationType.RIDE_REMINDER),
+                anyLong()
+        );
+        Mockito.verify(notificationService, never()).createNotification(eq(DRIVER_ID), Mockito.anyString(), Mockito.any(), anyLong());
     }
-
 
     @DataProvider
     public Object[][] validScheduledNoEmailRequests() {
@@ -852,58 +707,13 @@ public class RideServiceTest {
     @Test
     public void testCreatorEmailIgnoredInPassengerEmails() {
 
-        Passenger creator = new Passenger();
-        creator.setId(PASSENGER_ID);
-        creator.setEmail(PASSENGER_EMAIL);
-        creator.setName(PASSENGER_NAME);
-        creator.setBlocked(false);
-
-        Mockito.when(passengerRepository.findById(PASSENGER_ID))
-                .thenReturn(Optional.of(creator));
-
-        Mockito.when(rideRepository.existsByCreatorAndStatusIn(
-                Mockito.eq(creator),
-                Mockito.anyList()
-        )).thenReturn(false);
-
-        Mockito.when(rideRepository.existsByStatusAndScheduledAtBetween(
-                Mockito.any(), Mockito.any(), Mockito.any()
-        )).thenReturn(false);
-
-        Driver driver = new Driver();
-        driver.setId(DRIVER_ID);
-        driver.setName(DRIVER_NAME);
-        driver.setSurname(DRIVER_SURNAME);
-
-        Mockito.when(driverService.findDriverForRide(Mockito.any()))
-                .thenReturn(driver);
-
-        RouteInfo routeInfo = new RouteInfo(DISTANCE_KM, DURATION_MIN);
-
-        Mockito.when(routeCalculationService.calculateRoute(
-                Mockito.any(), Mockito.any(), Mockito.anyList()
-        )).thenReturn(routeInfo);
-
-        Mockito.when(priceCalculationService.getBasePrice(Mockito.any()))
-                .thenReturn(BASE_PRICE);
-
-        Mockito.when(priceCalculationService.calculatePrice(
-                Mockito.any(), Mockito.anyDouble()
-        )).thenReturn(CALCULATED_PRICE);
-
-        Mockito.when(rideRepository.save(Mockito.any()))
-                .thenAnswer(inv -> {
-                    Ride r = inv.getArgument(0);
-                    r.setId(100L);
-                    return r;
-                });
-
-        // Creator email inside list
+        Passenger creator = buildValidPassenger();
+        Driver driver = stubInstantRideCommon(creator);
         CreateRideRequest request = new CreateRideRequest(
                 new LocationRequest(LAT, LNG, ADDRESS),
                 new LocationRequest(LAT, LNG, ADDRESS),
                 null,
-                List.of(PASSENGER_EMAIL), // SAME EMAIL
+                List.of(PASSENGER_EMAIL),
                 VehicleType.STANDARD,
                 false,
                 false,
@@ -911,166 +721,63 @@ public class RideServiceTest {
         );
 
         Ride ride = rideService.createRide(PASSENGER_ID, request);
-
         assertNotNull(ride);
 
-        // Creator must be only passenger
         assertEquals(ride.getPassengers().size(), 1);
-
-        // No invites created
         assertEquals(ride.getInvites().size(), 0);
-
-        Mockito.verify(rideInviteMailService, Mockito.never())
-                .sendInvite(Mockito.any(), Mockito.any(), Mockito.any());
-
-        // Only normal creator notification (accepted ride)
+        Mockito.verify(rideInviteMailService, never()).sendInvite(Mockito.any(), Mockito.any(), Mockito.any());
         Mockito.verify(notificationService, Mockito.times(1))
                 .createNotification(
-                        Mockito.eq(PASSENGER_ID),
+                        eq(PASSENGER_ID),
                         Mockito.anyString(),
-                        Mockito.eq(NotificationType.ACCEPTED_RIDE),
-                        Mockito.anyLong()
+                        eq(NotificationType.ACCEPTED_RIDE),
+                        anyLong()
                 );
     }
-
 
     //duplicate emails
     @Test
     public void testDuplicateEmailsAddPassengerOnlyOnce() {
+        Passenger creator = buildValidPassenger();
 
-        Passenger creator = new Passenger();
-        creator.setId(PASSENGER_ID);
-        creator.setEmail(PASSENGER_EMAIL);
-        creator.setName(PASSENGER_NAME);
-        creator.setBlocked(false);
-
-        Mockito.when(passengerRepository.findById(PASSENGER_ID))
-                .thenReturn(Optional.of(creator));
-
-        Mockito.when(rideRepository.existsByCreatorAndStatusIn(
-                Mockito.eq(creator),
-                Mockito.anyList()
-        )).thenReturn(false);
-
-        Mockito.when(rideRepository.existsByStatusAndScheduledAtBetween(
-                Mockito.any(), Mockito.any(), Mockito.any()
-        )).thenReturn(false);
-
-        // Existing passenger
+        Driver driver = stubInstantRideCommon(creator);
         Passenger invited = new Passenger();
         invited.setId(2L);
         invited.setEmail("a@gmail.com");
-
         Mockito.when(passengerRepository.findByEmail("a@gmail.com"))
                 .thenReturn(Optional.of(invited));
-
-        Driver driver = new Driver();
-        driver.setId(DRIVER_ID);
-        driver.setName(DRIVER_NAME);
-        driver.setSurname(DRIVER_SURNAME);
-
-        Mockito.when(driverService.findDriverForRide(Mockito.any()))
-                .thenReturn(driver);
-
-        RouteInfo routeInfo = new RouteInfo(DISTANCE_KM, DURATION_MIN);
-
-        Mockito.when(routeCalculationService.calculateRoute(
-                Mockito.any(), Mockito.any(), Mockito.anyList()
-        )).thenReturn(routeInfo);
-
-        Mockito.when(priceCalculationService.getBasePrice(Mockito.any()))
-                .thenReturn(BASE_PRICE);
-
-        Mockito.when(priceCalculationService.calculatePrice(
-                Mockito.any(), Mockito.anyDouble()
-        )).thenReturn(CALCULATED_PRICE);
-
-        Mockito.when(rideRepository.save(Mockito.any()))
-                .thenAnswer(inv -> {
-                    Ride r = inv.getArgument(0);
-                    r.setId(100L);
-                    return r;
-                });
 
         CreateRideRequest request = new CreateRideRequest(
                 new LocationRequest(LAT, LNG, ADDRESS),
                 new LocationRequest(LAT, LNG, ADDRESS),
                 null,
-                List.of("a@gmail.com", "a@gmail.com"), // DUPLICATES
+                List.of("a@gmail.com", "a@gmail.com"),
                 VehicleType.STANDARD,
                 false,
                 false,
                 null
         );
-
         Ride ride = rideService.createRide(PASSENGER_ID, request);
-
         assertNotNull(ride);
 
-        // Creator + 1 invited
         assertEquals(ride.getPassengers().size(), 2);
 
-        // Notification for invited passenger only ONCE
         Mockito.verify(notificationService, Mockito.times(1))
                 .createNotification(
-                        Mockito.eq(2L),
+                        eq(2L),
                         Mockito.anyString(),
-                        Mockito.eq(NotificationType.RIDE_REMINDER),
-                        Mockito.anyLong()
+                        eq(NotificationType.RIDE_REMINDER),
+                        anyLong()
                 );
     }
-
 
     @Test
     public void testInviteCreatedForUnknownEmail() {
 
-        Passenger creator = new Passenger();
-        creator.setId(PASSENGER_ID);
-        creator.setEmail(PASSENGER_EMAIL);
-        creator.setName(PASSENGER_NAME);
-        creator.setBlocked(false);
-
-        Mockito.when(passengerRepository.findById(PASSENGER_ID))
-                .thenReturn(Optional.of(creator));
-
-        Mockito.when(rideRepository.existsByCreatorAndStatusIn(
-                Mockito.eq(creator),
-                Mockito.anyList()
-        )).thenReturn(false);
-
-        Mockito.when(rideRepository.existsByStatusAndScheduledAtBetween(
-                Mockito.any(), Mockito.any(), Mockito.any()
-        )).thenReturn(false);
-
-        // Email NOT found
+        Passenger creator = buildValidPassenger();
+        Driver driver = stubInstantRideCommon(creator);
         Mockito.when(passengerRepository.findByEmail("ghost@gmail.com"))
                 .thenReturn(Optional.empty());
-
-        Driver driver = new Driver();
-        driver.setId(DRIVER_ID);
-
-        Mockito.when(driverService.findDriverForRide(Mockito.any()))
-                .thenReturn(driver);
-
-        RouteInfo routeInfo = new RouteInfo(DISTANCE_KM, DURATION_MIN);
-
-        Mockito.when(routeCalculationService.calculateRoute(
-                Mockito.any(), Mockito.any(), Mockito.anyList()
-        )).thenReturn(routeInfo);
-
-        Mockito.when(priceCalculationService.getBasePrice(Mockito.any()))
-                .thenReturn(BASE_PRICE);
-
-        Mockito.when(priceCalculationService.calculatePrice(
-                Mockito.any(), Mockito.anyDouble()
-        )).thenReturn(CALCULATED_PRICE);
-
-        Mockito.when(rideRepository.save(Mockito.any()))
-                .thenAnswer(inv -> {
-                    Ride r = inv.getArgument(0);
-                    r.setId(100L);
-                    return r;
-                });
 
         CreateRideRequest request = new CreateRideRequest(
                 new LocationRequest(LAT, LNG, ADDRESS),
@@ -1086,8 +793,6 @@ public class RideServiceTest {
         Ride ride = rideService.createRide(PASSENGER_ID, request);
 
         assertNotNull(ride);
-
-        // Invite created
         assertEquals(ride.getInvites().size(), 1);
 
         RideInvite invite = ride.getInvites().get(0);
@@ -1096,59 +801,30 @@ public class RideServiceTest {
         assertNotNull(invite.getTrackingToken());
         assertNotNull(invite.getCreatedAt());
 
-        Mockito.verify(rideInviteMailService, Mockito.times(1))
-                .sendInvite(Mockito.any(), Mockito.eq(creator), Mockito.any());
+        Mockito.verify(rideInviteMailService, Mockito.times(1)).sendInvite(Mockito.any(), eq(creator), Mockito.any());
     }
 
     @Test
     public void testDriverStateUpdatedForInstantRide() {
+        Passenger creator = buildValidPassenger();
 
-        Passenger creator = new Passenger();
-        creator.setId(PASSENGER_ID);
-        creator.setEmail(PASSENGER_EMAIL);
-        creator.setName(PASSENGER_NAME);
-        creator.setBlocked(false);
-
-        Mockito.when(passengerRepository.findById(PASSENGER_ID))
-                .thenReturn(Optional.of(creator));
-
-        Mockito.when(rideRepository.existsByCreatorAndStatusIn(
-                Mockito.eq(creator),
-                Mockito.anyList()
-        )).thenReturn(false);
-
-        Mockito.when(rideRepository.existsByStatusAndScheduledAtBetween(
-                Mockito.any(), Mockito.any(), Mockito.any()
-        )).thenReturn(false);
-
-        // Driver
         Driver driver = new Driver();
         driver.setId(DRIVER_ID);
         driver.setFree(true);
         driver.setAvailable(true);
 
-        Mockito.when(driverService.findDriverForRide(Mockito.any()))
-                .thenReturn(driver);
+        Mockito.when(passengerRepository.findById(PASSENGER_ID)).thenReturn(Optional.of(creator));
+        Mockito.when(rideRepository.existsByCreatorAndStatusIn(
+                eq(creator),
+                Mockito.anyList()
+        )).thenReturn(false);
+        Mockito.when(rideRepository.existsByStatusAndScheduledAtBetween(
+                Mockito.any(), Mockito.any(), Mockito.any()
+        )).thenReturn(false);
+        Mockito.when(driverService.findDriverForRide(Mockito.any())).thenReturn(driver);
 
-        RouteInfo routeInfo = new RouteInfo(DISTANCE_KM, DURATION_MIN);
-
-        Mockito.when(routeCalculationService.calculateRoute(
-                Mockito.any(), Mockito.any(), Mockito.anyList()
-        )).thenReturn(routeInfo);
-
-        Mockito.when(priceCalculationService.getBasePrice(Mockito.any()))
-                .thenReturn(BASE_PRICE);
-
-        Mockito.when(priceCalculationService.calculatePrice(
-                Mockito.any(), Mockito.anyDouble()
-        )).thenReturn(CALCULATED_PRICE);
-
-        Mockito.when(rideRepository.save(Mockito.any()))
-                .thenAnswer(inv -> {
-                    Ride r = inv.getArgument(0);
-                    r.setId(100L);
-                    return r;
-                });
+        stubRouteAndPrice();
+        stubRideSave();
 
         CreateRideRequest request = new CreateRideRequest(
                 new LocationRequest(LAT, LNG, ADDRESS),
@@ -1164,11 +840,177 @@ public class RideServiceTest {
         Ride ride = rideService.createRide(PASSENGER_ID, request);
 
         assertNotNull(ride);
-
-        // 🔥 STATE ASSERTIONS
         assertFalse(driver.isFree());
         assertFalse(driver.isAvailable());
         assertEquals(driver.getCurrentRide(), ride);
+    }
+
+    @Test
+    public void testScheduledExactlyFiveHours() {
+        Passenger passenger = buildValidPassenger();
+
+        Mockito.when(passengerRepository.findById(PASSENGER_ID))
+                .thenReturn(Optional.of(passenger));
+
+        Mockito.when(rideRepository.existsByCreatorAndStatusIn(
+                Mockito.eq(passenger),
+                Mockito.anyList()
+        )).thenReturn(false);
+
+        stubRouteAndPrice();
+        stubRideSave();
+
+        LocalDateTime exactlyFiveHours = LocalDateTime.now().plusHours(5);
+
+        CreateRideRequest request = new CreateRideRequest(
+                new LocationRequest(LAT, LNG, ADDRESS),
+                new LocationRequest(LAT, LNG, ADDRESS),
+                null,
+                null,
+                VehicleType.STANDARD,
+                false,
+                false,
+                exactlyFiveHours
+        );
+
+        Ride createdRide = rideService.createRide(PASSENGER_ID, request);
+
+        assertNotNull(createdRide);
+        assertEquals(createdRide.getStatus(), RideStatus.PENDING);
+        assertEquals(createdRide.getScheduledAt(), exactlyFiveHours);
+    }
+
+    @Test
+    public void testScheduledJustUnderFiveHours() {
+        Passenger passenger = buildValidPassenger();
+
+        Mockito.when(passengerRepository.findById(PASSENGER_ID))
+                .thenReturn(Optional.of(passenger));
+
+        Mockito.when(rideRepository.existsByCreatorAndStatusIn(
+                Mockito.eq(passenger),
+                Mockito.anyList()
+        )).thenReturn(false);
+
+        LocalDateTime justUnder = LocalDateTime.now().plusHours(5).minusMinutes(1);
+
+        CreateRideRequest request = new CreateRideRequest(
+                new LocationRequest(LAT, LNG, ADDRESS),
+                new LocationRequest(LAT, LNG, ADDRESS),
+                null,
+                null,
+                VehicleType.STANDARD,
+                false,
+                false,
+                justUnder
+        );
+
+        stubRouteAndPrice();
+        stubRideSave();
+
+        Ride createdRide = rideService.createRide(PASSENGER_ID, request);
+
+        assertNotNull(createdRide);
+        assertEquals(createdRide.getStatus(), RideStatus.PENDING);
+    }
+
+    @Test(expectedExceptions = RuntimeException.class)
+    public void testDriverServiceFails() {
+        Passenger passenger = buildValidPassenger();
+
+        Mockito.when(passengerRepository.findById(PASSENGER_ID))
+                .thenReturn(Optional.of(passenger));
+
+        Mockito.when(rideRepository.existsByCreatorAndStatusIn(
+                Mockito.eq(passenger),
+                Mockito.anyList()
+        )).thenReturn(false);
+
+        Mockito.when(rideRepository.existsByStatusAndScheduledAtBetween(
+                Mockito.any(), Mockito.any(), Mockito.any()
+        )).thenReturn(false);
+
+        Mockito.when(driverService.findDriverForRide(Mockito.any()))
+                .thenThrow(new RuntimeException("No available drivers"));
+
+        CreateRideRequest request = new CreateRideRequest(
+                new LocationRequest(LAT, LNG, ADDRESS),
+                new LocationRequest(LAT, LNG, ADDRESS),
+                null,
+                null,
+                VehicleType.STANDARD,
+                false,
+                false,
+                null
+        );
+
+        rideService.createRide(PASSENGER_ID, request);
+    }
+
+    @Test(expectedExceptions = RuntimeException.class)
+    public void testRouteCalculationFails() {
+
+        Passenger passenger = buildValidPassenger();
+
+        Mockito.when(passengerRepository.findById(PASSENGER_ID)).thenReturn(Optional.of(passenger));
+        Mockito.when(rideRepository.existsByCreatorAndStatusIn(
+                eq(passenger),
+                Mockito.anyList()
+        )).thenReturn(false);
+        Mockito.when(rideRepository.existsByStatusAndScheduledAtBetween(
+                Mockito.any(), Mockito.any(), Mockito.any()
+        )).thenReturn(false);
+
+        Driver driver = new Driver();
+        driver.setId(DRIVER_ID);
+
+        Mockito.when(driverService.findDriverForRide(Mockito.any())).thenReturn(driver);
+
+        Mockito.when(routeCalculationService.calculateRoute(
+                Mockito.any(),
+                Mockito.any(),
+                Mockito.anyList()
+        )).thenThrow(new RuntimeException("ORS down"));
+
+        CreateRideRequest request = new CreateRideRequest(
+                new LocationRequest(LAT, LNG, ADDRESS),
+                new LocationRequest(LAT, LNG, ADDRESS),
+                null,
+                null,
+                VehicleType.STANDARD,
+                false,
+                false,
+                null
+        );
+        rideService.createRide(PASSENGER_ID, request);
+    }
+
+    @Test(expectedExceptions = RuntimeException.class)
+    public void testDriverServiceReturnsNull() {
+
+        Passenger passenger = buildValidPassenger();
+
+        Mockito.when(passengerRepository.findById(PASSENGER_ID)).thenReturn(Optional.of(passenger));
+        Mockito.when(rideRepository.existsByCreatorAndStatusIn(
+                eq(passenger),
+                Mockito.anyList()
+        )).thenReturn(false);
+        Mockito.when(rideRepository.existsByStatusAndScheduledAtBetween(
+                Mockito.any(), Mockito.any(), Mockito.any()
+        )).thenReturn(false);
+        Mockito.when(driverService.findDriverForRide(Mockito.any())).thenReturn(null);
+
+        CreateRideRequest request = new CreateRideRequest(
+                new LocationRequest(LAT, LNG, ADDRESS),
+                new LocationRequest(LAT, LNG, ADDRESS),
+                null,
+                null,
+                VehicleType.STANDARD,
+                false,
+                false,
+                null
+        );
+        rideService.createRide(PASSENGER_ID, request);
     }
 
 
