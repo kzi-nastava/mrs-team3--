@@ -491,7 +491,7 @@ public class PassengerRideHistoryFragment extends Fragment implements PassengerR
         if (layoutPassengers != null) layoutPassengers.setVisibility(View.GONE);
         if (layoutCancellation != null) layoutCancellation.setVisibility(View.GONE);
 
-        tvDialogDate.setText(formatDateTime(ride.startTime));
+        tvDialogDate.setText(formatOnlyDate(ride.startTime));
         tvDialogDriverName.setText(ride.driverName != null ? ("Driver: " + ride.driverName) : "Driver: N/A");
 
         String startAddr = (ride.startLocation != null && ride.startLocation.address != null) ? ride.startLocation.address : "N/A";
@@ -499,8 +499,8 @@ public class PassengerRideHistoryFragment extends Fragment implements PassengerR
         tvDialogStartAddress.setText(startAddr);
         tvDialogEndAddress.setText(endAddr);
 
-        tvDialogStartTime.setText(formatOnlyTime(ride.startTime));
-        tvDialogEndTime.setText(ride.endTime != null ? formatOnlyTime(ride.endTime) : "-");
+        tvDialogStartTime.setText(formatDateTime(ride.startTime));
+        tvDialogEndTime.setText(formatDateTime(ride.endTime));
 
         Configuration.getInstance().setUserAgentValue(requireContext().getPackageName());
         mapView.setTileSource(TileSourceFactory.MAPNIK);
@@ -586,16 +586,15 @@ public class PassengerRideHistoryFragment extends Fragment implements PassengerR
         if (iso == null) return "-";
         Date d = parseIsoToDate(iso);
         if (d == null) return iso;
-        return new SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault()).format(d);
+        return new SimpleDateFormat("dd. MMMM yyyy, HH:mm", Locale.getDefault()).format(d);
     }
 
-    private String formatOnlyTime(String iso) {
-        if (iso == null) return "-";
+    private String formatOnlyDate(String iso) {
+        if (iso == null || iso.trim().isEmpty()) return "/";
         Date d = parseIsoToDate(iso);
-        if (d == null) return "-";
-        return new SimpleDateFormat("HH:mm", Locale.getDefault()).format(d);
+        if (d == null) return "/";
+        return new SimpleDateFormat("dd. MMMM yyyy.", new Locale("sr", "RS")).format(d);
     }
-
     private void displayStops(LinearLayout layout, List<com.example.uber3.network.model.location.LocationDto> stops) {
 
         layout.removeAllViews();
