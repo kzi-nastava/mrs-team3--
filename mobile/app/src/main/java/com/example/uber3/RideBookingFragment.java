@@ -26,6 +26,7 @@ import com.example.uber3.helpers.GeocodingHelper;
 import com.example.uber3.network.api.ApiClient;
 import com.example.uber3.network.api.ApiService;
 import com.example.uber3.network.model.favorite.FavoriteRouteResponse;
+import com.example.uber3.network.model.history.PassengerRideSummaryExtendedResponse;
 import com.example.uber3.network.model.location.LocationRequest;
 import com.example.uber3.network.model.ride.CreateRideRequest;
 import com.example.uber3.network.model.ride.RideResponse;
@@ -82,6 +83,42 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
 
     public static RideBookingFragment newInstance() {
         return new RideBookingFragment();
+    }
+
+    public static RideBookingFragment newInstanceWithPrefill(PassengerRideSummaryExtendedResponse ride) {
+        RideBookingFragment f = new RideBookingFragment();
+        Bundle b = new Bundle();
+
+        if (ride != null && ride.startLocation != null) {
+            b.putString("prefill_pickup_address", ride.startLocation.address);
+            b.putDouble("prefill_pickup_lat", ride.startLocation.latitude != null ? ride.startLocation.latitude : 0.0);
+            b.putDouble("prefill_pickup_lng", ride.startLocation.longitude != null ? ride.startLocation.longitude : 0.0);
+        }
+
+        ArrayList<String> stopAddr = new ArrayList<>();
+        ArrayList<Double> stopLat = new ArrayList<>();
+        ArrayList<Double> stopLng = new ArrayList<>();
+
+        if (ride != null && ride.stops != null) {
+            for (var s : ride.stops) {
+                stopAddr.add((s != null && s.address != null) ? s.address : "/");
+                stopLat.add((s != null && s.latitude != null) ? s.latitude : 0.0);
+                stopLng.add((s != null && s.longitude != null) ? s.longitude : 0.0);
+            }
+        }
+
+        b.putStringArrayList("prefill_stop_addr", stopAddr);
+        b.putSerializable("prefill_stop_lat", stopLat);
+        b.putSerializable("prefill_stop_lng", stopLng);
+
+        if (ride != null && ride.endLocation != null) {
+            b.putString("prefill_dest_address", ride.endLocation.address);
+            b.putDouble("prefill_dest_lat", ride.endLocation.latitude != null ? ride.endLocation.latitude : 0.0);
+            b.putDouble("prefill_dest_lng", ride.endLocation.longitude != null ? ride.endLocation.longitude : 0.0);
+        }
+
+        f.setArguments(b);
+        return f;
     }
 
     @Nullable
@@ -163,12 +200,10 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
 
 
         fillFromMapPoints();
+        applyPrefillIfAny();
 
         return view;
     }
-
-
-
 
     private void addPassenger() {
 
@@ -1118,7 +1153,6 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
         });
     }
 
-
     private void checkBlockAndBook() {
 
         apiService.getBlockStatus()
@@ -1201,10 +1235,57 @@ public class RideBookingFragment extends BottomSheetDialogFragment {
                 });
     }
 
+    @SuppressWarnings("unchecked")
+    private void applyPrefillIfAny() {
+        Bundle b = getArguments();
+        if (b == null || !b.containsKey("prefill_pickup_address")) return;
 
+        resetForm();
 
+        isAutoFilling = true;
 
+        String pickupAddr = b.getString("prefill_pickup_address", "/");
+        String destAddr = b.getString("prefill_dest_address", "/");
 
+        pickupInput.setText(pickupAddr);
+        destinationInput.setText(destAddr);
 
+        pickupInput.dismissDropDown();
+        destinationInput.dismissDropDown();
 
+        isAutoFilling = false;
+
+        MapFragment.selectedPoints.clear();
+
+        double pLat = b.getDouble("prefill_pickup_lat", 0.0);
+        double pLng = b.getDouble("prefill_pickup_lng", 0.0);
+        double dLat = b.getDouble("prefill_dest_lat", 0.0);
+        double dLng = b.getDouble("prefill_dest_lng", 0.0);
+
+        MapFragment.selectedPoints.add(new GeoPoint(pLat, pLng));
+
+        ArrayList<String> stopAddr = b.getStringArrayList("prefill_stop_addr");
+        ArrayList<Double> stopLat = (ArrayList<Double>) b.getSerializable("prefill_stop_lat");
+        ArrayList<Double> stopLng = (ArrayList<Double>) b.getSerializable("prefill_stop_lng");
+
+        if (stopAddr != null && stopLat != null && stopLng != null) {
+            for (int i = 0; i < stopAddr.size(); i++) {
+                addStop();
+
+                LinearLayout row = (LinearLayout) stopsContainer.getChildAt(stopsContainer.getChildCount() - 1);
+                TextInputLayout til = (TextInputLayout) row.getChildAt(0);
+                AutoCompleteTextView et = (AutoCompleteTextView) til.getEditText();
+                if (et != null) et.setText(stopAddr.get(i));
+
+                MapFragment.selectedPoints.add(new GeoPoint(stopLat.get(i), stopLng.get(i)));
+            }
+        }
+
+        MapFragment.selectedPoints.add(new GeoPoint(dLat, dLng));
+
+        if (MapFragment.instance != null) {
+            MapFragment.instance.redrawMarkers();
+        }
+
+    }
 }

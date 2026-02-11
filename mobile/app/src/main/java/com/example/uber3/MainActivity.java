@@ -244,8 +244,6 @@ public class MainActivity extends AppCompatActivity {
 
         String role = currentUserRole;
 
-
-
         navigationView.getMenu().findItem(R.id.nav_ride).setVisible(false);
         navigationView.getMenu().findItem(R.id.nav_requests).setVisible(false);
         navigationView.getMenu().findItem(R.id.nav_chat).setVisible(false);
@@ -283,7 +281,6 @@ public class MainActivity extends AppCompatActivity {
 
         }
     }
-
 
     @Override
     protected void onNewIntent(Intent intent) {

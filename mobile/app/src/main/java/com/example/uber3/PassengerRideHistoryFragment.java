@@ -32,6 +32,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.uber3.adapter.PassengerRideHistoryAdapter;
 import com.example.uber3.network.api.ApiClient;
 import com.example.uber3.network.api.ApiService;
+import com.example.uber3.network.manager.TokenManager;
 import com.example.uber3.network.model.favorite.FavoriteRouteRequest;
 import com.example.uber3.network.model.history.PassengerRideSummaryExtendedResponse;
 import com.example.uber3.network.model.history.PassengerRideSummaryResponse;
@@ -469,6 +470,16 @@ public class PassengerRideHistoryFragment extends Fragment implements PassengerR
 
         Button btnClose = dialog.findViewById(R.id.btnClose);
 
+        Button btnOrderAgain = dialog.findViewById(R.id.btnOrderAgain);
+
+        btnOrderAgain.setOnClickListener(v -> {
+            androidx.fragment.app.FragmentActivity activity = getActivity();
+            if (activity == null || !isAdded()) return;
+
+            dialog.dismiss();
+            openOrderAgain(ride);
+        });
+
 
 
         LinearLayout layoutStops = dialog.findViewById(R.id.layoutStops);
@@ -862,5 +873,24 @@ public class PassengerRideHistoryFragment extends Fragment implements PassengerR
         }
 
         adapter.notifyDataSetChanged();
+    }
+
+    private void openOrderAgain(PassengerRideSummaryExtendedResponse ride) {
+        androidx.fragment.app.FragmentActivity activity = getActivity();
+        if (activity == null || !isAdded() || ride == null) return;
+
+        HomeFragment home = HomeFragment.newInstance(
+                TokenManager.getRole(activity)
+        );
+
+        activity.getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.fragmentContainer, home)
+                .commit();
+
+        activity.getSupportFragmentManager().executePendingTransactions();
+
+        RideBookingFragment sheet = RideBookingFragment.newInstanceWithPrefill(ride);
+        sheet.show(activity.getSupportFragmentManager(), "RideBooking");
     }
 }

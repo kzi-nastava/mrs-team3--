@@ -222,35 +222,16 @@
             android:orientation="vertical"
             android:layout_marginBottom="16dp"/>
 
-        <LinearLayout
+        <Button
+            android:id="@+id/btnOrderAgain"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginBottom="12dp">
-
-            <Button
-                android:id="@+id/btnOrderNow"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/order_now"
-                android:textAllCaps="false"
-                app:backgroundTint="#10B981"
-                app:cornerRadius="8dp"
-                android:paddingVertical="12dp"/>
-
-            <Button
-                android:id="@+id/btnOrderLater"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginStart="10dp"
-                android:text="@string/order_later"
-                android:textAllCaps="false"
-                app:backgroundTint="#6366F1"
-                app:cornerRadius="8dp"
-                android:paddingVertical="12dp"/>
-        </LinearLayout>
+            android:text="Order again"
+            android:textAllCaps="false"
+            app:backgroundTint="#10B981"
+            app:cornerRadius="8dp"
+            android:paddingVertical="12dp"
+            android:layout_marginBottom="12dp"/>
 
         <Button
             android:id="@+id/btnAddFavorite"
@@ -262,7 +243,6 @@
             android:layout_marginBottom="12dp"
             app:backgroundTint="#FEE2E2"
             app:cornerRadius="8dp"/>
-
 
         <Button
             android:id="@+id/btnClose"
