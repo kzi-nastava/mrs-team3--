@@ -77,7 +77,14 @@ public class MainActivity extends AppCompatActivity {
             }
             else if (id == R.id.nav_ride) {
                 topAppBar.setTitle("Ride History");
-                loadFragment(DriverHistoryFragment.newInstance());
+
+                if ("PASSENGER".equals(currentUserRole)) {
+                    loadFragment(new PassengerRideHistoryFragment());
+                } else if ("DRIVER".equals(currentUserRole)) {
+                    loadFragment(DriverHistoryFragment.newInstance());
+                } else if ("ADMIN".equals(currentUserRole)) {
+                    loadFragment(AdminRideHistoryFragment.newInstance());
+                }
 
             } else if (id == R.id.nav_profile) {
                 topAppBar.setTitle("Profile");
@@ -237,8 +244,6 @@ public class MainActivity extends AppCompatActivity {
 
         String role = currentUserRole;
 
-
-
         navigationView.getMenu().findItem(R.id.nav_ride).setVisible(false);
         navigationView.getMenu().findItem(R.id.nav_requests).setVisible(false);
         navigationView.getMenu().findItem(R.id.nav_chat).setVisible(false);
@@ -276,7 +281,6 @@ public class MainActivity extends AppCompatActivity {
 
         }
     }
-
 
     @Override
     protected void onNewIntent(Intent intent) {

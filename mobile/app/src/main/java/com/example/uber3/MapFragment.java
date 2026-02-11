@@ -337,7 +337,7 @@ public class MapFragment extends Fragment {
     }
 
 
-    private void redrawMarkers() {
+    void redrawMarkers() {
 
         for (Marker m : markers) {
             mapView.getOverlays().remove(m);
