@@ -521,9 +521,6 @@ public class RideTrackingFragment extends Fragment {
             geoPoints.add(new GeoPoint(loc.lat, loc.lng));
         }
 
-        // FIX 1: Added onError callback — previously ORS failures were silently swallowed.
-        // FIX 2: On any ORS/SSL failure, fall back to straight-line segments between waypoints
-        //        so the user always sees a visual route on the map.
         ORSRepository.getRoute(geoPoints, new ORSRepository.RouteCallback() {
             @Override
             public void onRouteReady(List<GeoPoint> points) {
@@ -539,11 +536,6 @@ public class RideTrackingFragment extends Fragment {
                 });
             }
 
-            // FIX 1 & 2: This method previously didn't exist. ORS errors (including SSL
-            // certificate issues like the CertificateNotYetValidException seen in logs on
-            // Feb 8 2026) caused the route to silently never draw. Now we log the error
-            // and immediately draw a dashed straight-line fallback so the user always
-            // sees something on the map.
             public void onError(String error) {
                 if (!isAdded()) return;
                 Log.e(TAG, "ORS route fetch failed (SSL or network): " + error);
@@ -589,9 +581,7 @@ public class RideTrackingFragment extends Fragment {
     private void fitMapToBounds() {
         if (markers.isEmpty()) return;
 
-        // FIX 3: Previously only marker positions were included in the bounding box.
-        // Now we also include all route polyline points, so the full drawn route is
-        // always visible and never clipped at the edges of the screen.
+
         List<GeoPoint> points = new ArrayList<>();
 
         for (Marker marker : markers) {
