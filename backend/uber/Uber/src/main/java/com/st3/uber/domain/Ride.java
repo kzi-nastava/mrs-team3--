@@ -164,4 +164,11 @@ public class Ride {
         driver.setCurrentRide(this);
     }
 
+    @PrePersist
+    protected void onCreate() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+    }
+
 }
