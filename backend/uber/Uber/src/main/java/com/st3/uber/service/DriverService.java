@@ -11,6 +11,7 @@ import com.st3.uber.exception.RideRejectedException;
 import com.st3.uber.repository.DriverRepository;
 import com.st3.uber.repository.RideRepository;
 import com.st3.uber.util.DistanceCalculator;
+import com.st3.uber.util.GetAddressFromLatLng;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -20,6 +21,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.st3.uber.util.GetAddressFromLatLng.addressFromLatLng;
 import static org.springframework.http.HttpStatus.*;
 
 @Service
@@ -281,6 +283,9 @@ public class DriverService {
         if (currentRide.getStatus() != RideStatus.IN_PROGRESS) {
             throw new ResponseStatusException(BAD_REQUEST, "Can only finish rides that are in progress");
         }
+
+        String address = addressFromLatLng(actualEndLocation.getLat(), actualEndLocation.getLng());
+        actualEndLocation.setAddress(address);
 
         Ride finishedRide = rideService.finishRideWithDetails(
                 currentRide.getId(),

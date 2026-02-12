@@ -89,20 +89,6 @@
             return savedRide;
         }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         public Ride createRide(Long passengerId, CreateRideRequest request) {
             Passenger creator = passengerRepository.findById(passengerId)
                     .orElseThrow(() -> new IllegalArgumentException("Passenger not found"));
@@ -115,8 +101,6 @@
                                 : "Your account is blocked."
                 );
             }
-
-
 
             LocalDateTime now = LocalDateTime.now();
 
@@ -137,8 +121,6 @@
             )) {
                 throw new IllegalStateException("You already have an active or pending ride");
             }
-
-
 
             Ride ride = new Ride();
             ride.setCreator(creator);
@@ -387,10 +369,14 @@
                 ride.getActualRideStops().addAll(ride.getRideStops());
             }
 
-            ride.setStatus(RideStatus.COMPLETED);
+            boolean earlyFinish = finishedEarly(ride, actualEndLocation);
+
+            if(!earlyFinish)
+                ride.setStatus(RideStatus.COMPLETED);
+
             ride.setFinishedAt(LocalDateTime.now());
 
-           Ride savedRide = rideRepository.saveAndFlush(ride);
+            Ride savedRide = rideRepository.saveAndFlush(ride);
 
 
             for (Passenger passenger : savedRide.getPassengers()) {
@@ -465,6 +451,22 @@
             }
 
             return savedRide;
+        }
+
+        private boolean finishedEarly(Ride ride, Location currentLocation){
+            if(ride.getEndLocation() != currentLocation){
+                ride.setStatus(RideStatus.FINISHED_EARLY);
+                RouteInfo routeInfo = routeCalculationService.calculateRoute(
+                        ride.getStartLocation(),
+                        currentLocation,
+                        ride.getActualRideStops()
+                );
+                ride.setDistance(routeInfo.distanceKm());
+                double price = ride.getBasePrice() + ride.getDistance() * 120;
+                ride.setCalculatedPrice(price);
+                return true;
+            }
+            return false;
         }
 
         public Ride reachStop(Long rideId, int stopIndex) {

@@ -140,8 +140,20 @@ export class DriverDashboardComponent implements OnInit, OnDestroy {
   protected finishRide(): void {
     const ride = this.selectedRide() as DriverRide;
 
-    // FIXED: Pass the actual rideId
-    this.service.finishRide(ride.rideId, null).subscribe({
+    let currentLocation: Location | null = null;
+
+    if (this.driverMarker) {
+      const latlng = this.driverMarker.getLatLng();
+      currentLocation = {
+        lat: latlng.lat,
+        lng: latlng.lng,
+        address: 'Current Location'
+      };
+    }
+    else if (ride.driverCurrentLocation) {
+      currentLocation = ride.driverCurrentLocation;
+    }
+    this.service.finishRide(ride.rideId, currentLocation).subscribe({
       next: (response) => {
         this.closeFinishModal();
 
@@ -272,7 +284,7 @@ if (this.isDriverRide(ride) && ride.status === 'IN_PROGRESS') {
 
   // Use actual driver current location from backend if available
   // Otherwise fall back to start location
-  const driverLocation = ride.driverCurrentLocation 
+  const driverLocation = ride.driverCurrentLocation
     ? { lat: ride.driverCurrentLocation.lat, lng: ride.driverCurrentLocation.lng }
     : { lat: ride.startLocation.lat, lng: ride.startLocation.lng };
 
@@ -490,7 +502,7 @@ if (this.isDriverRide(ride) && ride.status === 'IN_PROGRESS') {
   private startPolling(): void {
   this.pollingInterval = setInterval(() => {
     const currentRide = this.selectedRide();
-    if (currentRide && this.isDriverRide(currentRide) && 
+    if (currentRide && this.isDriverRide(currentRide) &&
         (currentRide.status === 'ACCEPTED' || currentRide.status === 'IN_PROGRESS')) {
       this.loadDataSilently();
     }
@@ -508,7 +520,7 @@ private loadDataSilently(): void {
   this.service.getMyRides().subscribe({
     next: (rides) => {
       this.myRides.set(rides);
-      
+
       const currentRide = this.selectedRide();
       if (currentRide && this.isDriverRide(currentRide)) {
         const updatedRide = rides.find(r => r.rideId === currentRide.rideId);
