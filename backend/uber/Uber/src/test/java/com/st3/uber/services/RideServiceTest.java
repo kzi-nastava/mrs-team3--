@@ -1,4 +1,4 @@
-package com.st3.uber.s1;
+package com.st3.uber.services;
 
 import com.st3.uber.domain.Driver;
 import com.st3.uber.domain.Passenger;
@@ -15,7 +15,6 @@ import com.st3.uber.repository.*;
 import com.st3.uber.service.*;
 
 import org.mockito.InOrder;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;

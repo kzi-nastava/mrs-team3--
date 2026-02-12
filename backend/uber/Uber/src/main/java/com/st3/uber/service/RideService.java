@@ -223,7 +223,7 @@
                 driver = driverService.findDriverForRide(ride);
 
                 ride.setDriver(driver);
-                driver.setCurrentRide(ride);
+                //driver.setCurrentRide(ride);
                 driver.setFree(false);
                 driver.setAvailable(false);
 
@@ -255,6 +255,11 @@
             ride.setCreatedAt(LocalDateTime.now());
             ride.setScheduledAt(request.scheduledAt());
             Ride savedRide = rideRepository.save(ride);
+
+            if (driver != null) {
+                driver.setCurrentRide(savedRide);
+                driverRepository.save(driver);
+            }
 
             for (RideInvite invite : savedRide.getInvites()) {
                 rideInviteMailService.sendInvite(invite, creator, savedRide);
