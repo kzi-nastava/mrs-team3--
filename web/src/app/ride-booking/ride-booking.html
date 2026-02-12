@@ -1,7 +1,7 @@
 <p-toast position="top-right"></p-toast>
 
 <div class="booking-section">
-  <h1>Let's ride!</h1>
+  <h1 id="title-ride">Let's ride!</h1>
 
   <form [formGroup]="rideForm" class="booking-form">
 
@@ -215,7 +215,7 @@
       Cancel
     </button>
 
-    <button class="book-ride-btn" (click)="confirmCreateRide()">
+    <button id="confirm-ride-btn" class="book-ride-btn" (click)="confirmCreateRide()">
       Confirm
     </button>
   </div>

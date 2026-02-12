@@ -51,7 +51,7 @@ export class RideTrackingComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private route: ActivatedRoute,
     private router: Router
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.route.params.subscribe(params => {
@@ -114,7 +114,7 @@ export class RideTrackingComponent implements OnInit, OnDestroy {
     });
   }
 
-  private loadCurrentRide(): void {
+  private loadCurrentRide(retries = 3): void {
     this.rideTrackingService.getCurrentRide().subscribe({
       next: (data) => {
         this.rideData.set(data);
@@ -127,6 +127,14 @@ export class RideTrackingComponent implements OnInit, OnDestroy {
         console.error('Error loading current ride:', err);
 
         if (err.status === 204) {
+          if (retries > 0) {
+            console.log(`No ride found, retrying... (${retries} attempts left)`);
+            setTimeout(() => {
+              this.loadCurrentRide(retries - 1);
+            }, 1000);
+            return;
+          }
+
           this.rideData.set(null);
           this.error.set(null);
         } else {
@@ -200,7 +208,7 @@ export class RideTrackingComponent implements OnInit, OnDestroy {
       const reached = ride.stopsReached && ride.stopsReached[index];
       const color = reached ? 'gold' : 'blue';
       const label = reached ? `Stop ${index + 1} ✓` : `Stop ${index + 1}`;
-      
+
       const stopMarker = L.marker(
         [stop.lat, stop.lng],
         {
@@ -268,7 +276,7 @@ export class RideTrackingComponent implements OnInit, OnDestroy {
     // For in-progress rides, only draw route from driver position through unreached stops
     if (ride.status === 'IN_PROGRESS' && ride.driverCurrentLocation) {
       // Get unreached stops only
-      const unreachedStops = ride.stops.filter((stop, index) => 
+      const unreachedStops = ride.stops.filter((stop, index) =>
         !ride.stopsReached || !ride.stopsReached[index]
       );
 
@@ -356,7 +364,7 @@ export class RideTrackingComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if(ride.status !== 'IN_PROGRESS' && ride.status !== 'PANIC') {
+    if (ride.status !== 'IN_PROGRESS' && ride.status !== 'PANIC') {
       this.showToast('Panic can only be triggered during an active ride', 'warning');
       return;
     }
@@ -430,35 +438,35 @@ export class RideTrackingComponent implements OnInit, OnDestroy {
   }
 
   private startPolling(): void {
-  this.pollingInterval = setInterval(() => {
-    this.loadRideDataSilently();
-  }, 15000);
-}
-
-private stopPolling(): void {
-  if (this.pollingInterval) {
-    clearInterval(this.pollingInterval);
-    this.pollingInterval = null;
+    this.pollingInterval = setInterval(() => {
+      this.loadRideDataSilently();
+    }, 15000);
   }
-}
 
-private loadRideDataSilently(): void {
-  const loadObservable = this.isGuestMode && this.trackingToken
-    ? this.rideTrackingService.getRideByToken(this.trackingToken)
-    : this.rideTrackingService.getCurrentRide();
-
-  loadObservable.subscribe({
-    next: (data) => {
-      this.rideData.set(data);
-      if (this.map) {
-        this.addMarkers(data);
-        this.drawRoute(data);
-      }
-    },
-    error: (err) => {
-      console.error('Polling error:', err);
+  private stopPolling(): void {
+    if (this.pollingInterval) {
+      clearInterval(this.pollingInterval);
+      this.pollingInterval = null;
     }
-  });
-}
+  }
+
+  private loadRideDataSilently(): void {
+    const loadObservable = this.isGuestMode && this.trackingToken
+      ? this.rideTrackingService.getRideByToken(this.trackingToken)
+      : this.rideTrackingService.getCurrentRide();
+
+    loadObservable.subscribe({
+      next: (data) => {
+        this.rideData.set(data);
+        if (this.map) {
+          this.addMarkers(data);
+          this.drawRoute(data);
+        }
+      },
+      error: (err) => {
+        console.error('Polling error:', err);
+      }
+    });
+  }
 
 }
