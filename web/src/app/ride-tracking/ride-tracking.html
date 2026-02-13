@@ -43,7 +43,7 @@
       <div class="tracking-header">
         <div class="header-left">
           <h1>Track Your Ride</h1>
-          <span class="status-badge" [ngClass]="getStatusClass(rideData()!.status)">
+          <span id="badge_status" class="status-badge" [ngClass]="getStatusClass(rideData()!.status)">
             {{ getStatusText(rideData()!.status) }}
           </span>
         </div>

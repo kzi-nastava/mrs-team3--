@@ -238,6 +238,25 @@
     <string name="john_doe_example_com">john.doe@example.com</string>
     <string name="active">ACTIVE</string>
     <string name="track_emoji">🗺️ Track</string>
+    <string name="order_now">Order now</string>
+    <string name="order_later">Order later</string>
+    <string name="add_to_favorite">add to favorite ❤️</string>
+    <string name="heart">🤍</string>
+    <string name="start_end">Start → End</string>
+    <string name="favorite">★ FAVORITE</string>
+    <string name="start_b">Start: -</string>
+    <string name="end_b">End: -</string>
+    <string name="heart_a">❤️</string>
+    <string name="favorites">❤️ Favorites</string>
+    <string name="invite_passengers">Invite passengers</string>
+    <string name="passenger_email">Passenger email</string>
+    <string name="end_date_">END</string>
+    <string name="start_date">START</string>
+    <string name="end_time_">END TIME</string>
+    <string name="favorite_main">FAVORITE</string>
+    <string name="start_time_">START TIME</string>
+    <string name="end_address_">End address...</string>
+    <string name="start_address_">Start address...</string>
 
     <string-array name="vehicle_types">
         <item>STANDARD</item>

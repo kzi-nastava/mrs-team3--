@@ -618,7 +618,7 @@ public class AdminRideHistoryFragment extends Fragment implements AdminRideHisto
 
         for (InconsistencyReportDto r : reports) {
             TextView tv = new TextView(requireContext());
-            tv.setText("⚠️ " + (r.message != null ? r.message : "Report"));
+            tv.setText("⚠️ " + (r.reportText != null ? r.reportText : "Report"));
             tv.setPadding(16, 8, 16, 8);
             tv.setTextSize(14);
             layout.addView(tv);

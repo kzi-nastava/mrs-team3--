@@ -4,7 +4,9 @@ import com.example.uber3.network.model.DriverProfileChangeRequestDto;
 import com.example.uber3.network.model.ProfileResponse;
 
 import retrofit2.Call;
+import retrofit2.http.DELETE;
 import retrofit2.http.GET;
+import retrofit2.http.HTTP;
 import retrofit2.http.PUT;
 import retrofit2.http.Body;
 import com.example.uber3.network.model.UpdateProfileRequest;
@@ -19,6 +21,8 @@ import com.example.uber3.network.model.LoginRequest;
 import com.example.uber3.network.model.LoginResponse;
 import com.example.uber3.network.model.auth.RegisterRequest;
 import com.example.uber3.network.model.auth.RegisterResponse;
+import com.example.uber3.network.model.favorite.FavoriteRouteRequest;
+import com.example.uber3.network.model.favorite.FavoriteRouteResponse;
 import com.example.uber3.network.model.mails.ForgotPasswordRequest;
 import com.example.uber3.network.model.mails.ResetPasswordRequest;
 import com.example.uber3.network.model.ride.CreateRideRequest;
@@ -107,6 +111,17 @@ public interface ApiService {
 
     @GET("api/profile/me/block-status")
     Call<BlockStatusDto> getBlockStatus();
+
+    @POST("api/favorites")
+    Call<Void> addFavorite(@Body FavoriteRouteRequest request);
+
+    @HTTP(method = "DELETE", path = "api/favorites", hasBody = true)
+    Call<Void> removeFavorite(@Body FavoriteRouteRequest request);
+
+
+    @GET("api/favorites")
+    Call<List<FavoriteRouteResponse>> getFavorites();
+
 
 
 

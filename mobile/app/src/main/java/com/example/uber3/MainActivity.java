@@ -134,7 +134,7 @@ public class MainActivity extends AppCompatActivity {
     private void handleHomeNavigation() {
         if ("ADMIN".equals(currentUserRole)) {
             topAppBar.setTitle("Ride History");
-//            loadFragment(AdminRideHistoryFragment.newInstance());
+            loadFragment(AdminRideHistoryFragment.newInstance());
         }
         else if ("DRIVER".equals(currentUserRole)) {
             topAppBar.setTitle("Driver Dashboard");
@@ -163,16 +163,15 @@ public class MainActivity extends AppCompatActivity {
      * Handle ride/history navigation based on user role
      */
     private void handleRideNavigation() {
-        if ("DRIVER".equals(currentUserRole)) {
-            topAppBar.setTitle("Ride History");
+        topAppBar.setTitle("Ride History");
+
+        if ("PASSENGER".equals(currentUserRole)) {
+            loadFragment(new PassengerRideHistoryFragment());
+        } else if ("DRIVER".equals(currentUserRole)) {
             loadFragment(DriverHistoryFragment.newInstance());
-        }
-        else if ("PASSENGER".equals(currentUserRole)) {
-            topAppBar.setTitle("Ride History");
-            // If PassengerRideHistoryFragment exists, use it
-            // Otherwise, you can use a shared history fragment or HomeFragment
-            loadFragment(HomeFragment.newInstance(currentUserRole));
-        }
+        } else if ("ADMIN".equals(currentUserRole)) {
+            loadFragment(AdminRideHistoryFragment.newInstance());
+        } 
     }
 
     /**
@@ -277,7 +276,6 @@ public class MainActivity extends AppCompatActivity {
     private void updateMenuByRole() {
         String role = currentUserRole;
 
-        // Hide all role-specific items first
         navigationView.getMenu().findItem(R.id.nav_ride).setVisible(false);
         navigationView.getMenu().findItem(R.id.nav_requests).setVisible(false);
         navigationView.getMenu().findItem(R.id.nav_chat).setVisible(false);
