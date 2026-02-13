@@ -206,6 +206,24 @@
     <string name="panic_emoji">🚨 Panic</string>
     <string name="s">S</string>
     <string name="pickup">PICKUP</string>
+    <string name="driver_dashboard">Driver Dashboard</string>
+    <string name="report">📋</string>
+    <string name="your_active_rides_will_appear_here">Your active rides will appear here</string>
+    <string name="go_to_pickup">📍 Go to Pickup</string>
+    <string name="start_ride">▶ Start Ride</string>
+    <string name="finish_ride">✓ Finish Ride</string>
+    <string name="cancel_ride">❌ Cancel Ride</string>
+    <string name="no_active_rides_or_pending_requests_nyou_ll_be_notified_when_new_rides_are_available">🚗 No active rides or pending requests.\nYou\'ll be notified when new rides are available!</string>
+    <string name="my_rides">My Rides</string>
+    <string name="available_rides">Available Rides</string>
+    <string name="search_emoji">🔍</string>
+    <string name="no_available_rides">No Available Rides</string>
+    <string name="check_back_later_for_new_ride_requests">Check back later for new ride requests</string>
+    <string name="ride_0">Ride #0</string>
+    <string name="start_location_emoji">🟢 Start Location</string>
+    <string name="end_location_emoji">🔴 End Location</string>
+    <string name="available">Available</string>
+    <string name="accept_ride">Accept Ride</string>
 
     <string-array name="vehicle_types">
         <item>STANDARD</item>
