@@ -4,7 +4,7 @@
   <button class="icon-btn" (click)="goHistory()" title="Ride History">
     📊
   </button>
-  
+
   <button class="icon-btn" (click)="goMessages()" title="Messages">
     💬
   </button>
@@ -26,20 +26,21 @@
 
 
   <div class="spacer"></div>
-  
+
   <button class="icon-btn" (click)="toggleActiveStatus()" [title]="isActive ? 'Go Inactive' : 'Go Active'">
-    @if (isActive) {
-    <span>🟢</span>
-    }
-    @if (!isActive) {
+    @if (inRide || !isActive) {
     <span>🔴</span>
     }
+    @if (!inRide && isActive) {
+    <span>🟢</span>
+    }
+
   </button>
-  
+
   <button class="icon-btn" (click)="goProfile()" title="Profile">
     👤
   </button>
-  
+
   <button class="icon-btn logout-btn" (click)="logout()" title="Logout">
     🚪
   </button>
