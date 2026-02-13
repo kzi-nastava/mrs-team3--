@@ -286,11 +286,6 @@ public class DriverService {
         String address = addressFromLatLng(actualEndLocation.getLat(), actualEndLocation.getLng());
         actualEndLocation.setAddress(address);
 
-//        Ride finishedRide = rideService.finishRideWithDetails(
-//                currentRide.getId(),
-//                actualEndLocation
-//        );
-
         currentRide.setActualEndLocation(actualEndLocation);
 
         if (currentRide.getActualRideStops().isEmpty() && !currentRide.getRideStops().isEmpty()) {
@@ -425,7 +420,7 @@ public class DriverService {
     }
 
     private boolean finishedEarly(Ride ride, Location currentLocation){
-        if(ride.getEndLocation() != currentLocation){
+        if(!isWithinRadius(currentLocation, ride.getEndLocation())){
             ride.setStatus(RideStatus.FINISHED_EARLY);
             RouteInfo routeInfo = routeCalculationService.calculateRoute(
                 ride.getStartLocation(),
@@ -438,6 +433,16 @@ public class DriverService {
             return true;
         }
         return false;
+    }
+
+    private boolean isWithinRadius(Location loc1, Location loc2) {
+        double distance = DistanceCalculator.distanceKm(
+                loc1.getLat(),
+                loc1.getLng(),
+                loc2.getLat(),
+                loc2.getLng()
+        );
+        return distance <= 0.3;
     }
 
     public void updateDriverLocation(Long driverId, double latitude, double longitude) {
