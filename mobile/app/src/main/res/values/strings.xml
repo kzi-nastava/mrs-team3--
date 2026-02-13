@@ -224,6 +224,20 @@
     <string name="end_location_emoji">🔴 End Location</string>
     <string name="available">Available</string>
     <string name="accept_ride">Accept Ride</string>
+    <string name="back_emoji">← Back</string>
+    <string name="time_left">Time Left</string>
+    <string name="reg">Reg.</string>
+    <string name="email_invites">Email Invites</string>
+    <string name="this_driver_doesn_t_have_any_rides_in_progress">This driver doesn\'t have any rides in progress.</string>
+    <string name="back_to_drivers">Back to Drivers</string>
+    <string name="warning_emoji">⚠️</string>
+    <string name="search_drivers_by_name">🔍 Search drivers by name...</string>
+    <string name="clear_search">Clear search</string>
+    <string name="no_active_drivers_with_rides_in_progress">No active drivers with rides in progress</string>
+    <string name="john_doe">John Doe</string>
+    <string name="john_doe_example_com">john.doe@example.com</string>
+    <string name="active">ACTIVE</string>
+    <string name="track_emoji">🗺️ Track</string>
 
     <string-array name="vehicle_types">
         <item>STANDARD</item>

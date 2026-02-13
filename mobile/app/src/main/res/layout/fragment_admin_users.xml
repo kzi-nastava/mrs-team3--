@@ -2,43 +2,143 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
-    android:padding="16dp"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="#F9FAFB">
 
     <com.google.android.material.tabs.TabLayout
         android:id="@+id/tabLayout"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
-
-    <ProgressBar
-        android:id="@+id/pbUsers"
-        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:visibility="gone"
-        android:padding="12dp"/>
+        android:background="@android:color/white"
+        android:elevation="4dp"
+        app:tabIndicatorColor="#6366f1"
+        app:tabSelectedTextColor="#6366f1"
+        app:tabTextColor="@color/gray_600"/>
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvUsers"
+    <!-- ALL USERS TAB CONTENT -->
+    <FrameLayout
+        android:id="@+id/layoutUsersTab"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:visibility="gone"/>
+        android:visibility="gone">
 
-    <ProgressBar
-        android:id="@+id/pbDrivers"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:visibility="gone"
-        android:padding="12dp"/>
+        <ProgressBar
+            android:id="@+id/pbUsers"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:visibility="gone"/>
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvDrivers"
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvUsers"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="16dp"
+            android:clipToPadding="false"/>
+
+    </FrameLayout>
+
+    <!-- ACTIVE DRIVERS TAB CONTENT -->
+    <FrameLayout
+        android:id="@+id/layoutDriversTab"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:visibility="gone"/>
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <!-- Search Bar -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="16dp"
+                app:cardElevation="2dp"
+                app:cardCornerRadius="8dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="8dp"
+                    android:gravity="center_vertical">
+
+                    <EditText
+                        android:id="@+id/etDriverSearch"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="@string/search_drivers_by_name"
+                        android:background="@android:color/transparent"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"
+                        android:textSize="14sp"
+                        android:inputType="text"
+                        android:imeOptions="actionSearch"/>
+
+                    <ImageButton
+                        android:id="@+id/btnClearSearch"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:src="@android:drawable/ic_menu_close_clear_cancel"
+                        android:visibility="gone"
+                        android:contentDescription="@string/clear_search"/>
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <ProgressBar
+                android:id="@+id/pbDrivers"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginTop="24dp"
+                android:visibility="gone"/>
+
+            <!-- Empty State -->
+            <LinearLayout
+                android:id="@+id/layoutDriversEmpty"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="32dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/car_emoji"
+                    android:textSize="64sp"
+                    android:layout_marginBottom="16dp"/>
+
+                <TextView
+                    android:id="@+id/tvDriversEmptyMessage"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/no_active_drivers_with_rides_in_progress"
+                    android:textSize="16sp"
+                    android:textColor="@color/gray_600"
+                    android:gravity="center"/>
+
+            </LinearLayout>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvDrivers"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="16dp"
+                android:clipToPadding="false"/>
+
+        </LinearLayout>
+
+    </FrameLayout>
 
 </LinearLayout>
