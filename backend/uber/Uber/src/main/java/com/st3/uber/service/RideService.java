@@ -292,24 +292,6 @@
             return savedRide;
         }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         public RouteEstimateResponse estimateRoute(RouteEstimateRequest request) {
             Location start = new Location(
                     request.getStartLocation().latitude(),
@@ -350,124 +332,124 @@
             );
         }
 
-        @Transactional(propagation = Propagation.MANDATORY)
-        public Ride finishRideWithDetails(Long rideId, Location actualEndLocation) {
-            Ride ride = rideRepository.findByIdWithLock(rideId)
-                    .orElseThrow(() -> new IllegalArgumentException("Ride not found"));
-
-            if (ride.getStatus() != RideStatus.IN_PROGRESS) {
-                throw new IllegalStateException("Only in-progress rides can be finished");
-            }
-
-            if (actualEndLocation != null) {
-                ride.setActualEndLocation(actualEndLocation);
-            } else {
-                ride.setActualEndLocation(ride.getEndLocation());
-            }
-
-            if (ride.getActualRideStops().isEmpty() && !ride.getRideStops().isEmpty()) {
-                ride.getActualRideStops().addAll(ride.getRideStops());
-            }
-
-            boolean earlyFinish = finishedEarly(ride, actualEndLocation);
-
-            if(!earlyFinish)
-                ride.setStatus(RideStatus.COMPLETED);
-
-            ride.setFinishedAt(LocalDateTime.now());
-
-            Ride savedRide = rideRepository.saveAndFlush(ride);
-
-
-            for (Passenger passenger : savedRide.getPassengers()) {
-                notificationService.createNotification(
-                        passenger.getId(),
-                        String.format("Your ride is complete! Total cost: %.2f RSD. Please rate your experience.",
-                                savedRide.getCalculatedPrice()),
-                        NotificationType.FINISHED_RIDE,
-                        savedRide.getId()
-                );
-            }
-
-            for (Passenger passenger : ride.getPassengers()) {
-                try {
-                    String subject = "Ride Completed";
-                    String body = String.format("""
-                Dear %s,
-                
-                Your ride has been completed.
-                
-                Ride Details:
-                - From: %s
-                - To: %s
-                - Distance: %.2f km
-                - Duration: %d minutes
-                - Total Cost: %.2f RSD
-                
-                Thank you for riding with us!
-                
-                Best regards,
-                Uber Team
-                """,
-                            passenger.getName(),
-                            ride.getStartLocation().getAddress(),
-                            ride.getActualEndLocation() != null ? ride.getActualEndLocation().getAddress() : ride.getEndLocation().getAddress(),
-                            ride.getDistance(),
-                            ride.getEstimatedTimeMinutes(),
-                            ride.getCalculatedPrice()
-                    );
-                    mailService.sendText(passenger.getEmail(), subject, body);
-                } catch (Exception e) {
-                    System.err.println("Failed to send completion email to passenger: " + e.getMessage());
-                }
-            }
-
-            for (RideInvite invite : ride.getInvites()) {
-                try {
-                    String subject = "Ride Completed - Tracking Update";
-                    String body = String.format("""
-                Hello,
-                
-                The ride you were tracking has been completed.
-                
-                Ride Details:
-                - From: %s
-                - To: %s
-                - Distance: %.2f km
-                
-                Thank you for your interest!
-                
-                Best regards,
-                Uber Team
-                """,
-                            ride.getStartLocation().getAddress(),
-                            ride.getActualEndLocation() != null ? ride.getActualEndLocation().getAddress() : ride.getEndLocation().getAddress(),
-                            ride.getDistance()
-                    );
-                    mailService.sendText(invite.getEmail(), subject, body);
-                } catch (Exception e) {
-                    System.err.println("Failed to send completion email to invite: " + e.getMessage());
-                }
-            }
-
-            return savedRide;
-        }
-
-        private boolean finishedEarly(Ride ride, Location currentLocation){
-            if(ride.getEndLocation() != currentLocation){
-                ride.setStatus(RideStatus.FINISHED_EARLY);
-                RouteInfo routeInfo = routeCalculationService.calculateRoute(
-                        ride.getStartLocation(),
-                        currentLocation,
-                        ride.getActualRideStops()
-                );
-                ride.setDistance(routeInfo.distanceKm());
-                double price = ride.getBasePrice() + ride.getDistance() * 120;
-                ride.setCalculatedPrice(price);
-                return true;
-            }
-            return false;
-        }
+//        @Transactional(propagation = Propagation.MANDATORY)
+//        public Ride finishRideWithDetails(Long rideId, Location actualEndLocation) {
+//            Ride ride = rideRepository.findByIdWithLock(rideId)
+//                    .orElseThrow(() -> new IllegalArgumentException("Ride not found"));
+//
+//            if (ride.getStatus() != RideStatus.IN_PROGRESS) {
+//                throw new IllegalStateException("Only in-progress rides can be finished");
+//            }
+//
+//            if (actualEndLocation != null) {
+//                ride.setActualEndLocation(actualEndLocation);
+//            } else {
+//                ride.setActualEndLocation(ride.getEndLocation());
+//            }
+//
+//            if (ride.getActualRideStops().isEmpty() && !ride.getRideStops().isEmpty()) {
+//                ride.getActualRideStops().addAll(ride.getRideStops());
+//            }
+//
+//            boolean earlyFinish = finishedEarly(ride, actualEndLocation);
+//
+//            if(!earlyFinish)
+//                ride.setStatus(RideStatus.COMPLETED);
+//
+//            ride.setFinishedAt(LocalDateTime.now());
+//
+//            Ride savedRide = rideRepository.saveAndFlush(ride);
+//
+//
+//            for (Passenger passenger : savedRide.getPassengers()) {
+//                notificationService.createNotification(
+//                        passenger.getId(),
+//                        String.format("Your ride is complete! Total cost: %.2f RSD. Please rate your experience.",
+//                                savedRide.getCalculatedPrice()),
+//                        NotificationType.FINISHED_RIDE,
+//                        savedRide.getId()
+//                );
+//            }
+//
+//            for (Passenger passenger : ride.getPassengers()) {
+//                try {
+//                    String subject = "Ride Completed";
+//                    String body = String.format("""
+//                Dear %s,
+//
+//                Your ride has been completed.
+//
+//                Ride Details:
+//                - From: %s
+//                - To: %s
+//                - Distance: %.2f km
+//                - Duration: %d minutes
+//                - Total Cost: %.2f RSD
+//
+//                Thank you for riding with us!
+//
+//                Best regards,
+//                Uber Team
+//                """,
+//                            passenger.getName(),
+//                            ride.getStartLocation().getAddress(),
+//                            ride.getActualEndLocation() != null ? ride.getActualEndLocation().getAddress() : ride.getEndLocation().getAddress(),
+//                            ride.getDistance(),
+//                            ride.getEstimatedTimeMinutes(),
+//                            ride.getCalculatedPrice()
+//                    );
+//                    mailService.sendText(passenger.getEmail(), subject, body);
+//                } catch (Exception e) {
+//                    System.err.println("Failed to send completion email to passenger: " + e.getMessage());
+//                }
+//            }
+//
+//            for (RideInvite invite : ride.getInvites()) {
+//                try {
+//                    String subject = "Ride Completed - Tracking Update";
+//                    String body = String.format("""
+//                Hello,
+//
+//                The ride you were tracking has been completed.
+//
+//                Ride Details:
+//                - From: %s
+//                - To: %s
+//                - Distance: %.2f km
+//
+//                Thank you for your interest!
+//
+//                Best regards,
+//                Uber Team
+//                """,
+//                            ride.getStartLocation().getAddress(),
+//                            ride.getActualEndLocation() != null ? ride.getActualEndLocation().getAddress() : ride.getEndLocation().getAddress(),
+//                            ride.getDistance()
+//                    );
+//                    mailService.sendText(invite.getEmail(), subject, body);
+//                } catch (Exception e) {
+//                    System.err.println("Failed to send completion email to invite: " + e.getMessage());
+//                }
+//            }
+//
+//            return savedRide;
+//        }
+//
+//        private boolean finishedEarly(Ride ride, Location currentLocation){
+//            if(ride.getEndLocation() != currentLocation){
+//                ride.setStatus(RideStatus.FINISHED_EARLY);
+//                RouteInfo routeInfo = routeCalculationService.calculateRoute(
+//                        ride.getStartLocation(),
+//                        currentLocation,
+//                        ride.getActualRideStops()
+//                );
+//                ride.setDistance(routeInfo.distanceKm());
+//                double price = ride.getBasePrice() + ride.getDistance() * 120;
+//                ride.setCalculatedPrice(price);
+//                return true;
+//            }
+//            return false;
+//        }
 
         public Ride reachStop(Long rideId, int stopIndex) {
             Ride ride = rideRepository.findById(rideId)

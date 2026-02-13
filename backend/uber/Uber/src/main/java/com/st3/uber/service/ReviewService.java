@@ -39,15 +39,12 @@ public class ReviewService {
      */
     @Transactional(readOnly = true)
     public RideReviewDetailResponse getRideForReview(Long rideId, Long passengerId) {
-        // Fetch the ride
         Ride ride = rideRepository.findById(rideId)
                 .orElseThrow(() -> new IllegalArgumentException("Ride not found with ID: " + rideId));
 
-        // Fetch the passenger
         Passenger passenger = passengerRepository.findById(passengerId)
                 .orElseThrow(() -> new IllegalArgumentException("Passenger not found"));
 
-        // Check if passenger was part of this ride
         boolean isPassengerInRide = ride.getPassengers().stream()
                 .anyMatch(p -> p.getId().equals(passengerId));
 
@@ -57,26 +54,21 @@ public class ReviewService {
             throw new IllegalArgumentException("You were not a passenger on this ride");
         }
 
-        // Check if ride is completed
-        if (ride.getStatus() != RideStatus.COMPLETED) {
+        if (ride.getStatus() != RideStatus.COMPLETED && ride.getStatus() != RideStatus.FINISHED_EARLY) {
             throw new IllegalArgumentException("This ride is not completed yet");
         }
 
-        // Check if ride has a finish time
         if (ride.getFinishedAt() == null) {
             throw new IllegalArgumentException("Ride completion time is not available");
         }
 
-        // Check if review period has expired
         LocalDateTime deadline = ride.getFinishedAt().plusDays(REVIEW_DEADLINE_DAYS);
         boolean canReview = LocalDateTime.now().isBefore(deadline);
 
-        // Check if passenger already has a review
         Review existingReview = reviewRepository
                 .findByRideIdAndPassengerId(rideId, passengerId)
                 .orElse(null);
 
-        // Build response
         return new RideReviewDetailResponse(
                 ride.getId(),
                 mapLocation(ride.getStartLocation()),

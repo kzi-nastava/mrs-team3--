@@ -255,7 +255,7 @@ public class DriverController {
     ) {
         Long driverId = jwt.getClaim("uid");
         System.out.println("1. "+rideId + driverId);
-        Ride ride = driverService.finishRide(driverId, request.actualEndLocation(), rideService);
+        Ride ride = driverService.finishRide(driverId, request.actualEndLocation());
         System.out.println(". " +rideId +" "+ driverId+ " "+ ride.getDriver());
 
         List<Ride> driverRides = driverService.getDriverRides(driverId);
