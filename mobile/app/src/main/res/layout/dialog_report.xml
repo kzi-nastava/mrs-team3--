@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/report_inconsistency"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:textColor="@color/gray_900"
+        android:layout_marginBottom="8dp"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/please_describe_any_issues_or_inconsistencies_you_ve_noticed_during_your_ride"
+        android:textSize="14sp"
+        android:textColor="@color/gray_600"
+        android:layout_marginBottom="16dp"/>
+
+    <EditText
+        android:id="@+id/etReportText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="120dp"
+        android:gravity="top|start"
+        android:hint="@string/enter_your_report_here"
+        android:background="@drawable/bg_edit_text"
+        android:padding="12dp"
+        android:textSize="14sp"
+        android:textColor="@color/gray_900"
+        android:inputType="textMultiLine|textCapSentences"
+        android:maxLength="1000"/>
+
+    <TextView
+        android:id="@+id/tvCharCount"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/_0_1000_characters"
+        android:textSize="12sp"
+        android:textColor="@color/gray_500"
+        android:gravity="end"
+        android:layout_marginTop="8dp"/>
+</LinearLayout>

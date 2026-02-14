@@ -22,9 +22,8 @@ public interface DriverRepository extends JpaRepository<Driver, Long> {
         SELECT d
         FROM Driver d
         WHERE d.active = true
-          AND d.free = true
     """)
-    List<Driver> findActiveAndFreeDrivers();
+    List<Driver> findActiveDrivers();
 
     Driver findByEmail(String email);
 
