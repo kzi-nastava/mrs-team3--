@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 
-import { DriverService } from './driver.service';
+import {DriverService, DriverStatusResponse} from './driver.service';
 import { env } from '../../env/env';
 
 describe('DriverService', () => {
@@ -72,7 +72,12 @@ describe('DriverService', () => {
   });
 
   it('should return response from setActiveStatus', () => {
-    const mockResponse = { active: true };
+    const mockResponse: DriverStatusResponse = {
+      active: true,
+      activityRequest: false,
+      inRide: false,
+    };
+
 
     service.setActiveStatus().subscribe(res => {
       expect(res).toEqual(mockResponse);
