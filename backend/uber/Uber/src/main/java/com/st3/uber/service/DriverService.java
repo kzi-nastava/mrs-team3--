@@ -238,7 +238,7 @@ public class DriverService {
      }
 
     public List<ActiveVehicleResponse> getActiveDriverLocations() {
-        List<Driver> activeDrivers = driverRepository.findActiveAndFreeDrivers();
+        List<Driver> activeDrivers = driverRepository.findActiveDrivers();
 
         return activeDrivers.stream()
                 .filter(driver -> driver.getCurrentLocation() != null)
@@ -293,6 +293,7 @@ public class DriverService {
         );
     }
 
+    @Transactional
     public Ride acceptRide(Long driverId, Long rideId, RideService rideService) {
         Driver driver = driverRepository.findById(driverId)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Driver not found"));
@@ -352,7 +353,7 @@ public class DriverService {
         driver.setCurrentRide(null);
         driver.setFree(true);
 
-        List<Ride> nextRides = rideRepository.findByStatusAndScheduledAtIsNotNull(RideStatus.PENDING)
+        List<Ride> nextRides = rideRepository.findByStatusAndScheduledAtIsNotNull(RideStatus.ACCEPTED)
                 .stream()
                 .filter(r -> r.getDriver() != null && r.getDriver().getId().equals(driverId))
                 .sorted(Comparator.comparing(Ride::getScheduledAt))
