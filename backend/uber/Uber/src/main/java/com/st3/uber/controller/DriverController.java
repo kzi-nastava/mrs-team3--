@@ -1,5 +1,6 @@
 package com.st3.uber.controller;
 
+import com.st3.uber.domain.Driver;
 import com.st3.uber.domain.Location;
 import com.st3.uber.domain.Ride;
 import com.st3.uber.dto.register.RegisterDriverRequest;
@@ -10,6 +11,7 @@ import com.st3.uber.dto.ride.PendingRideResponse;
 import com.st3.uber.dto.route.ReachStopRequest;
 import com.st3.uber.dto.route.StopStatus;
 import com.st3.uber.dto.user.driver.*;
+import com.st3.uber.repository.DriverRepository;
 import com.st3.uber.service.DriverRegistrationService;
 import com.st3.uber.service.DriverRideHistoryService;
 import com.st3.uber.service.DriverService;
@@ -24,11 +26,14 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @CrossOrigin(origins = "http://localhost:4200")
 @RestController
@@ -39,13 +44,15 @@ public class DriverController {
     private final DriverRideHistoryService driverRideHistoryService;
     private final DriverService driverService;
     private final RideService rideService;
+    private final DriverRepository driverRepository;
 
-    public DriverController(DriverRegistrationService driverRegistrationService, DriverService driverService, 
-                            DriverRideHistoryService driverRideHistoryService, RideService rideService) {
+    public DriverController(DriverRegistrationService driverRegistrationService, DriverService driverService,
+                            DriverRideHistoryService driverRideHistoryService, RideService rideService, DriverRepository driverRepository) {
         this.driverRegistrationService = driverRegistrationService;
         this.driverService = driverService;
         this.driverRideHistoryService = driverRideHistoryService;
         this.rideService = rideService;
+        this.driverRepository = driverRepository;
     }
 
     @PreAuthorize("hasRole('ADMIN')")
@@ -163,14 +170,12 @@ public class DriverController {
     }
 
     @PutMapping("/change-active-status")
-    public ResponseEntity<Void> changeActiveStatus(Authentication authentication){
+    public ResponseEntity<DriverStatusResponse> changeActiveStatus(Authentication authentication) {
         JwtAuthenticationToken jwt = (JwtAuthenticationToken) authentication;
         Long uid = jwt.getToken().getClaim("uid");
 
-        driverService.changeActiveStatus(uid);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(driverService.changeActiveStatus(uid));
     }
-
 
     @PreAuthorize("hasRole('DRIVER')")
     @GetMapping(
@@ -254,9 +259,11 @@ public class DriverController {
             @AuthenticationPrincipal Jwt jwt
     ) {
         Long driverId = jwt.getClaim("uid");
-        System.out.println("1. "+rideId + driverId);
+        System.out.println("1. " + rideId + driverId);
         Ride ride = driverService.finishRide(driverId, request.actualEndLocation());
-        System.out.println(". " +rideId +" "+ driverId+ " "+ ride.getDriver());
+        driverService.changeActiveStatusAfterRequest(driverId);
+
+        System.out.println(". " + rideId + " " + driverId + " " + ride.getDriver());
 
         List<Ride> driverRides = driverService.getDriverRides(driverId);
         boolean hasNextRide = !driverRides.isEmpty();
@@ -396,6 +403,24 @@ public class DriverController {
         driverService.panicRideByDriver(rideId, driverId);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/status")
+    public ResponseEntity<DriverStatusResponse> getStatus(Authentication authentication) {
+        JwtAuthenticationToken jwt = (JwtAuthenticationToken) authentication;
+        Long uid = jwt.getToken().getClaim("uid");
+
+        Driver d = driverRepository.findById(uid)
+            .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Driver not found"));
+
+        boolean inRide = d.getCurrentRide() != null;
+
+        return ResponseEntity.ok(new DriverStatusResponse(
+            d.isActive(),
+            d.isActivityRequest(),
+            inRide
+        ));
+    }
+
 }
 
 

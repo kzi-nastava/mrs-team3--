@@ -1,9 +1,6 @@
 package com.st3.uber.services;
 
-import com.st3.uber.domain.Driver;
-import com.st3.uber.domain.Location;
-import com.st3.uber.domain.Passenger;
-import com.st3.uber.domain.Ride;
+import com.st3.uber.domain.*;
 import com.st3.uber.dto.route.RouteInfo;
 import com.st3.uber.enums.NotificationType;
 import com.st3.uber.enums.RideStatus;
@@ -81,7 +78,7 @@ public class DriverServiceTest {
   @Test(expectedExceptions = ResponseStatusException.class,
       expectedExceptionsMessageRegExp = "400 BAD_REQUEST \"Can only finish rides that are in progress\"")
   public void test_finish_ride_when_ride_not_in_progress(){
-    Ride ride = createActiveRide(new Passenger());
+    Ride ride = createActiveRide(passenger(1L, "name", "a@gmail.com"));
     ride.setStatus(RideStatus.COMPLETED);
     Driver driver = createDriverWithActiveRide(ride);
     when(driverRepository.findById(1L)).thenReturn(Optional.of(driver));
@@ -107,9 +104,9 @@ public class DriverServiceTest {
     ride.setId(1L);
     ride.setStatus(RideStatus.IN_PROGRESS);
     ride.setCreator(passenger);
+    ride.setPassengers(new ArrayList<>(List.of(passenger, passenger(2L, "new name", "a2@gmail.com"))));
     ride.setStartLocation(new Location(45.0, 19.0, "Start"));
     ride.setEndLocation(new Location(45.1, 19.1, "End"));
-    ride.setPassengers(new ArrayList<>());
     ride.setInvites(new ArrayList<>());
     ride.setRideStops(new ArrayList<>());
     ride.setActualRideStops(new ArrayList<>());
@@ -120,7 +117,7 @@ public class DriverServiceTest {
   @Test(dataProvider = "rideStopsData")
   public void test_finish_ride_with_various_stops(List<Location> rideStops, List<Location> actualRideStopsInitial,
                                                   int expectedActualStopCount) {
-    Ride ride = createActiveRide(new Passenger());
+    Ride ride = createActiveRide(passenger(1L, "name", "a@gmail.com"));
 
     ride.setRideStops(new ArrayList<>(rideStops));
     ride.setActualRideStops(new ArrayList<>(actualRideStopsInitial));
@@ -170,7 +167,7 @@ public class DriverServiceTest {
   @Test
   public void test_finish_ride_when_completed(){
     Location endLocation = new Location(80.05, 100.05, "End");
-    Ride ride = createActiveRide(new Passenger());
+    Ride ride = createActiveRide(passenger(1L, "name", "a@gmail.com"));
     ride.setEndLocation(endLocation);
     Driver driver = createDriverWithActiveRide(ride);
 
@@ -191,7 +188,7 @@ public class DriverServiceTest {
     Location stopLocation = new Location(45.05, 19.05, "Stop 1");
     Location endLocation = new Location(48.1, 19.1, "End");
 
-    Ride ride = createActiveRide(new Passenger());
+    Ride ride = createActiveRide(passenger(1L, "name", "a@gmail.com"));
     ride.setEndLocation(endLocation);
     Driver driver = createDriverWithActiveRide(ride);
 
@@ -210,10 +207,10 @@ public class DriverServiceTest {
 
   @Test
   public void test_finish_ride_when_driver_has_next_ride() {
-    Ride nextRide = createActiveRide(new Passenger());
+    Ride nextRide = createActiveRide(passenger(1L, "name", "a@gmail.com"));
     nextRide.setStatus(RideStatus.PENDING);
 
-    Ride currentRide = createActiveRide(new Passenger());
+    Ride currentRide = createActiveRide(passenger(2L, "new name", "a2@gmail.com"));
     Driver driver = createDriverWithActiveRide(currentRide);
 
     nextRide.setDriver(driver);
@@ -237,7 +234,7 @@ public class DriverServiceTest {
 
   @Test
   public void test_finish_ride_when_driver_has_no_next_ride() {
-    Ride currentRide = createActiveRide(new Passenger());
+    Ride currentRide = createActiveRide(passenger(1L, "name", "a@gmail.com"));
     Driver driver = createDriverWithActiveRide(currentRide);
 
     when(driverRepository.findById(1L)).thenReturn(Optional.of(driver));
@@ -255,5 +252,133 @@ public class DriverServiceTest {
     verify(driverRepository).save(driver);
   }
 
+  private Passenger passenger(Long id, String name, String email) {
+    Passenger p = new Passenger();
+    p.setId(id);
+    p.setName(name);
+    p.setEmail(email);
+    return p;
+  }
+
+  private RideInvite invite(String email) {
+    RideInvite i = new RideInvite();
+    i.setEmail(email);
+    return i;
+  }
+
+  private Ride baseRide() {
+    Ride r = createActiveRide(passenger(1L, "name", "a@gmail.com"));
+    r.setBasePrice(100.0);
+    r.setCalculatedPrice(500.0);
+    r.setEstimatedTimeMinutes(15);
+    r.setDistance(10.0);
+    return r;
+  }
+
+  @Test(dataProvider = "rideStatusData")
+  public void test_finish_ride_with_noInvites_noNextRide(Location plannedEnd, Location actualEnd, RideStatus expectedStatus) {
+    Ride ride = baseRide();
+
+    ride.setEndLocation(plannedEnd);
+    Driver driver = createDriverWithActiveRide(ride);
+
+    when(driverRepository.findById(1L)).thenReturn(Optional.of(driver));
+    when(rideRepository.saveAndFlush(ride)).thenReturn(ride);
+    when(rideRepository.findByStatusAndScheduledAtIsNotNull(RideStatus.PENDING)).thenReturn(List.of());
+    when(routeCalculationService.calculateRoute(any(), any(), any())).thenReturn(createRouteInfo());
+    when(driverRepository.save(driver)).thenReturn(driver);
+
+    driverService.finishRide(1L, actualEnd);
+
+    assertEquals(ride.getStatus(), expectedStatus, "Expected ride status to be " + expectedStatus + " but got " + ride.getStatus());
+    verify(rideRepository).saveAndFlush(ride);
+
+    int n = ride.getPassengers().size();
+
+    verify(notificationService, times(n)).createNotification(anyLong(), anyString(), eq(NotificationType.FINISHED_RIDE), eq(ride.getId()));
+    verify(mailService, times(n)).sendText(anyString(), anyString(), anyString());
+
+    verify(notificationService).createNotification(eq(driver.getId()), anyString(), eq(NotificationType.PROFILE_CHANGE), isNull());
+    assertTrue(driver.isAvailable());
+    verify(driverRepository).save(driver);
+  }
+
+  @Test(dataProvider = "rideStatusData")
+  public void test_finish_ride_with_noNextRide(Location plannedEnd, Location actualEnd, RideStatus expectedStatus) {
+    Ride ride = baseRide();
+    RideInvite invite = invite("invite@gmail.com");
+    ride.setInvites(List.of(invite));
+
+    ride.setEndLocation(plannedEnd);
+    Driver driver = createDriverWithActiveRide(ride);
+
+    when(driverRepository.findById(1L)).thenReturn(Optional.of(driver));
+    when(rideRepository.saveAndFlush(ride)).thenReturn(ride);
+    when(rideRepository.findByStatusAndScheduledAtIsNotNull(RideStatus.PENDING)).thenReturn(List.of());
+    when(routeCalculationService.calculateRoute(any(), any(), any())).thenReturn(createRouteInfo());
+    when(driverRepository.save(driver)).thenReturn(driver);
+
+    driverService.finishRide(1L, actualEnd);
+
+    assertEquals(ride.getStatus(), expectedStatus, "Expected ride status to be " + expectedStatus + " but got " + ride.getStatus());
+    verify(rideRepository).saveAndFlush(ride);
+
+    int n = ride.getPassengers().size();
+    int inviteCount = ride.getInvites().size();
+
+    verify(notificationService, times(n)).createNotification(anyLong(), anyString(), eq(NotificationType.FINISHED_RIDE), eq(ride.getId()));
+    verify(mailService, times(inviteCount + n)).sendText(anyString(), anyString(), anyString());
+    verifyNoMoreInteractions(mailService);
+
+    verify(notificationService).createNotification(eq(driver.getId()), anyString(), eq(NotificationType.PROFILE_CHANGE), isNull());
+    assertTrue(driver.isAvailable());
+    verify(driverRepository).save(driver);
+  }
+
+  @Test(dataProvider = "rideStatusData")
+  public void test_finish_ride(Location plannedEnd, Location actualEnd, RideStatus expectedStatus) {
+    Ride ride = baseRide();
+    RideInvite invite = invite("invite@gmail.com");
+    ride.setInvites(List.of(invite));
+
+    ride.setEndLocation(plannedEnd);
+    Driver driver = createDriverWithActiveRide(ride);
+
+    when(driverRepository.findById(1L)).thenReturn(Optional.of(driver));
+    when(rideRepository.saveAndFlush(ride)).thenReturn(ride);
+    when(rideRepository.findByStatusAndScheduledAtIsNotNull(RideStatus.PENDING)).thenReturn(List.of());
+    when(routeCalculationService.calculateRoute(any(), any(), any())).thenReturn(createRouteInfo());
+    when(driverRepository.save(driver)).thenReturn(driver);
+
+    driverService.finishRide(1L, actualEnd);
+
+    assertEquals(ride.getStatus(), expectedStatus, "Expected ride status to be " + expectedStatus + " but got " + ride.getStatus());
+    verify(rideRepository).saveAndFlush(ride);
+
+    int n = ride.getPassengers().size();
+    int inviteCount = ride.getInvites().size();
+
+    verify(notificationService, times(n)).createNotification(anyLong(), anyString(), eq(NotificationType.FINISHED_RIDE), eq(ride.getId()));
+    verify(mailService, times(inviteCount + n)).sendText(anyString(), anyString(), anyString());
+    verifyNoMoreInteractions(mailService);
+
+    verify(notificationService).createNotification(eq(driver.getId()), anyString(), eq(NotificationType.PROFILE_CHANGE), isNull());
+    assertTrue(driver.isAvailable());
+    verify(driverRepository).save(driver);
+  }
+  @DataProvider(name = "rideStatusData")
+  public Object[][] rideStatusData() {
+
+    Location plannedEnd = new Location(44.817000, 20.457000, "Planned End");
+    Location actualEndClose = new Location(44.817100, 20.457100, "Actual End (close)");
+    Location actualEndFar = new Location(44.826000, 20.467000, "Actual End (far)");
+
+    return new Object[][]{
+        { plannedEnd, actualEndClose, RideStatus.COMPLETED },
+        { plannedEnd, actualEndFar,   RideStatus.FINISHED_EARLY }
+    };
+  }
+
+  // proveriti kad ima sledecu voznju, a kad nema
 
 }

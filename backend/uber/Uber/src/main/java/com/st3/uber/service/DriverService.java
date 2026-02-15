@@ -3,6 +3,7 @@ package com.st3.uber.service;
 import com.st3.uber.domain.*;
 import com.st3.uber.dto.route.RouteInfo;
 import com.st3.uber.dto.user.driver.DriverCancelRideRequest;
+import com.st3.uber.dto.user.driver.DriverStatusResponse;
 import com.st3.uber.dto.vehicle.ActiveVehicleResponse;
 import com.st3.uber.enums.CancelledBy;
 import com.st3.uber.enums.NotificationType;
@@ -144,29 +145,75 @@ public class DriverService {
         driverRepository.save(driver);
     }
 
-    public void changeActiveStatus(Long driverId){
+    @Transactional
+    public DriverStatusResponse changeActiveStatus(Long driverId) {
+        Driver driver = driverRepository.findById(driverId)
+            .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Driver not found"));
+
+        boolean inRide = driver.getCurrentRide() != null;
+
+        boolean hasNextRides = !rideRepository
+            .findByDriverAndStatusIn(driver, List.of(RideStatus.PENDING, RideStatus.ACCEPTED))
+            .isEmpty();
+
+        // Ako je u toku vožnje ili ima sledeću (accepted/pending) -> samo queue request
+        if (inRide || hasNextRides) {
+
+            // "samo jednom"
+            if (!driver.isActivityRequest()) {
+                driver.setActivityRequest(true);
+                driverRepository.save(driver);
+
+                notificationService.createNotification(
+                    driverId,
+                    inRide
+                        ? "Your status change request will be processed after completing the current ride."
+                        : "Your status change request will be processed after all scheduled rides are completed.",
+                    NotificationType.PROFILE_CHANGE,
+                    inRide ? driver.getCurrentRide().getId() : null
+                );
+            }
+
+            // Ne menjamo active sad – samo vraćamo realno stanje
+            return new DriverStatusResponse(driver.isActive(), true, inRide);
+        }
+
+        // Nema vožnje i nema sledećih -> odmah toggle
+        boolean newActive = !driver.isActive();
+        driver.setActive(newActive);
+        driver.setAvailable(newActive);
+        driver.setFree(newActive);
+        driver.setActivityRequest(false);
+        driverRepository.save(driver);
+
+        notificationService.createNotification(
+            driverId,
+            newActive
+                ? "You are now active and available for rides."
+                : "You are now inactive and will not receive ride requests.",
+            NotificationType.PROFILE_CHANGE,
+            null
+        );
+
+        return new DriverStatusResponse(newActive, false, false);
+    }
+
+    @Transactional
+    public void changeActiveStatusAfterRequest(Long driverId){
         Driver driver = driverRepository.findById(driverId)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Driver not found"));
 
-        List<Ride> scheduledRides = rideRepository.findByStatusAndScheduledAtIsNotNull(RideStatus.PENDING)
-                .stream()
-                .filter(r -> r.getDriver() != null && r.getDriver().getId().equals(driverId))
-                .toList();
-
-        if(!scheduledRides.isEmpty()){
-            throw new ResponseStatusException(FORBIDDEN, "Driver cannot change status because of next rides");
+        if (!driver.isActivityRequest()) {
+            return;
         }
 
-        if(driver.getCurrentRide() != null){
-            driver.setActivityRequest(true);
-            driverRepository.save(driver);
+        boolean inRide = driver.getCurrentRide() != null;
 
-            notificationService.createNotification(
-                    driverId,
-                    "Your status change request will be processed after completing the current ride.",
-                    NotificationType.PROFILE_CHANGE,
-                    driver.getCurrentRide().getId()
-            );
+        boolean hasNextRides = !rideRepository
+            .findByDriverAndStatusIn(driver, List.of(RideStatus.PENDING, RideStatus.ACCEPTED))
+            .isEmpty();
+
+        if (inRide || hasNextRides) {
             return;
         }
 
@@ -174,12 +221,13 @@ public class DriverService {
         driver.setActive(newActive);
         driver.setAvailable(newActive);
         driver.setFree(newActive);
+        driver.setActivityRequest(false);
 
         driverRepository.save(driver);
 
         String statusMessage = newActive
-                ? "You are now active and available for rides."
-                : "You are now inactive and will not receive ride requests.";
+                ? "Your status change request has been processed. You are now active and available for rides."
+                : "Your status change request has been processed. You are now inactive and will not receive ride requests.";
 
         notificationService.createNotification(
                 driverId,
@@ -187,7 +235,7 @@ public class DriverService {
                 NotificationType.PROFILE_CHANGE,
                 null
         );
-    }
+     }
 
     public List<ActiveVehicleResponse> getActiveDriverLocations() {
         List<Driver> activeDrivers = driverRepository.findActiveAndFreeDrivers();
