@@ -26,14 +26,15 @@
 
 
   <div class="spacer"></div>
-  
-  <button id="active-status-btn" class="icon-btn" (click)="toggleActiveStatus()" [title]="isActive ? 'Go Inactive' : 'Go Active'">
-    @if (isActive) {
-    <span>🟢</span>
-    }
-    @if (!isActive) {
+
+   <button id="active-status-btn" class="icon-btn" (click)="toggleActiveStatus()" [title]="isActive ? 'Go Inactive' : 'Go Active'">
+    @if (inRide || !isActive) {
     <span>🔴</span>
     }
+    @if (!inRide && isActive) {
+    <span>🟢</span>
+    }
+
   </button>
   
   <button id="profile-btn" class="icon-btn" (click)="goProfile()" title="Profile">
@@ -45,10 +46,8 @@
   </button>
 </div>
 
-<!-- Chat Popup Component -->
 <app-chat-popup></app-chat-popup>
 
-<!-- Logout Modal -->
 @if (showLogoutModal) {
 <app-logout-modal (confirm)="onLogoutConfirm()" (cancel)="onLogoutCancel()">
 </app-logout-modal>

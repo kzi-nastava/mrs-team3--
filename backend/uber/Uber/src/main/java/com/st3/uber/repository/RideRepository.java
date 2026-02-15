@@ -148,4 +148,5 @@ public interface RideRepository extends JpaRepository<Ride, Long> {
     );
 
     List<Ride> findByStatus(RideStatus status);
+    List<Ride> findByDriverAndStatusIn(Driver driver, List<RideStatus> statuses);
 }

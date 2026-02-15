@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { DriverRideService, DriverRide, PendingRide, Location, CancelRideRequest } from '../services/driver-ride.service';
 import * as L from 'leaflet';
 import { env } from '../../env/env';
+import {DriverStatusComponent} from './driver-status';
+import {DriverService} from '../services/driver.service';
 
 interface Toast {
   id: number;
@@ -41,7 +43,9 @@ export class DriverDashboardComponent implements OnInit, OnDestroy {
   protected toasts: Toast[] = [];
   private toastIdCounter = 0;
 
-  constructor(private service: DriverRideService) {}
+  constructor(private service: DriverRideService,
+              private driverStatusStore: DriverStatusComponent,
+              private driverService: DriverService) {}
 
   ngOnInit(): void {
     this.loadData();
@@ -118,9 +122,13 @@ export class DriverDashboardComponent implements OnInit, OnDestroy {
 
   protected startRide(): void {
     const ride = this.selectedRide() as DriverRide;
+
     this.service.startRide(ride.rideId).subscribe({
       next: () => {
         this.showToast('Ride started!', 'success');
+
+        this.driverStatusStore.setInRide(true);
+
         this.loadData();
       },
       error: () => {
@@ -128,6 +136,7 @@ export class DriverDashboardComponent implements OnInit, OnDestroy {
       }
     });
   }
+
 
   protected openFinishModal(): void {
     this.showFinishModal.set(true);
@@ -140,12 +149,30 @@ export class DriverDashboardComponent implements OnInit, OnDestroy {
   protected finishRide(): void {
     const ride = this.selectedRide() as DriverRide;
 
-    // FIXED: Pass the actual rideId
-    this.service.finishRide(ride.rideId, null).subscribe({
+    let currentLocation: Location | null = null;
+
+    if (this.driverMarker) {
+      const latlng = this.driverMarker.getLatLng();
+      currentLocation = {
+        lat: latlng.lat,
+        lng: latlng.lng,
+        address: 'Current Location'
+      };
+    }
+    else if (ride.driverCurrentLocation) {
+      currentLocation = ride.driverCurrentLocation;
+    }
+
+    this.service.finishRide(ride.rideId, currentLocation).subscribe({
       next: (response) => {
         this.closeFinishModal();
+        this.driverStatusStore.setInRide(false);
 
-        // Clear the map and selected ride to prevent residue
+        this.driverService.getStatus().subscribe(s => {
+          this.driverStatusStore.setActive(s.active);
+          this.driverStatusStore.setInRide(s.inRide);
+        });
+
         this.clearMap();
         this.selectedRide.set(null);
 
@@ -272,7 +299,7 @@ if (this.isDriverRide(ride) && ride.status === 'IN_PROGRESS') {
 
   // Use actual driver current location from backend if available
   // Otherwise fall back to start location
-  const driverLocation = ride.driverCurrentLocation 
+  const driverLocation = ride.driverCurrentLocation
     ? { lat: ride.driverCurrentLocation.lat, lng: ride.driverCurrentLocation.lng }
     : { lat: ride.startLocation.lat, lng: ride.startLocation.lng };
 
@@ -490,7 +517,7 @@ if (this.isDriverRide(ride) && ride.status === 'IN_PROGRESS') {
   private startPolling(): void {
   this.pollingInterval = setInterval(() => {
     const currentRide = this.selectedRide();
-    if (currentRide && this.isDriverRide(currentRide) && 
+    if (currentRide && this.isDriverRide(currentRide) &&
         (currentRide.status === 'ACCEPTED' || currentRide.status === 'IN_PROGRESS')) {
       this.loadDataSilently();
     }
@@ -508,7 +535,7 @@ private loadDataSilently(): void {
   this.service.getMyRides().subscribe({
     next: (rides) => {
       this.myRides.set(rides);
-      
+
       const currentRide = this.selectedRide();
       if (currentRide && this.isDriverRide(currentRide)) {
         const updatedRide = rides.find(r => r.rideId === currentRide.rideId);

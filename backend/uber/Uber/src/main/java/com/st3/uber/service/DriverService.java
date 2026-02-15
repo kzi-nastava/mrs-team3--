@@ -1,7 +1,9 @@
 package com.st3.uber.service;
 
 import com.st3.uber.domain.*;
+import com.st3.uber.dto.route.RouteInfo;
 import com.st3.uber.dto.user.driver.DriverCancelRideRequest;
+import com.st3.uber.dto.user.driver.DriverStatusResponse;
 import com.st3.uber.dto.vehicle.ActiveVehicleResponse;
 import com.st3.uber.enums.CancelledBy;
 import com.st3.uber.enums.NotificationType;
@@ -20,6 +22,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.st3.uber.util.GetAddressFromLatLng.addressFromLatLng;
 import static org.springframework.http.HttpStatus.*;
 
 @Service
@@ -28,15 +31,20 @@ public class DriverService {
     private final DriverRepository driverRepository;
     private final NotificationService notificationService;
     private final RideRepository rideRepository;
+    private final RouteCalculationService routeCalculationService;
+
+    private final MailService mailService;
 
     public DriverService(
-            DriverRepository driverRepository,
-            NotificationService notificationService,
-            RideRepository rideRepository
-    ) {
+        DriverRepository driverRepository,
+        NotificationService notificationService,
+        RideRepository rideRepository,
+        RouteCalculationService routeCalculationService, MailService mailService) {
         this.driverRepository = driverRepository;
         this.notificationService = notificationService;
         this.rideRepository = rideRepository;
+        this.routeCalculationService = routeCalculationService;
+        this.mailService = mailService;
     }
 
     public List<Driver> findAvailableDrivers() {
@@ -112,7 +120,6 @@ public class DriverService {
         return selectedDriver;
     }
 
-
     private void notifyPassengersRideDeclined(Ride ride, String reason) {
         for (Passenger passenger : ride.getPassengers()) {
             notificationService.createNotification(
@@ -138,29 +145,75 @@ public class DriverService {
         driverRepository.save(driver);
     }
 
-    public void changeActiveStatus(Long driverId){
+    @Transactional
+    public DriverStatusResponse changeActiveStatus(Long driverId) {
+        Driver driver = driverRepository.findById(driverId)
+            .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Driver not found"));
+
+        boolean inRide = driver.getCurrentRide() != null;
+
+        boolean hasNextRides = !rideRepository
+            .findByDriverAndStatusIn(driver, List.of(RideStatus.PENDING, RideStatus.ACCEPTED))
+            .isEmpty();
+
+        // Ako je u toku vožnje ili ima sledeću (accepted/pending) -> samo queue request
+        if (inRide || hasNextRides) {
+
+            // "samo jednom"
+            if (!driver.isActivityRequest()) {
+                driver.setActivityRequest(true);
+                driverRepository.save(driver);
+
+                notificationService.createNotification(
+                    driverId,
+                    inRide
+                        ? "Your status change request will be processed after completing the current ride."
+                        : "Your status change request will be processed after all scheduled rides are completed.",
+                    NotificationType.PROFILE_CHANGE,
+                    inRide ? driver.getCurrentRide().getId() : null
+                );
+            }
+
+            // Ne menjamo active sad – samo vraćamo realno stanje
+            return new DriverStatusResponse(driver.isActive(), true, inRide);
+        }
+
+        // Nema vožnje i nema sledećih -> odmah toggle
+        boolean newActive = !driver.isActive();
+        driver.setActive(newActive);
+        driver.setAvailable(newActive);
+        driver.setFree(newActive);
+        driver.setActivityRequest(false);
+        driverRepository.save(driver);
+
+        notificationService.createNotification(
+            driverId,
+            newActive
+                ? "You are now active and available for rides."
+                : "You are now inactive and will not receive ride requests.",
+            NotificationType.PROFILE_CHANGE,
+            null
+        );
+
+        return new DriverStatusResponse(newActive, false, false);
+    }
+
+    @Transactional
+    public void changeActiveStatusAfterRequest(Long driverId){
         Driver driver = driverRepository.findById(driverId)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Driver not found"));
 
-        List<Ride> scheduledRides = rideRepository.findByStatusAndScheduledAtIsNotNull(RideStatus.PENDING)
-                .stream()
-                .filter(r -> r.getDriver() != null && r.getDriver().getId().equals(driverId))
-                .toList();
-
-        if(!scheduledRides.isEmpty()){
-            throw new ResponseStatusException(FORBIDDEN, "Driver cannot change status because of next rides");
+        if (!driver.isActivityRequest()) {
+            return;
         }
 
-        if(driver.getCurrentRide() != null){
-            driver.setActivityRequest(true);
-            driverRepository.save(driver);
+        boolean inRide = driver.getCurrentRide() != null;
 
-            notificationService.createNotification(
-                    driverId,
-                    "Your status change request will be processed after completing the current ride.",
-                    NotificationType.PROFILE_CHANGE,
-                    driver.getCurrentRide().getId()
-            );
+        boolean hasNextRides = !rideRepository
+            .findByDriverAndStatusIn(driver, List.of(RideStatus.PENDING, RideStatus.ACCEPTED))
+            .isEmpty();
+
+        if (inRide || hasNextRides) {
             return;
         }
 
@@ -168,12 +221,13 @@ public class DriverService {
         driver.setActive(newActive);
         driver.setAvailable(newActive);
         driver.setFree(newActive);
+        driver.setActivityRequest(false);
 
         driverRepository.save(driver);
 
         String statusMessage = newActive
-                ? "You are now active and available for rides."
-                : "You are now inactive and will not receive ride requests.";
+                ? "Your status change request has been processed. You are now active and available for rides."
+                : "Your status change request has been processed. You are now inactive and will not receive ride requests.";
 
         notificationService.createNotification(
                 driverId,
@@ -181,8 +235,7 @@ public class DriverService {
                 NotificationType.PROFILE_CHANGE,
                 null
         );
-    }
-
+     }
 
     public List<ActiveVehicleResponse> getActiveDriverLocations() {
         List<Driver> activeDrivers = driverRepository.findActiveDrivers();
@@ -202,9 +255,6 @@ public class DriverService {
                 driver.getVehicle().getRegistrationNumber()
         );
     }
-
-
-
 
     public List<Ride> getDriverRides(Long driverId) {
         Driver driver = driverRepository.findById(driverId)
@@ -268,7 +318,7 @@ public class DriverService {
     }
 
     @Transactional
-    public Ride finishRide(Long driverId, Location actualEndLocation, RideService rideService) {
+    public Ride finishRide(Long driverId, Location actualEndLocation) {
 
         Driver driver = driverRepository.findById(driverId)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Driver not found"));
@@ -282,10 +332,23 @@ public class DriverService {
             throw new ResponseStatusException(BAD_REQUEST, "Can only finish rides that are in progress");
         }
 
-        Ride finishedRide = rideService.finishRideWithDetails(
-                currentRide.getId(),
-                actualEndLocation
-        );
+        String address = addressFromLatLng(actualEndLocation.getLat(), actualEndLocation.getLng());
+        actualEndLocation.setAddress(address);
+
+        currentRide.setActualEndLocation(actualEndLocation);
+
+        if (currentRide.getActualRideStops().isEmpty() && !currentRide.getRideStops().isEmpty()) {
+            currentRide.getActualRideStops().addAll(currentRide.getRideStops());
+        }
+
+        boolean earlyFinish = finishedEarly(currentRide, actualEndLocation);
+
+        if(!earlyFinish)
+            currentRide.setStatus(RideStatus.COMPLETED);
+
+        currentRide.setFinishedAt(LocalDateTime.now());
+
+        Ride savedRide = rideRepository.saveAndFlush(currentRide);
 
         driver.setCurrentRide(null);
         driver.setFree(true);
@@ -296,6 +359,90 @@ public class DriverService {
                 .sorted(Comparator.comparing(Ride::getScheduledAt))
                 .toList();
 
+        sendNotifications(savedRide, currentRide, driver, nextRides);
+
+        driverRepository.save(driver);
+
+        return currentRide;
+    }
+
+    private void sendNotifications(Ride savedRide, Ride currentRide, Driver driver, List<Ride> nextRides){
+        List<String> status = List.of("is completed", "Completed", "complete");
+        if (currentRide.getStatus() == RideStatus.FINISHED_EARLY) {
+            status = List.of("finished early", "Finished Early", "finish early");
+        }
+
+        for (Passenger passenger : savedRide.getPassengers()) {
+            notificationService.createNotification(
+                passenger.getId(),
+                String.format("Your ride " + status.get(0) + "! Total cost: %.2f RSD. Please rate your experience.",
+                    savedRide.getCalculatedPrice()),
+                NotificationType.FINISHED_RIDE,
+                savedRide.getId()
+            );
+        }
+
+        for (Passenger passenger : currentRide.getPassengers()) {
+            try {
+                String subject = "Ride " + status.get(1);
+                String body = String.format("""
+                Dear %s,
+                
+                Your ride has been completed.
+                
+                Ride Details:
+                - From: %s
+                - To: %s
+                - Distance: %.2f km
+                - Duration: %d minutes
+                - Total Cost: %.2f RSD
+                
+                Thank you for riding with us!
+                
+                Best regards,
+                Uber Team
+                """,
+                    passenger.getName(),
+                    currentRide.getStartLocation().getAddress(),
+                    currentRide.getActualEndLocation() != null ? currentRide.getActualEndLocation().getAddress() : currentRide.getEndLocation().getAddress(),
+                    currentRide.getDistance(),
+                    currentRide.getEstimatedTimeMinutes(),
+                    currentRide.getCalculatedPrice()
+                );
+                mailService.sendText(passenger.getEmail(), subject, body);
+            } catch (Exception e) {
+                System.err.println("Failed to send completion email to passenger: " + e.getMessage());
+            }
+        }
+
+        for (RideInvite invite : currentRide.getInvites()) {
+            try {
+                String subject = "Ride " + status.get(1) + " - Tracking Update";
+                String body = String.format("""
+                Hello,
+                
+                The ride you were tracking has been completed.
+                
+                Ride Details:
+                - From: %s
+                - To: %s
+                - Distance: %.2f km
+                
+                Thank you for your interest!
+                
+                Best regards,
+                Uber Team
+                """,
+                    currentRide.getStartLocation().getAddress(),
+                    currentRide.getActualEndLocation() != null ? currentRide.getActualEndLocation().getAddress() : currentRide.getEndLocation().getAddress(),
+                    currentRide.getDistance()
+                );
+                mailService.sendText(invite.getEmail(), subject, body);
+            } catch (Exception e) {
+                System.err.println("Failed to send completion email to invite: " + e.getMessage());
+            }
+        }
+
         if (!nextRides.isEmpty()) {
             Ride nextRide = nextRides.get(0);
 
@@ -303,25 +450,48 @@ public class DriverService {
             driver.setAvailable(false);
 
             notificationService.createNotification(
-                    driver.getId(),
-                    "Ride completed! Your next scheduled ride is now active.",
-                    NotificationType.RIDE_REMINDER,
-                    nextRide.getId()
+                driver.getId(),
+                "Ride " + status.get(1) + "! Your next scheduled ride is now active.",
+                NotificationType.RIDE_REMINDER,
+                nextRide.getId()
             );
-        } else {
+        }
+        else {
             driver.setAvailable(true);
 
             notificationService.createNotification(
-                    driver.getId(),
-                    "Ride completed! You are now available for new rides.",
-                    NotificationType.PROFILE_CHANGE,
-                    null
+                driver.getId(),
+                "Ride " + status.get(1) + "! You are now available for new rides.",
+                NotificationType.PROFILE_CHANGE,
+                null
             );
         }
+    }
 
-        driverRepository.save(driver);
+    private boolean finishedEarly(Ride ride, Location currentLocation){
+        if(!isWithinRadius(currentLocation, ride.getEndLocation())){
+            ride.setStatus(RideStatus.FINISHED_EARLY);
+            RouteInfo routeInfo = routeCalculationService.calculateRoute(
+                ride.getStartLocation(),
+                currentLocation,
+                ride.getActualRideStops()
+            );
+            ride.setDistance(routeInfo.distanceKm());
+            double price = ride.getBasePrice() + ride.getDistance() * 120;
+            ride.setCalculatedPrice(price);
+            return true;
+        }
+        return false;
+    }
 
-        return finishedRide;
+    private boolean isWithinRadius(Location loc1, Location loc2) {
+        double distance = DistanceCalculator.distanceKm(
+                loc1.getLat(),
+                loc1.getLng(),
+                loc2.getLat(),
+                loc2.getLng()
+        );
+        return distance <= 0.3;
     }
 
     public void updateDriverLocation(Long driverId, double latitude, double longitude) {
