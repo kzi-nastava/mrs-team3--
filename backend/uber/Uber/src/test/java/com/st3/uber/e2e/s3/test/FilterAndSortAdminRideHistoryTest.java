@@ -8,8 +8,9 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.testng.annotations.BeforeSuite;
-import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
+import java.util.List;
 
 import static org.testng.Assert.assertTrue;
 
@@ -22,6 +23,18 @@ public class FilterAndSortAdminRideHistoryTest {
 
   private String email = "admin@gmail.com";
   private String password = "aaaaaa";
+  private String startDate = "2026-02-10";
+  private String endDate = "2026-02-15";
+
+  private List<String> sortOptions = List.of(
+      "startTime|desc", "startTime|asc",
+      "endTime|desc", "endTime|asc",
+      "price|desc", "price|asc",
+      "status|desc", "status|asc",
+      "panic|desc", "panic|asc",
+      "route|desc", "route|asc"
+  );
+  private String sortBy = sortOptions.get(8);
 
   @BeforeSuite
   public void initialize() {
@@ -47,6 +60,9 @@ public class FilterAndSortAdminRideHistoryTest {
     this.homePage.goToRideHistoryPage();
     assertTrue(this.homePage.isOnHistoryPage());
 
-  }
+    this.adminHistoryPage.selectFromDate(startDate);
+    this.adminHistoryPage.selectToDate(endDate);
 
+    this.adminHistoryPage.sortByValue(sortBy);
+  }
 }
