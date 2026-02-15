@@ -156,10 +156,8 @@ public class DriverService {
             .findByDriverAndStatusIn(driver, List.of(RideStatus.PENDING, RideStatus.ACCEPTED))
             .isEmpty();
 
-        // Ako je u toku vožnje ili ima sledeću (accepted/pending) -> samo queue request
         if (inRide || hasNextRides) {
 
-            // "samo jednom"
             if (!driver.isActivityRequest()) {
                 driver.setActivityRequest(true);
                 driverRepository.save(driver);
@@ -174,11 +172,9 @@ public class DriverService {
                 );
             }
 
-            // Ne menjamo active sad – samo vraćamo realno stanje
             return new DriverStatusResponse(driver.isActive(), true, inRide);
         }
 
-        // Nema vožnje i nema sledećih -> odmah toggle
         boolean newActive = !driver.isActive();
         driver.setActive(newActive);
         driver.setAvailable(newActive);
