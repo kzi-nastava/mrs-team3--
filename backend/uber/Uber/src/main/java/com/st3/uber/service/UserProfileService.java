@@ -17,9 +17,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserProfileService {
 
     private final UserRepository userRepository;
+    private final DriverService driverService;
 
-    public UserProfileService(UserRepository userRepository) {
+
+    public UserProfileService(UserRepository userRepository, DriverService driverService) {
         this.userRepository = userRepository;
+        this.driverService = driverService;
     }
 
     public Object getProfile(Long userId) {
@@ -49,7 +52,8 @@ public class UserProfileService {
                     driver.getAddress(),
                     driver.getProfileImage(),
                     vehicleResponse,
-                    driver.isActive()
+                    driver.isActive(),
+                    driverService.getLiveWorkingMinutes(driver)
             );
         }
 

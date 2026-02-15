@@ -13,6 +13,7 @@ public class ProfileResponse {
     // DRIVER FIELDS
     public Vehicle vehicle;
     public Boolean active;
+    public Integer activeMinutes24h;
 
     public static class Vehicle {
         public Long id;

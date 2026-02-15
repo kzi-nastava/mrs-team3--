@@ -11,5 +11,6 @@ public record DriverProfileResponse(
   String address,
   String profileImage,
   VehicleResponse vehicle,
-  boolean active
+  boolean active,
+  int activeMinutes24h
 ) {}
