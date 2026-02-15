@@ -17,9 +17,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import static com.st3.uber.util.GetAddressFromLatLng.addressFromLatLng;
@@ -32,6 +35,9 @@ public class DriverService {
     private final NotificationService notificationService;
     private final RideRepository rideRepository;
     private final RouteCalculationService routeCalculationService;
+
+    private final Map<Long, LocalDateTime> activeSessionStart =
+            new ConcurrentHashMap<>();
 
     private final MailService mailService;
 
@@ -139,6 +145,12 @@ public class DriverService {
             throw new ResponseStatusException(FORBIDDEN, "Driver cannot logout while in a ride");
         }
 
+        LocalDateTime start = activeSessionStart.remove(driverId);
+        if (start != null) {
+            long minutes = Duration.between(start, LocalDateTime.now()).toMinutes();
+            driver.setWorkingMinutesPerDay(driver.getWorkingMinutesPerDay() + (int) minutes);
+        }
+
         driver.setActive(false);
         driver.setAvailable(false);
         driver.setFree(false);
@@ -176,6 +188,18 @@ public class DriverService {
         }
 
         boolean newActive = !driver.isActive();
+
+
+        if (newActive) {
+            activeSessionStart.put(driverId, LocalDateTime.now());
+        } else {
+            LocalDateTime start = activeSessionStart.remove(driverId);
+            if (start != null) {
+                long minutes = Duration.between(start, LocalDateTime.now()).toMinutes();
+                int updated = driver.getWorkingMinutesPerDay() + (int) minutes;
+                driver.setWorkingMinutesPerDay(Math.min(updated, 480));
+            }
+        }
         driver.setActive(newActive);
         driver.setAvailable(newActive);
         driver.setFree(newActive);
@@ -601,4 +625,26 @@ public class DriverService {
         ride.setPanic(true);
         rideRepository.save(ride);
     }
+
+    public void startDriverSession(Long driverId){
+        activeSessionStart.put(driverId, LocalDateTime.now());
+    }
+
+    public int getLiveWorkingMinutes(Driver driver) {
+
+        int base = driver.getWorkingMinutesPerDay();
+
+        LocalDateTime start = activeSessionStart.get(driver.getId());
+
+        if (start == null) {
+            return base;
+        }
+
+        long extra = Duration.between(start, LocalDateTime.now()).toMinutes();
+
+        int total = base + (int) extra;
+
+        return Math.min(total, 480);
+    }
+
 }

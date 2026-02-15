@@ -27,11 +27,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
-  import static java.util.Base64.getDecoder;
+import static java.util.Base64.getDecoder;
 
 @Service
 public class AuthService {
@@ -40,6 +38,7 @@ public class AuthService {
   private final VerificationTokenRepository tokenRepository;
   private final PasswordEncoder passwordEncoder;
   private final JwtEncoder jwtEncoder;
+  private final DriverService driverService;
 
   @Value("${app.backend.url}")
   private String backendUrl;
@@ -56,14 +55,17 @@ public class AuthService {
   private long jwtTtlSeconds;
   private final RideRepository rideRepository;
 
+
+
   public AuthService(UserRepository userRepository, MailService mailService, VerificationTokenRepository tokenRepository,
-                     PasswordEncoder passwordEncoder, JwtEncoder jwtEncoder, RideRepository rideRepository) {
+                     PasswordEncoder passwordEncoder, JwtEncoder jwtEncoder, DriverService driverService, RideRepository rideRepository) {
     this.userRepository = userRepository;
     this.mailService = mailService;
     this.tokenRepository = tokenRepository;
     this.passwordEncoder = passwordEncoder;
     this.jwtEncoder = jwtEncoder;
-    this.rideRepository = rideRepository;
+      this.driverService = driverService;
+      this.rideRepository = rideRepository;
   }
 
   @Transactional
@@ -88,6 +90,8 @@ public class AuthService {
           driver.setActive(true);
           driver.setAvailable(true);
           driver.setFree(true);
+
+          driverService.startDriverSession(driver.getId());
 
           driver.setCurrentLocation(generateRandomNoviSadLocation());
           driver.setLocationUpdatedAt(LocalDateTime.now());

@@ -58,6 +58,8 @@ public class ProfileFragment extends Fragment {
     private CheckBox cbPetTransport;
     private Spinner spVehicleType;
 
+    private TextView tvActiveHours;
+
 
     private boolean editMode = false;
     private boolean isDriver = false;
@@ -141,6 +143,8 @@ public class ProfileFragment extends Fragment {
         etLicensePlate = view.findViewById(R.id.etLicensePlate);
         tvSeats = view.findViewById(R.id.tvSeats);
         etSeats = view.findViewById(R.id.etSeats);
+        tvActiveHours = view.findViewById(R.id.tvActiveHours);
+
 
         changeRequestCard = view.findViewById(R.id.changeRequestCard);
         tvChangeField = view.findViewById(R.id.tvChangeField);
@@ -469,6 +473,7 @@ public class ProfileFragment extends Fragment {
 
         profileService.loadProfile(new Callback<ProfileResponse>() {
 
+            @SuppressLint("SetTextI18n")
             @Override
             public void onResponse(@NonNull Call<ProfileResponse> call,
                                    @NonNull Response<ProfileResponse> response) {
@@ -534,6 +539,18 @@ public class ProfileFragment extends Fragment {
                     cbBabyTransport.setChecked(p.vehicle.babyTransport);
                     cbPetTransport.setChecked(p.vehicle.petTransport);
 
+                }
+                if (isDriver && p.activeMinutes24h != null) {
+                    int minutes = p.activeMinutes24h;
+
+                    if (minutes > 480) minutes = 480;
+
+                    int hours = minutes / 60;
+                    int mins = minutes % 60;
+
+                    tvActiveHours.setText(hours + "h " + mins + "min");
+                } else {
+                    tvActiveHours.setText("0h 0min");
                 }
 
             }

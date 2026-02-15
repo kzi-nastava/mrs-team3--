@@ -20,7 +20,7 @@
     <string name="change_password">🔒 Change Password</string>
     <string name="driver_information">Driver Information</string>
     <string name="mock_active_hours">Active Hours (24h)</string>
-    <string name="mock_hours">18.5 hours</string>
+    <string name="mock_hours">—</string>
     <string name="vehicle_model">Vehicle Model</string>
     <string name="mock_model">Toyota Corolla</string>
     <string name="license_plate">License Plate</string>

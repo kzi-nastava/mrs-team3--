@@ -28,6 +28,7 @@ export interface VehicleResponse {
 export interface DriverProfileResponse extends BaseProfile {
   vehicle: VehicleResponse;
   active: boolean;
+  activeMinutes24h: number;
 }
 
 export interface BlockStatus {
