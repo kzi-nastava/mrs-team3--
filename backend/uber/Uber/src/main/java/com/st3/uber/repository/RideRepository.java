@@ -35,30 +35,6 @@ public interface RideRepository extends JpaRepository<Ride, Long> {
     List<Ride> findByScheduledAtBefore(LocalDateTime dateTime);
     List<Ride> findByCreatorAndFinishedAtIsNotNull(Passenger creator);
 
-    List<Ride> findByStatusAndScheduledAtBetween(
-            RideStatus status,
-            LocalDateTime startTime,
-            LocalDateTime endTime
-    );
-
-
-    @Query("SELECT r FROM Ride r WHERE r.status = :status " +
-            "AND r.scheduledAt IS NOT NULL " +
-            "AND r.scheduledAt BETWEEN :now AND :futureTime")
-    List<Ride> findUpcomingScheduledRides(
-            @Param("status") RideStatus status,
-            @Param("now") LocalDateTime now,
-            @Param("futureTime") LocalDateTime futureTime
-    );
-
-    @Query("SELECT r FROM Ride r " +
-            "LEFT JOIN FETCH r.passengers " +
-            "LEFT JOIN FETCH r.driver " +
-            "WHERE r.status = :status AND r.scheduledAt IS NOT NULL")
-    List<Ride> findPendingRidesWithPassengersAndDriver(@Param("status") RideStatus status);
-
-    List<Ride> findPastByCreator(Passenger passenger);
-
     // For ride tracking - find active rides for a passenger
     @Query("SELECT r FROM Ride r WHERE :passenger MEMBER OF r.passengers AND r.status IN :statuses")
     List<Ride> findByPassengersContainingAndStatusIn(

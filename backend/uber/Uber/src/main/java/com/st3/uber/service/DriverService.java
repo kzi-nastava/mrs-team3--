@@ -343,13 +343,18 @@ public class DriverService {
         Driver driver = driverRepository.findById(driverId)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Driver not found"));
 
-        Ride currentRide = driver.getCurrentRide();
-        if (currentRide == null) {
+        Ride ride = driver.getCurrentRide();
+        if (ride == null) {
             throw new ResponseStatusException(BAD_REQUEST, "Driver has no active ride");
         }
+        Ride currentRide = rideRepository.findByIdWithLock(ride.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Ride not found"));
 
         if (currentRide.getStatus() != RideStatus.IN_PROGRESS) {
             throw new ResponseStatusException(BAD_REQUEST, "Can only finish rides that are in progress");
+        }
+        if (actualEndLocation==null){
+            throw new IllegalStateException("It should get valid end location");
         }
 
         String address = addressFromLatLng(actualEndLocation.getLat(), actualEndLocation.getLng());
@@ -357,9 +362,6 @@ public class DriverService {
 
         currentRide.setActualEndLocation(actualEndLocation);
 
-        if (currentRide.getActualRideStops().isEmpty() && !currentRide.getRideStops().isEmpty()) {
-            currentRide.getActualRideStops().addAll(currentRide.getRideStops());
-        }
 
         boolean earlyFinish = finishedEarly(currentRide, actualEndLocation);
 
@@ -383,7 +385,7 @@ public class DriverService {
 
         driverRepository.save(driver);
 
-        return currentRide;
+        return savedRide;
     }
 
     private void sendNotifications(Ride savedRide, Ride currentRide, Driver driver, List<Ride> nextRides){
