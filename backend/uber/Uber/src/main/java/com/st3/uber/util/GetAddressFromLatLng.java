@@ -8,19 +8,34 @@ import org.springframework.web.client.RestTemplate;
 import java.util.Map;
 
 public class GetAddressFromLatLng {
+
   public static String addressFromLatLng(double lat, double lng) {
+    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      return "Unknown Location";
+    }
+
     String url = "https://nominatim.openstreetmap.org/reverse?lat="
-        + lat + "&lon=" + lng + "&format=json";
+            + lat + "&lon=" + lng + "&format=json";
 
-    RestTemplate restTemplate = new RestTemplate();
-    HttpHeaders headers = new HttpHeaders();
-    headers.set("User-Agent", "ride-app");
-    HttpEntity<String> entity = new HttpEntity<>(headers);
+    try {
+      RestTemplate restTemplate = new RestTemplate();
+      HttpHeaders headers = new HttpHeaders();
+      headers.set("User-Agent", "ride-app");
+      HttpEntity<String> entity = new HttpEntity<>(headers);
 
-    ResponseEntity<Map> response = restTemplate.exchange(
-        url, HttpMethod.GET, entity, Map.class);
+      ResponseEntity<Map> response = restTemplate.exchange(
+              url, HttpMethod.GET, entity, Map.class);
 
-    return response.getBody().get("display_name").toString();
+      Map body = response.getBody();
+      if (body != null && body.containsKey("display_name")) {
+        return body.get("display_name").toString();
+      }
+
+      return "Unknown Location";
+
+    } catch (Exception e) {
+      System.err.println("Address lookup failed: " + e.getMessage());
+      return "Unknown Location";
+    }
   }
-
 }
