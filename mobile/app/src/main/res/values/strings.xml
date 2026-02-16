@@ -257,6 +257,21 @@
     <string name="start_time_">START TIME</string>
     <string name="end_address_">End address...</string>
     <string name="start_address_">Start address...</string>
+    <string name="ride_pricing_management">💰 Ride Pricing Management</string>
+    <string name="configure_base_prices_and_per_kilometer_rates">Configure base prices and per-kilometer rates</string>
+    <string name="standard_vehicle">🚗 Standard Vehicle</string>
+    <string name="base_price_rsd">Base Price (RSD)</string>
+    <string name="enter_standard_base_price">Enter standard base price</string>
+    <string name="luxury_vehicle">🚙 Luxury Vehicle</string>
+    <string name="enter_luxury_base_price">Enter luxury base price</string>
+    <string name="van_emoji">🚐 Van</string>
+    <string name="enter_van_base_price">Enter van base price</string>
+    <string name="price_per_kilometer">📏 Price Per Kilometer</string>
+    <string name="rate_rsd_km">Rate (RSD/km)</string>
+    <string name="enter_price_per_kilometer">Enter price per kilometer</string>
+    <string name="current_pricing">📊 Current Pricing</string>
+    <string name="reset">↺ Reset</string>
+    <string name="save_changes">💾 Save Changes</string>
 
     <string-array name="vehicle_types">
         <item>STANDARD</item>
