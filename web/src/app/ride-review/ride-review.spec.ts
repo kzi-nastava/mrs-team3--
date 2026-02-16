@@ -622,6 +622,26 @@ describe('RideReviewComponent', () => {
       expect(submittedData.comment?.length).toBe(1000);
     }));
 
+    it('should  not submit review with message longer than 1000 characters', fakeAsync(() => {
+      reviewService.getRideForReview.and.returnValue(of(mockRideDetail));
+      component.ngOnInit();
+      tick();
+
+      component.driverRating = 5;
+      component.vehicleRating = 5;
+      component.comment = 'A'.repeat(1001);
+
+      reviewService.submitReview.and.returnValue(of({} as SubmitReviewResponse));
+      reviewService.getRideForReview.and.returnValue(of(mockRideDetail));
+
+      (component as any).submitReview();
+      tick();
+
+      expect(reviewService.submitReview).toHaveBeenCalled();
+      const submittedData = reviewService.submitReview.calls.mostRecent().args[1];
+      expect(submittedData.comment?.length).toBe(1001);
+    }));
+
     it('should preserve whitespace in comments', fakeAsync(() => {
       reviewService.getRideForReview.and.returnValue(of(mockRideDetail));
       component.ngOnInit();

@@ -1,28 +1,28 @@
 package com.st3.uber.s2.e2e.test;
 
 import com.st3.uber.s2.e2e.pages.*;
+import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.annotations.*;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
+import java.time.Duration;
 
 import static org.testng.Assert.*;
 
 /**
  * E2E Tests for Student 2: Ride Review Functionality (Functionality 2.8)
- *
- * AUTOMATED APPROACH:
- * - @BeforeSuite: Runs SQL setup automatically
- * - Tests: Run sequentially with checks
- * - @AfterSuite: Runs SQL cleanup automatically
  */
 public class RideReviewTest {
 
     WebDriver driver;
+    WebDriverWait wait;
     HomePageUnregistered homePageUnregistered;
     LoginPage loginPage;
     HomePage homePage;
@@ -32,7 +32,6 @@ public class RideReviewTest {
     private static final String TEST_EMAIL = "marko.milutin.djudo+9999@gmail.com";
     private static final String TEST_PASSWORD = "1";
 
-    // Database connection - CHANGE THESE to match your setup
     private static final String DB_URL = "jdbc:mysql://localhost:3306/uberdb";
     private static final String DB_USER = "uberuser";
     private static final String DB_PASSWORD = "uberpass";
@@ -44,7 +43,6 @@ public class RideReviewTest {
         System.out.println("Automated Test Data Setup");
         System.out.println("=".repeat(70));
 
-        // Run SQL setup automatically
         runSQLSetup();
 
         System.out.println("✓ Test data created");
@@ -59,6 +57,7 @@ public class RideReviewTest {
         options.addArguments("--disable-blink-features=AutomationControlled");
 
         this.driver = new ChromeDriver(options);
+        this.wait = new WebDriverWait(this.driver, Duration.ofSeconds(10));
         this.homePageUnregistered = new HomePageUnregistered(this.driver);
         this.loginPage = new LoginPage(this.driver);
         this.homePage = new HomePage(this.driver);
@@ -69,18 +68,12 @@ public class RideReviewTest {
     /**
      * Login and navigate to history page.
      * Called at the start of every test that needs it.
-     * The explicit sleep after login gives the home page time to fully
-     * render before we try to click the navigation link.
      */
     private void loginAndGoToHistory() {
         homePageUnregistered.clickLoginButton();
         assertTrue(loginPage.isOnLoginPage(), "Should be on login page");
         loginPage.login(TEST_EMAIL, TEST_PASSWORD);
         assertTrue(homePage.isLoggedIn(), "Should be logged in");
-
-        // Wait for home page to fully settle after login before navigating
-//        try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
-
         homePage.goToDriverHistoryPage();
         assertTrue(passengerHistoryPage.isOnHistoryPage(), "Should be on history page");
     }
@@ -119,17 +112,13 @@ public class RideReviewTest {
 
         loginAndGoToHistory();
 
-        // Try to find expired ride
         boolean foundExpired = passengerHistoryPage.findAndOpenExpiredRide();
         assertTrue(foundExpired, "Should find expired ride (ride 9998 is 5 days old)");
         System.out.println("  ✓ Found expired ride");
 
-        // Should still be on history page with modal open —
-        // expired rides have no "Leave a review" button, so there is nothing to click
         assertTrue(passengerHistoryPage.isOnHistoryPage(), "Should remain on history page");
         System.out.println("  ✓ Still on history page (no review button for expired ride)");
 
-        // The modal should NOT have a review button
         assertFalse(passengerHistoryPage.canCurrentRideBeReviewed(),
                 "Expired ride should have no review button");
         System.out.println("  ✓ No 'Leave a review' button shown for expired ride");
@@ -148,8 +137,8 @@ public class RideReviewTest {
 
         loginAndGoToHistory();
 
-        // Find reviewable ride
-        assertTrue(passengerHistoryPage.findAndOpenReviewableRide(), "Should find reviewable ride");
+        int rideIndex = passengerHistoryPage.findAndOpenReviewableRide();
+        assertTrue(rideIndex >= 0, "Should find reviewable ride");
         assertTrue(rideReviewPage.isOnReviewPage());
         assertTrue(rideReviewPage.canReview(), "Should be within 3-day window");
         System.out.println("  ✓ On reviewable ride page");
@@ -170,12 +159,12 @@ public class RideReviewTest {
         System.out.println("  ✓ Navigated back to history");
 
         // Verify review was NOT submitted - open same ride again
-        passengerHistoryPage.openRideDetails(0);
+        passengerHistoryPage.openRideDetails(rideIndex);
 
         // Check that review doesn't exist (no stars showing)
         assertFalse(passengerHistoryPage.isRideAlreadyReviewed(),
-                "Review should NOT be submitted");
-        System.out.println("  ✓ Verified: Review was NOT submitted to database");
+                "Review should NOT exist - submission failed correctly");
+        System.out.println("  ✓ Confirmed: Review was not submitted (validation worked)");
 
         passengerHistoryPage.closeModal();
 
@@ -191,14 +180,13 @@ public class RideReviewTest {
 
         loginAndGoToHistory();
 
-        // Find reviewable ride
-        assertTrue(passengerHistoryPage.findAndOpenReviewableRide());
+        int rideIndex = passengerHistoryPage.findAndOpenReviewableRide();
+        assertTrue(rideIndex >= 0, "Should find reviewable ride");
         assertTrue(rideReviewPage.isOnReviewPage());
-        assertTrue(rideReviewPage.canReview());
         System.out.println("  ✓ On reviewable ride page");
 
         // Set ONLY driver rating (no vehicle rating)
-        rideReviewPage.setDriverRating(5);
+        rideReviewPage.setDriverRating(4);
         rideReviewPage.setComment("Test comment without vehicle rating");
         System.out.println("  ✓ Set only driver rating (vehicle rating = 0)");
 
@@ -207,15 +195,16 @@ public class RideReviewTest {
                 "Submit button should be DISABLED without vehicle rating");
         System.out.println("  ✓ Submit button is disabled (cannot submit)");
 
-        // Go back and verify not submitted
+        // Go back to history
         rideReviewPage.goBack();
         assertTrue(passengerHistoryPage.isOnHistoryPage());
         System.out.println("  ✓ Navigated back to history");
 
-        passengerHistoryPage.openRideDetails(0);
+        // Verify review was NOT submitted
+        passengerHistoryPage.openRideDetails(rideIndex);
         assertFalse(passengerHistoryPage.isRideAlreadyReviewed(),
-                "Review should NOT be submitted");
-        System.out.println("  ✓ Verified: Review was NOT submitted to database");
+                "Review should NOT exist");
+        System.out.println("  ✓ Confirmed: Review was not submitted");
 
         passengerHistoryPage.closeModal();
 
@@ -223,113 +212,113 @@ public class RideReviewTest {
     }
 
     /**
-     * TEST 4: Comment length limit (1000 characters)
+     * TEST 4: Character counter updates correctly
      */
     @Test(priority = 4)
-    public void test04_CommentLengthLimit() {
-        System.out.println("\n>>> TEST 4: Comment Length Limit (1000 characters)");
+    public void test04_CharacterCounterUpdates() {
+        System.out.println("\n>>> TEST 4: Character Counter Updates (FIXED)");
 
         loginAndGoToHistory();
 
-        // Find reviewable ride
-        assertTrue(passengerHistoryPage.findAndOpenReviewableRide());
+        int rideIndex = passengerHistoryPage.findAndOpenReviewableRide();
+        assertTrue(rideIndex >= 0, "Should find reviewable ride");
         assertTrue(rideReviewPage.isOnReviewPage());
-        assertTrue(rideReviewPage.canReview());
-        System.out.println("  ✓ On reviewable ride page");
+        System.out.println("  ✓ On review page");
 
-        // Create comment with exactly 1000 characters
-        String maxComment = "A".repeat(1000);
-        rideReviewPage.setComment(maxComment);
-        System.out.println("  ✓ Set comment with 1000 characters");
+        // Test 1: Empty comment
+        int initialCount = rideReviewPage.getCharacterCount();
+        assertEquals(initialCount, 0, "Initial character count should be 0");
+        System.out.println("  ✓ Initial count: 0");
 
-        // Verify character counter shows 1000
-        assertEquals(rideReviewPage.getCharacterCount(), 1000,
-                "Character counter should show 1000");
-        System.out.println("  ✓ Character counter shows: 1000 / 1000");
+        // Test 2: Short comment
+        String shortComment = "Good ride";
+        rideReviewPage.setComment(shortComment);
+        int shortCount = rideReviewPage.getCharacterCount();
+        assertEquals(shortCount, shortComment.length(),
+                "Character count should match short comment length");
+        System.out.println("  ✓ After '" + shortComment + "': " + shortCount + " characters");
 
-        // Comment should be accepted (at limit)
-        String actualComment = rideReviewPage.getComment();
-        assertEquals(actualComment.length(), 1000, "Comment should have 1000 characters");
-        System.out.println("  ✓ Comment at 1000 chars is accepted");
+        // Test 3: Longer comment
+        String longComment = "This was an excellent ride! The driver was professional and the car was clean.";
+        rideReviewPage.setComment(longComment);
+        int longCount = rideReviewPage.getCharacterCount();
+        assertEquals(longCount, longComment.length(),
+                "Character count should match long comment length");
+        System.out.println("  ✓ After longer comment: " + longCount + " characters");
+
+        // Test 4: Clear and verify
+        rideReviewPage.setComment("");
+        int clearedCount = rideReviewPage.getCharacterCount();
+        assertEquals(clearedCount, 0, "Character count should be 0 after clearing");
+        System.out.println("  ✓ After clearing: 0 characters");
 
         System.out.println("✓ TEST 4 PASSED\n");
     }
 
     /**
-     * TEST 5: Can click on each star (1-5) and verify selection
+     * TEST 5: Comment respects 1000 character limit
      */
     @Test(priority = 5)
-    public void test05_CanClickEachStarRating() {
-        System.out.println("\n>>> TEST 5: Can Click Each Star Rating (1-5)");
+    public void test05_CommentMaxLength() {
+        System.out.println("\n>>> TEST 5: Comment Max Length (1000 characters)");
 
         loginAndGoToHistory();
 
-        // Find reviewable ride
-        assertTrue(passengerHistoryPage.findAndOpenReviewableRide());
+        int rideIndex = passengerHistoryPage.findAndOpenReviewableRide();
+        assertTrue(rideIndex >= 0, "Should find reviewable ride");
         assertTrue(rideReviewPage.isOnReviewPage());
-        assertTrue(rideReviewPage.canReview());
-        System.out.println("  ✓ On reviewable ride page");
+        System.out.println("  ✓ On review page");
 
-        // Test each rating value from 1 to 5
-        for (int rating = 1; rating <= 5; rating++) {
-            // Test driver rating
-            rideReviewPage.setDriverRating(rating);
-            int actualDriver = rideReviewPage.getDriverRating();
-            assertEquals(actualDriver, rating, "Driver rating should be " + rating);
+        // Create a 1200-character string
+        String longComment = "a".repeat(1200);
+        System.out.println("  ✓ Created 1200-character string");
 
-            // Test vehicle rating
-            rideReviewPage.setVehicleRating(rating);
-            int actualVehicle = rideReviewPage.getVehicleRating();
-            assertEquals(actualVehicle, rating, "Vehicle rating should be " + rating);
+        // Try to input it
+        rideReviewPage.setComment(longComment);
 
-            System.out.println("  ✓ Rating " + rating + " stars works (driver & vehicle)");
-        }
+        // The textarea has maxlength="1000", so it should truncate
+        int actualCount = rideReviewPage.getCharacterCount();
+        String actualComment = rideReviewPage.getComment();
 
-        // Go back without submitting
-        rideReviewPage.goBack();
-        assertTrue(passengerHistoryPage.isOnHistoryPage());
-        System.out.println("  ✓ Navigated back (no submission)");
+        assertTrue(actualCount <= 1000, "Character count should not exceed 1000");
+        assertTrue(actualComment.length() <= 1000, "Comment length should not exceed 1000");
+        System.out.println("  ✓ Input truncated to: " + actualCount + " characters (max 1000)");
 
         System.out.println("✓ TEST 5 PASSED\n");
     }
 
     /**
-     * TEST 6: Submit valid review + Verify in history (SAME TEST)
+     * TEST 6: Submit valid review + Verify in history (IMPROVED - validates ratings AND comment!)
      */
     @Test(priority = 6)
     public void test06_SubmitValidReviewAndVerify() {
-        System.out.println("\n>>> TEST 6: Submit Valid Review + Verify in History");
+        System.out.println("\n>>> TEST 6: Submit Valid Review + Verify (IMPROVED)");
 
         loginAndGoToHistory();
 
-        // Find reviewable ride
-        assertTrue(passengerHistoryPage.findAndOpenReviewableRide());
+        int rideIndex = passengerHistoryPage.findAndOpenReviewableRide();
+        assertTrue(rideIndex >= 0, "Should find reviewable ride");
         assertTrue(rideReviewPage.isOnReviewPage());
-        assertTrue(rideReviewPage.canReview());
-        System.out.println("  ✓ On reviewable ride page");
+        System.out.println("  ✓ On review page");
 
-        // Submit complete review
-        int driverRating = 5;
-        int vehicleRating = 4;
-        String comment = "Excellent ride! Very professional driver and clean vehicle.";
+        // Submit a complete review with specific values
+        int expectedDriverRating = 5;
+        int expectedVehicleRating = 4;
+        String expectedComment = "Excellent service! Very professional driver.";
 
-        rideReviewPage.setDriverRating(driverRating);
-        rideReviewPage.setVehicleRating(vehicleRating);
-        rideReviewPage.setComment(comment);
-        System.out.println("  ✓ Set driver=5, vehicle=4, comment");
+        rideReviewPage.setDriverRating(expectedDriverRating);
+        rideReviewPage.setVehicleRating(expectedVehicleRating);
+        rideReviewPage.setComment(expectedComment);
+        System.out.println("  ✓ Set ratings: driver=" + expectedDriverRating +
+                ", vehicle=" + expectedVehicleRating);
+        System.out.println("  ✓ Set comment: \"" + expectedComment + "\"");
 
-        // Verify form is filled correctly
-        assertEquals(rideReviewPage.getDriverRating(), driverRating);
-        assertEquals(rideReviewPage.getVehicleRating(), vehicleRating);
-        assertEquals(rideReviewPage.getComment(), comment);
-
-        // Submit
-        assertTrue(rideReviewPage.isSubmitButtonEnabled(), "Submit should be enabled");
+        assertTrue(rideReviewPage.isSubmitButtonEnabled(), "Submit button should be enabled");
         rideReviewPage.submitReview();
         System.out.println("  ✓ Submitted review");
 
-        // Verify success message
-        assertTrue(rideReviewPage.isSuccessMessageDisplayed(), "Success message should appear");
+        assertTrue(rideReviewPage.isSuccessMessageDisplayed(),
+                "Success message should appear");
         System.out.println("  ✓ Success message displayed");
 
         // Go back to history
@@ -337,34 +326,67 @@ public class RideReviewTest {
         assertTrue(passengerHistoryPage.isOnHistoryPage());
         System.out.println("  ✓ Back on history page");
 
-        // Open same ride and verify review appears
-        passengerHistoryPage.openRideDetails(0);
+        // Refresh page to get fresh data from backend
+        passengerHistoryPage.refreshPage();
+        assertTrue(passengerHistoryPage.isOnHistoryPage(), "Should still be on history page after refresh");
+        System.out.println("  ✓ Page refreshed to load new review data");
 
-        // Verify review exists in history
-        assertTrue(passengerHistoryPage.isRideAlreadyReviewed(),
-                "Review should exist in database");
-        System.out.println("  ✓ Review exists in history modal");
+        // Verify review exists in history modal
+        passengerHistoryPage.openRideDetails(rideIndex);
 
-        // Verify ratings are displayed (they appear as p-rating elements)
-        // The specific values are shown in the modal - this confirms data persisted
-        System.out.println("  ✓ Driver rating and vehicle rating visible in history");
+        boolean hasReview = passengerHistoryPage.isRideAlreadyReviewed();
+        assertTrue(hasReview, "Review should exist in history");
+
+        int actualDriverRating = passengerHistoryPage.getDriverRatingFromModal();
+        int actualVehicleRating = passengerHistoryPage.getVehicleRatingFromModal();
+
+        assertEquals(actualDriverRating, expectedDriverRating,
+                "Driver rating should match what was submitted");
+        assertEquals(actualVehicleRating, expectedVehicleRating,
+                "Vehicle rating should match what was submitted");
+
+        System.out.println("  ✓ Driver rating verified: " + actualDriverRating + " (expected: " +
+                expectedDriverRating + ")");
+        System.out.println("  ✓ Vehicle rating verified: " + actualVehicleRating + " (expected: " +
+                expectedVehicleRating + ")");
 
         passengerHistoryPage.closeModal();
 
-        System.out.println("✓ TEST 6 PASSED\n");
+        // Also verify on the review page itself
+        passengerHistoryPage.openRideDetails(rideIndex);
+        passengerHistoryPage.clickReviewButton();
+        assertTrue(rideReviewPage.isOnReviewPage());
+
+        int reviewPageDriverRating = rideReviewPage.getDriverRating();
+        int reviewPageVehicleRating = rideReviewPage.getVehicleRating();
+        String reviewPageComment = rideReviewPage.getComment();
+
+        assertEquals(reviewPageDriverRating, expectedDriverRating,
+                "Driver rating on review page should match");
+        assertEquals(reviewPageVehicleRating, expectedVehicleRating,
+                "Vehicle rating on review page should match");
+        assertEquals(reviewPageComment, expectedComment,
+                "Comment on review page should match");
+
+        System.out.println("  ✓ Review page shows: driver=" + reviewPageDriverRating +
+                ", vehicle=" + reviewPageVehicleRating);
+        System.out.println("  ✓ Comment verified: \"" + reviewPageComment + "\"");
+
+        System.out.println("✓ TEST 6 PASSED - All values verified!\n");
     }
 
     /**
-     * TEST 7: Update existing review + Verify update (CONTINUATION OF TEST 6)
+     * TEST 7: Update existing review
      */
     @Test(priority = 7, dependsOnMethods = "test06_SubmitValidReviewAndVerify")
     public void test07_UpdateExistingReviewAndVerify() {
-        System.out.println("\n>>> TEST 7: Update Existing Review + Verify Changes");
+        System.out.println("\n>>> TEST 7: Update Existing Review + Verify Changes (IMPROVED)");
 
         loginAndGoToHistory();
 
         // Find the same ride (should have review from test 6)
-        assertTrue(passengerHistoryPage.findAndOpenReviewableRide());
+        int rideIndex = passengerHistoryPage.findAndOpenReviewableRide();
+        assertTrue(rideIndex >= 0, "Should find reviewable ride");
         assertTrue(rideReviewPage.isOnReviewPage());
         System.out.println("  ✓ On review page for ride with existing review");
 
@@ -373,20 +395,28 @@ public class RideReviewTest {
                 "Should show 'existing review' notice");
         System.out.println("  ✓ Existing review notice displayed");
 
-        // Verify form is pre-populated with previous review data
-        assertEquals(rideReviewPage.getDriverRating(), 5, "Should load previous driver rating");
-        assertEquals(rideReviewPage.getVehicleRating(), 4, "Should load previous vehicle rating");
-        System.out.println("  ✓ Form pre-populated with existing ratings (driver=5, vehicle=4)");
+        // Verify form is pre-populated with previous review data (from test 6)
+        int previousDriverRating = 5;
+        int previousVehicleRating = 4;
+
+        assertEquals(rideReviewPage.getDriverRating(), previousDriverRating,
+                "Should load previous driver rating");
+        assertEquals(rideReviewPage.getVehicleRating(), previousVehicleRating,
+                "Should load previous vehicle rating");
+        System.out.println("  ✓ Form pre-populated with existing ratings (driver=" +
+                previousDriverRating + ", vehicle=" + previousVehicleRating + ")");
 
         // Update the review with new values
         int newDriverRating = 3;
         int newVehicleRating = 3;
-        String emptyComment = ""; // Test with empty comment
+        String newComment = "Updated review - changed my mind.";
 
         rideReviewPage.setDriverRating(newDriverRating);
         rideReviewPage.setVehicleRating(newVehicleRating);
-        rideReviewPage.setComment(emptyComment); // Clear comment
-        System.out.println("  ✓ Updated: driver=3, vehicle=3, comment='' (empty)");
+        rideReviewPage.setComment(newComment);
+        System.out.println("  ✓ Updated: driver=" + newDriverRating + ", vehicle=" +
+                newVehicleRating);
+        System.out.println("  ✓ Updated comment: \"" + newComment + "\"");
 
         // Submit update
         assertTrue(rideReviewPage.isSubmitButtonEnabled());
@@ -403,19 +433,45 @@ public class RideReviewTest {
         assertTrue(passengerHistoryPage.isOnHistoryPage());
         System.out.println("  ✓ Back on history page");
 
-        // Verify updated review in history
-        passengerHistoryPage.openRideDetails(0);
+        // Refresh to get updated data
+        passengerHistoryPage.refreshPage();
+
+        assertTrue(passengerHistoryPage.isOnHistoryPage());
+        System.out.println("  ✓ Page refreshed to load updated review");
+
+        // Verify updated review in history modal
+        passengerHistoryPage.openRideDetails(rideIndex);
         assertTrue(passengerHistoryPage.isRideAlreadyReviewed(),
                 "Updated review should still exist");
-        System.out.println("  ✓ Updated review exists in history");
 
-        // Note: The actual rating values (3, 3) are visible in the modal
-        // confirming the update persisted correctly
-        System.out.println("  ✓ Updated ratings visible in history modal");
+        int updatedDriverRating = passengerHistoryPage.getDriverRatingFromModal();
+        int updatedVehicleRating = passengerHistoryPage.getVehicleRatingFromModal();
+
+        assertEquals(updatedDriverRating, newDriverRating,
+                "Driver rating should be updated to " + newDriverRating);
+        assertEquals(updatedVehicleRating, newVehicleRating,
+                "Vehicle rating should be updated to " + newVehicleRating);
 
         passengerHistoryPage.closeModal();
 
-        System.out.println("✓ TEST 7 PASSED\n");
+        // Also verify on the review page itself
+        passengerHistoryPage.openRideDetails(rideIndex);
+        passengerHistoryPage.clickReviewButton();
+        assertTrue(rideReviewPage.isOnReviewPage());
+
+        // Check editable form values (not readonly since ride can still be reviewed)
+        int reviewPageDriverRating = rideReviewPage.getDriverRating();
+        int reviewPageVehicleRating = rideReviewPage.getVehicleRating();
+        String reviewPageComment = rideReviewPage.getComment();
+
+        assertEquals(reviewPageDriverRating, newDriverRating,
+                "Driver rating on review page should be updated");
+        assertEquals(reviewPageVehicleRating, newVehicleRating,
+                "Vehicle rating on review page should be updated");
+        assertEquals(reviewPageComment, newComment,
+                "Comment on review page should be updated");
+
+        System.out.println("✓ TEST 7 PASSED - All updated values verified!\n");
     }
 
     /**

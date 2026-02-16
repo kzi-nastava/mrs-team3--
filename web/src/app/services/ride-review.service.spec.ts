@@ -29,7 +29,6 @@ describe('RideReviewService', () => {
   });
 
   afterEach(() => {
-    // Verify that no unmatched requests are outstanding
     httpMock.verify();
   });
 
@@ -475,6 +474,30 @@ describe('RideReviewService', () => {
         reviewedAt: '2026-02-15T18:00:00',
         message: 'Review submitted successfully'
       });
+    });
+
+    it('should handle error with comment longer than 1001 characters', () => {
+      const rideId = 8888;
+      const longComment = 'A'.repeat(1001);
+      const reviewRequest: SubmitReviewRequest = {
+        driverRating: 5,
+        vehicleRating: 5,
+        comment: longComment
+      };
+
+      service.submitReview(rideId, reviewRequest).subscribe({
+        next: () => fail('should have failed with validation error for comment exceeding 1000 characters'),
+        error: (error) => {
+          expect(error.status).toBe(400);
+          expect(error.error.message).toContain('1000');
+        }
+      });
+
+      const req = httpMock.expectOne(`${baseUrl}/${rideId}/review`);
+      req.flush(
+        { message: 'Comment cannot exceed 1000 characters' },
+        { status: 400, statusText: 'Bad Request' }
+      );
     });
 
     it('should handle empty string comment', () => {

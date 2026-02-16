@@ -15,6 +15,9 @@ import java.util.List;
 
 public class RideReviewPage {
 
+    private static final int DRIVER_RATING_SECTION_INDEX = 0;
+    private static final int VEHICLE_RATING_SECTION_INDEX = 1;
+
     @FindBy(className = "back-btn")
     private WebElement backButton;
 
@@ -68,28 +71,6 @@ public class RideReviewPage {
         }
     }
 
-    public boolean isLoadingDisplayed() {
-        try {
-            return loadingState.isDisplayed();
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    public boolean isErrorDisplayed() {
-        try {
-            wait.until(ExpectedConditions.visibilityOf(errorCard));
-            return errorCard.isDisplayed();
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    public String getErrorMessage() {
-        wait.until(ExpectedConditions.visibilityOf(errorCard));
-        return errorCard.getText();
-    }
-
     public boolean canReview() {
         try {
             wait.until(ExpectedConditions.visibilityOf(deadlineCard));
@@ -100,96 +81,85 @@ public class RideReviewPage {
         }
     }
 
-    public boolean isReviewExpired() {
-        try {
-            wait.until(ExpectedConditions.visibilityOf(deadlineCard));
-            return deadlineCard.getText().toLowerCase().contains("expired");
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    public int getDaysRemaining() {
-        wait.until(ExpectedConditions.visibilityOf(deadlineCard));
-        String text = deadlineCard.getText();
-
-        // Extract number before "day" or "days"
-        String[] parts = text.split(" ");
-        for (int i = 0; i < parts.length; i++) {
-            if (parts[i].equals("day") || parts[i].equals("days")) {
-                try {
-                    return Integer.parseInt(parts[i - 1]);
-                } catch (NumberFormatException e) {
-                    return -1;
-                }
-            }
-        }
-        return -1;
-    }
-
     public void setDriverRating(int rating) {
-        if (rating < 1 || rating > 5) {
-            throw new IllegalArgumentException("Rating must be between 1 and 5");
-        }
-
-        List<WebElement> ratingSections = driver.findElements(By.className("rating-section"));
-        WebElement driverRatingSection = ratingSections.get(0); // First rating section is for driver
-
-        List<WebElement> stars = driverRatingSection.findElements(By.className("star-btn"));
-
-        wait.until(ExpectedConditions.elementToBeClickable(stars.get(rating - 1)));
-        actions.moveToElement(stars.get(rating - 1)).click().perform();
+        setRatingForSection(DRIVER_RATING_SECTION_INDEX, rating);
     }
 
     public void setVehicleRating(int rating) {
+        setRatingForSection(VEHICLE_RATING_SECTION_INDEX, rating);
+    }
+
+    private void setRatingForSection(int sectionIndex, int rating) {
         if (rating < 1 || rating > 5) {
             throw new IllegalArgumentException("Rating must be between 1 and 5");
         }
 
         List<WebElement> ratingSections = driver.findElements(By.className("rating-section"));
-        WebElement vehicleRatingSection = ratingSections.get(1); // Second rating section is for vehicle
 
-        List<WebElement> stars = vehicleRatingSection.findElements(By.className("star-btn"));
+        if (sectionIndex >= ratingSections.size()) {
+            throw new IllegalStateException("Rating section index " + sectionIndex + " not found");
+        }
+
+        WebElement ratingSection = ratingSections.get(sectionIndex);
+        List<WebElement> stars = ratingSection.findElements(By.className("star-btn"));
 
         wait.until(ExpectedConditions.elementToBeClickable(stars.get(rating - 1)));
         actions.moveToElement(stars.get(rating - 1)).click().perform();
     }
 
     public int getDriverRating() {
-        return getRatingForSection(0);
+        return getRatingForSection(DRIVER_RATING_SECTION_INDEX);
     }
 
     public int getVehicleRating() {
-        return getRatingForSection(1);
+        return getRatingForSection(VEHICLE_RATING_SECTION_INDEX);
     }
 
     /**
-     * Waits until the filled-star count in the given rating section stabilises,
-     * then returns it. This handles Angular's async class binding ([class.filled]).
+     * Waits until the filled-star count in the given rating section stabilizes using WebDriverWait.
      */
     private int getRatingForSection(int sectionIndex) {
-        // Short poll: re-read until the count is stable for two consecutive reads
-        int last = -1;
-        long deadline = System.currentTimeMillis() + 3000; // 3s max
-        while (System.currentTimeMillis() < deadline) {
-            List<WebElement> sections = driver.findElements(By.className("rating-section"));
-            if (sections.size() > sectionIndex) {
-                int current = sections.get(sectionIndex)
-                        .findElements(By.cssSelector(".star-btn.filled")).size();
-                if (current == last) {
-                    return current; // stable — Angular change detection has settled
+        // First wait for rating sections to be present
+        wait.until(ExpectedConditions.presenceOfAllElementsLocatedBy(By.className("rating-section")));
+
+        // Custom wait condition: star count stabilizes
+        try {
+            return wait.until(driver -> {
+                List<WebElement> sections = driver.findElements(By.className("rating-section"));
+                if (sections.size() <= sectionIndex) {
+                    return null; // Section not found yet
                 }
-                last = current;
-            }
-            try { Thread.sleep(100); } catch (InterruptedException ignored) {}
+
+                int currentCount = sections.get(sectionIndex)
+                        .findElements(By.cssSelector(".star-btn.filled"))
+                        .size();
+
+                // Double-check immediately to see if it's stable
+                int recheckCount = driver.findElements(By.className("rating-section"))
+                        .get(sectionIndex)
+                        .findElements(By.cssSelector(".star-btn.filled"))
+                        .size();
+
+                // If counts match, Angular has settled
+                return (currentCount == recheckCount) ? currentCount : null;
+            });
+        } catch (Exception e) {
+            return 0;
         }
-        return last < 0 ? 0 : last;
     }
 
     public void setComment(String comment) {
         wait.until(ExpectedConditions.visibilityOf(commentTextarea));
-        commentTextarea.clear();
-        commentTextarea.sendKeys(comment);
+
+        // Use JavaScript to clear and set value to trigger Angular's change detection
+        ((JavascriptExecutor) driver).executeScript(
+                "arguments[0].value = ''; arguments[0].dispatchEvent(new Event('input'));",
+                commentTextarea
+        );
+
+        if (comment != null && !comment.isEmpty()) {
+            commentTextarea.sendKeys(comment);
+        }
     }
 
     public String getComment() {
@@ -200,7 +170,6 @@ public class RideReviewPage {
     public int getCharacterCount() {
         wait.until(ExpectedConditions.visibilityOf(charCounter));
         String text = charCounter.getText();
-        // Extract number before " /"
         String[] parts = text.split(" / ");
         return Integer.parseInt(parts[0].trim());
     }
@@ -212,6 +181,7 @@ public class RideReviewPage {
 
     public boolean isSubmitButtonEnabled() {
         try {
+            wait.until(ExpectedConditions.presenceOfElementLocated(By.className("btn-submit")));
             return submitButton.isEnabled();
         } catch (Exception e) {
             return false;
@@ -227,11 +197,6 @@ public class RideReviewPage {
         }
     }
 
-    public String getSuccessMessage() {
-        wait.until(ExpectedConditions.visibilityOf(successBanner));
-        return successBanner.getText();
-    }
-
     public boolean hasExistingReview() {
         try {
             return existingReviewNotice.isDisplayed();
@@ -240,109 +205,8 @@ public class RideReviewPage {
         }
     }
 
-    public boolean isReviewReadonly() {
-        try {
-            return readonlyReview.isDisplayed();
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    public int getReadonlyDriverRating() {
-        wait.until(ExpectedConditions.visibilityOf(readonlyReview));
-
-        List<WebElement> ratingDisplays = readonlyReview.findElements(By.className("rating-display"));
-        WebElement driverRating = ratingDisplays.get(0);
-
-        List<WebElement> filledStars = driverRating.findElements(By.cssSelector(".stars-display span.filled"));
-        return filledStars.size();
-    }
-
-    public int getReadonlyVehicleRating() {
-        wait.until(ExpectedConditions.visibilityOf(readonlyReview));
-
-        List<WebElement> ratingDisplays = readonlyReview.findElements(By.className("rating-display"));
-        WebElement vehicleRating = ratingDisplays.get(1);
-
-        List<WebElement> filledStars = vehicleRating.findElements(By.cssSelector(".stars-display span.filled"));
-        return filledStars.size();
-    }
-
-    public String getReadonlyComment() {
-        wait.until(ExpectedConditions.visibilityOf(readonlyReview));
-
-        try {
-            WebElement commentDisplay = readonlyReview.findElement(By.className("comment-display"));
-            return commentDisplay.findElement(By.tagName("p")).getText();
-        } catch (Exception e) {
-            return ""; // No comment
-        }
-    }
-
     public void goBack() {
         wait.until(ExpectedConditions.elementToBeClickable(backButton));
         actions.moveToElement(backButton).click().perform();
-    }
-
-    public String getRideId() {
-        String url = driver.getCurrentUrl();
-        String[] parts = url.split("/");
-        return parts[parts.length - 1];
-    }
-
-    public boolean isMapDisplayed() {
-        try {
-            WebElement map = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("reviewMap")));
-            return map.isDisplayed();
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    public String getDriverName() {
-        try {
-            List<WebElement> infoItems = driver.findElements(By.className("info-item"));
-            for (WebElement item : infoItems) {
-                String label = item.findElement(By.className("info-label")).getText();
-                if (label.equals("Driver")) {
-                    return item.findElement(By.className("info-value")).getText();
-                }
-            }
-        } catch (Exception e) {
-            return "";
-        }
-        return "";
-    }
-
-    public String getVehicleType() {
-        try {
-            List<WebElement> infoItems = driver.findElements(By.className("info-item"));
-            for (WebElement item : infoItems) {
-                String label = item.findElement(By.className("info-label")).getText();
-                if (label.equals("Vehicle Type")) {
-                    return item.findElement(By.className("info-value")).getText();
-                }
-            }
-        } catch (Exception e) {
-            return "";
-        }
-        return "";
-    }
-
-    public void waitForSuccessMessageToDisappear() {
-        try {
-            wait.until(ExpectedConditions.invisibilityOf(successBanner));
-        } catch (Exception e) {
-            // Already disappeared or never appeared
-        }
-    }
-
-    public boolean isReviewFormVisible() {
-        try {
-            WebElement reviewFormCard = driver.findElement(By.className("review-form-card"));
-            return reviewFormCard.isDisplayed();
-        } catch (Exception e) {
-            return false;
-        }
     }
 }
