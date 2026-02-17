@@ -10,74 +10,106 @@
     <button (click)="switchTab('DRIVERS')" [class.active]="selectedTab==='DRIVERS'">
       Active Drivers
     </button>
+
+    <button (click)="switchTab('PRICING')" [class.active]="selectedTab==='PRICING'">
+    📊 Pricing Management
+    </button>
   </div>
 
   @if (selectedTab==='USERS' && loadingUsers) {
-  <p>Loading users...</p>
+    <p>Loading users...</p>
   }
 
   @if (selectedTab==='DRIVERS' && loadingDrivers) {
-  <p>Loading drivers...</p>
+    <p>Loading drivers...</p>
   }
 
   @if (!loadingUsers && selectedTab==='USERS') {
-  <div class="list">
-    @for (u of users; track u.id) {
-    <div class="card" (click)="openUser(u)">
-      <h3>{{u.name}} {{u.surname}}</h3>
-      <p>{{u.email}}</p>
+    <div class="list">
+      @for (u of users; track u.id) {
+        <div class="card" (click)="openUser(u)">
+          <h3>{{u.name}} {{u.surname}}</h3>
+          <p>{{u.email}}</p>
+        </div>
+      }
     </div>
-    }
-  </div>
   }
 
   @if (!loadingDrivers && selectedTab==='DRIVERS') {
-  <div class="list">
-    @for (d of drivers; track d.id) {
-    <div class="card">
-      <h3>{{d.name}} {{d.surname}}</h3>
-      <p>{{d.email}}</p>
+    <!-- Search Bar -->
+    <div class="search-container">
+      <input
+        type="text"
+        class="search-input"
+        placeholder="🔍 Search drivers by name..."
+        [(ngModel)]="driverSearchQuery"
+        (input)="filterDrivers()"
+      />
+      @if (driverSearchQuery) {
+        <button class="clear-search" (click)="clearSearch()">✕</button>
+      }
     </div>
-    }
-  </div>
+
+    <div class="list">
+      @for (d of filteredDrivers; track d.id) {
+        <div class="card driver-card">
+          <div class="driver-info">
+            <h3>{{d.name}} {{d.surname}}</h3>
+            <p>{{d.email}}</p>
+            @if (d.blocked) {
+              <span class="badge blocked">Blocked</span>
+            } @else {
+              <span class="badge active">Active</span>
+            }
+          </div>
+          <button class="btn-track" (click)="trackDriverRide(d); $event.stopPropagation()">
+            🗺️ Track Ride
+          </button>
+        </div>
+      }
+
+      @if (filteredDrivers.length === 0 && driverSearchQuery) {
+        <div class="empty-state">
+          <p>No drivers found matching "{{driverSearchQuery}}"</p>
+        </div>
+      }
+
+      @if (filteredDrivers.length === 0 && !driverSearchQuery) {
+        <div class="empty-state">
+          <p>No active drivers with rides in progress</p>
+        </div>
+      }
+    </div>
   }
 
 </div>
 
 @if (showUserModal && selectedUser) {
+  <div class="modal-overlay" (click)="closeModal()">
+    <div class="modal-box" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>User details</h2>
+        <button (click)="closeModal()">✕</button>
+      </div>
 
-<div class="modal-overlay" (click)="closeModal()">
+      <div class="modal-body">
+        <p><b>Name:</b> {{selectedUser.name}} {{selectedUser.surname}}</p>
+        <p><b>Email:</b> {{selectedUser.email}}</p>
 
-  <div class="modal-box" (click)="$event.stopPropagation()">
+        @if (selectedUser.phoneNumber) {
+          <p><b>Phone:</b> {{selectedUser.phoneNumber}}</p>
+        }
 
-    <div class="modal-header">
-      <h2>User details</h2>
-      <button (click)="closeModal()">✕</button>
+        @if (selectedUser.address) {
+          <p><b>Address:</b> {{selectedUser.address}}</p>
+        }
+
+        <p><b>Role:</b> {{selectedUser.role}}</p>
+
+        <app-block-user-button [userId]="selectedUser.id" [isBlocked]="selectedUser.blocked"
+          (blockChanged)="onBlockChanged()">
+        </app-block-user-button>
+      </div>
     </div>
-
-    <div class="modal-body">
-
-      <p><b>Name:</b> {{selectedUser.name}} {{selectedUser.surname}}</p>
-      <p><b>Email:</b> {{selectedUser.email}}</p>
-
-      @if (selectedUser.phoneNumber) {
-      <p><b>Phone:</b> {{selectedUser.phoneNumber}}</p>
-      }
-
-      @if (selectedUser.address) {
-      <p><b>Address:</b> {{selectedUser.address}}</p>
-      }
-
-      <p><b>Role:</b> {{selectedUser.role}}</p>
-
-      <app-block-user-button [userId]="selectedUser.id" [isBlocked]="selectedUser.blocked"
-        (blockChanged)="onBlockChanged()">
-      </app-block-user-button>
-
-    </div>
-
   </div>
-
-</div>
-
 }

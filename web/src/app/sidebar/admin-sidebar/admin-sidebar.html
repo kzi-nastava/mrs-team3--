@@ -1,39 +1,36 @@
 <div class="icon-sidebar">
-  <button class="icon-btn" (click)="goHome()" title="Home">
+  <button id="home-btn" class="icon-btn" (click)="goHome()" title="Home">
     🏠
   </button>
-  <button class="icon-btn" (click)="registerDriver()" title="Register Driver">
+  <button id="register-driver-btn" class="icon-btn" (click)="registerDriver()" title="Register Driver">
     🚗
   </button>
-  <button class="icon-btn" (click)="goMessages()" title="Messages">
+  <button id="messages-btn" class="icon-btn" (click)="goMessages()" title="Messages">
     💬
   </button>
-  <button class="icon-btn notification-btn" (click)="goNotifications()" title="Notifications">
+  <button id="notifications-btn" class="icon-btn notification-btn" (click)="goNotifications()" title="Notifications">
     🔔
     @if (unreadCount > 0) {
     <span class="notification-badge">{{unreadCount}}</span>
     } </button>
-  <button class="icon-btn" (click)="goProfileChangeRequests()" title="Profile Change Requests">
+  <button id="profile-change-requests-btn" class="icon-btn" (click)="goProfileChangeRequests()" title="Profile Change Requests">
     📝
   </button>
 
-  <button class="icon-btn" (click)="goUserManagement()" title="User Management">
+  <button id="user-management-btn" class="icon-btn" (click)="goUserManagement()" title="User Management">
     👥
   </button>
-  <button class="icon-btn" (click)="goPricing()" title="Pricing Management">
-    📊
-  </button>
 
-  <button class="icon-btn" (click)="goReport()" title="Analytics">
+  <button id="analytics-btn" class="icon-btn" (click)="goReport()" title="Analytics">
     📈
   </button>
 
 
   <div class="spacer"></div>
-  <button class="icon-btn" (click)="goProfile()" title="Profile">
+  <button id="profile-btn" class="icon-btn" (click)="goProfile()" title="Profile">
     👤
   </button>
-  <button class="icon-btn logout-btn" (click)="logout()" title="Logout">
+  <button id="logout-btn" class="icon-btn logout-btn" (click)="logout()" title="Logout">
     🚪
   </button>
 </div>

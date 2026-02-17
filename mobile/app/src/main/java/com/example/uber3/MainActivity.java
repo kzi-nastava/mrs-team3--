@@ -10,7 +10,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
-import com.example.uber3.ReportFragment;
+
 import com.example.uber3.network.api.ApiClient;
 import com.example.uber3.network.api.ApiService;
 import com.example.uber3.network.manager.LogoutHelper;
@@ -28,94 +28,155 @@ public class MainActivity extends AppCompatActivity {
     private DrawerLayout drawerLayout;
     private MaterialToolbar topAppBar;
     private NavigationView navigationView;
-
     private String currentUserRole;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        currentUserRole = TokenManager.getRole(this);
 
+        currentUserRole = TokenManager.getRole(this);
         String token = TokenManager.getToken(this);
 
+        // Connect to WebSocket if logged in
         if (token != null) {
             ChatWebSocketManager.getInstance().connect(token);
         }
 
+        // Initialize views
         drawerLayout = findViewById(R.id.drawerLayout);
         topAppBar = findViewById(R.id.topAppBar);
         navigationView = findViewById(R.id.navigationView);
+
+        // Setup navigation header
         View header = navigationView.getHeaderView(0);
         TextView tvEmail = header.findViewById(R.id.tvEmail);
         tvEmail.setText(TokenManager.getUserEmail(this));
+
+        // Setup toolbar
         topAppBar.setNavigationIcon(R.drawable.ic_menu);
         topAppBar.setNavigationOnClickListener(v -> drawerLayout.open());
 
+        // Update menu visibility
         updateMenuVisibility();
         updateMenuByRole();
+
+        // Setup navigation listener
         navigationView.setNavigationItemSelectedListener(item -> {
             int id = item.getItemId();
 
             if (id == R.id.nav_home) {
-                topAppBar.setTitle("Home");
-                loadFragment(HomeFragment.newInstance(currentUserRole));
-
-            }else if (id == R.id.nav_chat) {
-                topAppBar.setTitle("Chat");
-
-                if(currentUserRole.equals("ADMIN")){
-                    loadFragment(new AdminChatListFragment());
-                } else {
-                    loadFragment(ChatFragment.forAdmin());
-                }
+                handleHomeNavigation();
+            }
+            else if (id == R.id.nav_chat) {
+                handleChatNavigation();
             }
             else if (id == R.id.nav_ride) {
-                topAppBar.setTitle("Ride History");
-                loadFragment(DriverHistoryFragment.newInstance());
-
-            } else if (id == R.id.nav_profile) {
+                handleRideNavigation();
+            }
+            else if (id == R.id.nav_profile) {
                 topAppBar.setTitle("Profile");
                 loadFragment(ProfileFragment.newInstance(currentUserRole));
-
-            } else if (id == R.id.nav_requests) {
+            }
+            else if (id == R.id.nav_track_ride) {
+                loadRideTrackingFragment();
+            }
+            else if (id == R.id.nav_driver_dashboard) {
+                topAppBar.setTitle("Driver Dashboard");
+                loadFragment(DriverDashboardFragment.newInstance());
+            }
+            else if (id == R.id.nav_requests) {
                 topAppBar.setTitle("Change Requests");
                 loadFragment(new DriverChangeRequestFragment());
-            } else if (id == R.id.nav_login) {
+            }
+            else if (id == R.id.nav_login) {
                 topAppBar.setTitle("Login");
                 loadFragment(new LoginFragment());
-
-            } else if (id == R.id.nav_logout) {
+            }
+            else if (id == R.id.nav_logout) {
                 LogoutHelper.logout(this);
                 return true;
-            } else if (id == R.id.nav_register_driver) {
+            }
+            else if (id == R.id.nav_register_driver) {
                 topAppBar.setTitle("Register Driver");
                 loadFragment(new RegisterDriverFragment());
-            } else if (id == R.id.nav_report) {
+            }
+            else if (id == R.id.nav_report) {
                 topAppBar.setTitle("Reports");
                 loadFragment(new ReportFragment());
             }
-
+            else if (id == R.id.nav_admin_users) {
+                topAppBar.setTitle("Users Management");
+                loadFragment(AdminUsersFragment.newInstance());
+            }
 
             drawerLayout.close();
             return true;
         });
 
+        // Load initial fragment
         if (savedInstanceState == null) {
-
             if (TokenManager.getToken(this) != null) {
-                topAppBar.setTitle("Home");
-                loadFragment(HomeFragment.newInstance(currentUserRole));
+                handleHomeNavigation();
             } else {
                 topAppBar.setTitle("Login");
                 loadFragment(new LoginFragment());
             }
         }
 
+        // Handle deep links
         handleDeepLink(getIntent());
-
     }
 
+    /**
+     * Handle home navigation based on user role
+     */
+    private void handleHomeNavigation() {
+        if ("ADMIN".equals(currentUserRole)) {
+            topAppBar.setTitle("Ride History");
+            loadFragment(AdminRideHistoryFragment.newInstance());
+        }
+        else if ("DRIVER".equals(currentUserRole)) {
+            topAppBar.setTitle("Driver Dashboard");
+            loadFragment(DriverDashboardFragment.newInstance());
+        }
+        else {
+            // PASSENGER or default
+            topAppBar.setTitle("Home");
+            loadFragment(HomeFragment.newInstance(currentUserRole));
+        }
+    }
+
+    /**
+     * Handle chat navigation based on user role
+     */
+    private void handleChatNavigation() {
+        topAppBar.setTitle("Chat");
+        if ("ADMIN".equals(currentUserRole)) {
+            loadFragment(new AdminChatListFragment());
+        } else {
+            loadFragment(ChatFragment.forAdmin());
+        }
+    }
+
+    /**
+     * Handle ride/history navigation based on user role
+     */
+    private void handleRideNavigation() {
+        topAppBar.setTitle("Ride History");
+
+        if ("PASSENGER".equals(currentUserRole)) {
+            loadFragment(new PassengerRideHistoryFragment());
+        } else if ("DRIVER".equals(currentUserRole)) {
+            loadFragment(DriverHistoryFragment.newInstance());
+        } else if ("ADMIN".equals(currentUserRole)) {
+            loadFragment(AdminRideHistoryFragment.newInstance());
+        } 
+    }
+
+    /**
+     * Handle deep link intents
+     */
     private void handleDeepLink(Intent intent) {
         if (intent == null || intent.getData() == null) return;
 
@@ -140,8 +201,18 @@ public class MainActivity extends AppCompatActivity {
         else if (path.contains("/verify")) {
             handleEmailVerification(token);
         }
+        else if (path.contains("/track")) {
+            // Handle ride tracking deep link
+            String trackingToken = data.getQueryParameter("token");
+            if (trackingToken != null) {
+                loadRideTrackingFragmentWithToken(trackingToken);
+            }
+        }
     }
 
+    /**
+     * Handle email verification
+     */
     private void handleEmailVerification(String token) {
         if (token == null || token.isEmpty()) {
             showVerificationResult("invalid");
@@ -175,15 +246,20 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
+
+    /**
+     * Show verification result fragment
+     */
     private void showVerificationResult(String status) {
         topAppBar.setTitle("Verification");
         loadFragment(VerificationResultFragment.newInstance(status));
     }
 
-
+    /**
+     * Update menu visibility based on login state
+     */
     private void updateMenuVisibility() {
-        boolean loggedIn =
-                TokenManager.getToken(this) != null;
+        boolean loggedIn = TokenManager.getToken(this) != null;
 
         navigationView.getMenu()
                 .findItem(R.id.nav_login)
@@ -194,6 +270,50 @@ public class MainActivity extends AppCompatActivity {
                 .setVisible(loggedIn);
     }
 
+    /**
+     * Update menu items visibility based on user role
+     */
+    private void updateMenuByRole() {
+        String role = currentUserRole;
+
+        navigationView.getMenu().findItem(R.id.nav_ride).setVisible(false);
+        navigationView.getMenu().findItem(R.id.nav_requests).setVisible(false);
+        navigationView.getMenu().findItem(R.id.nav_chat).setVisible(false);
+        navigationView.getMenu().findItem(R.id.nav_profile).setVisible(false);
+        navigationView.getMenu().findItem(R.id.nav_register_driver).setVisible(false);
+        navigationView.getMenu().findItem(R.id.nav_admin_users).setVisible(false);
+        navigationView.getMenu().findItem(R.id.nav_report).setVisible(false);
+        navigationView.getMenu().findItem(R.id.nav_track_ride).setVisible(false);
+        navigationView.getMenu().findItem(R.id.nav_driver_dashboard).setVisible(false);
+
+        // Show items based on role
+        if ("PASSENGER".equals(role)) {
+            navigationView.getMenu().findItem(R.id.nav_chat).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_ride).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_profile).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_report).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_track_ride).setVisible(true);
+        }
+        else if ("DRIVER".equals(role)) {
+            navigationView.getMenu().findItem(R.id.nav_driver_dashboard).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_chat).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_ride).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_profile).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_report).setVisible(true);
+        }
+        else if ("ADMIN".equals(role)) {
+            navigationView.getMenu().findItem(R.id.nav_requests).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_chat).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_profile).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_register_driver).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_admin_users).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_report).setVisible(true);
+        }
+    }
+
+    /**
+     * Load a fragment into the container
+     */
     private void loadFragment(Fragment fragment) {
         if (fragment != null) {
             getSupportFragmentManager()
@@ -203,6 +323,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Public methods for fragment navigation
+     */
     public void loadRegisterFragment() {
         topAppBar.setTitle("Register");
         loadFragment(new RegisterFragment());
@@ -218,41 +341,21 @@ public class MainActivity extends AppCompatActivity {
         loadFragment(new ForgotPasswordFragment());
     }
 
-    private void updateMenuByRole() {
-
-        String role = currentUserRole;
-
-
-
-        navigationView.getMenu().findItem(R.id.nav_ride).setVisible(false);
-        navigationView.getMenu().findItem(R.id.nav_requests).setVisible(false);
-        navigationView.getMenu().findItem(R.id.nav_chat).setVisible(false);
-        navigationView.getMenu().findItem(R.id.nav_profile).setVisible(false);
-        navigationView.getMenu().findItem(R.id.nav_register_driver).setVisible(false);
-
-        if (role.equals("PASSENGER")) {
-            navigationView.getMenu().findItem(R.id.nav_chat).setVisible(true);
-            navigationView.getMenu().findItem(R.id.nav_ride).setVisible(true);
-            navigationView.getMenu().findItem(R.id.nav_profile).setVisible(true);
-
-        }
-
-        if (role.equals("DRIVER")) {
-            navigationView.getMenu().findItem(R.id.nav_chat).setVisible(true);
-            navigationView.getMenu().findItem(R.id.nav_ride).setVisible(true);
-            navigationView.getMenu().findItem(R.id.nav_profile).setVisible(true);
-
-        }
-
-        if (role.equals("ADMIN")) {
-            navigationView.getMenu().findItem(R.id.nav_requests).setVisible(true);
-            navigationView.getMenu().findItem(R.id.nav_chat).setVisible(true);
-            navigationView.getMenu().findItem(R.id.nav_profile).setVisible(true);
-            navigationView.getMenu().findItem(R.id.nav_register_driver).setVisible(true);
-
-        }
+    /**
+     * Load ride tracking for logged-in user (gets current ride automatically)
+     */
+    public void loadRideTrackingFragment() {
+        topAppBar.setTitle("Ride Tracking");
+        loadFragment(RideTrackingFragment.newInstance());
     }
 
+    /**
+     * Load ride tracking with a specific tracking token (for guest access)
+     */
+    public void loadRideTrackingFragmentWithToken(String trackingToken) {
+        topAppBar.setTitle("Ride Tracking");
+        loadFragment(RideTrackingFragment.newInstanceWithToken(trackingToken));
+    }
 
     @Override
     protected void onNewIntent(Intent intent) {
@@ -260,5 +363,4 @@ public class MainActivity extends AppCompatActivity {
         setIntent(intent);
         handleDeepLink(intent);
     }
-
 }

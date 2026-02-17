@@ -1,0 +1,314 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- ════════════════════════════════════
+         LAYER 1: Map (always full-screen behind everything)
+         ════════════════════════════════════ -->
+    <org.osmdroid.views.MapView
+        android:id="@+id/mapView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+
+    <!-- Refresh FAB over the map (top-right) -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/btnRefresh"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|end"
+        android:layout_margin="16dp"
+        android:src="@drawable/ic_refresh"
+        app:tint="@android:color/white"
+        app:backgroundTint="#6366f1"
+        app:fabSize="mini"/>
+
+    <!-- ════════════════════════════════════
+         LAYER 2: Bottom sheet (compact, scrollable)
+         ════════════════════════════════════ -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:orientation="vertical"
+        android:maxHeight="360dp">
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:maxHeight="360dp"
+            android:fillViewport="false"
+            android:scrollbars="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_bottom_sheet"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:paddingTop="12dp"
+                android:paddingBottom="16dp"
+                android:elevation="16dp">
+
+                <!-- ── Ride Info Bar (distance / price / passengers) ── -->
+                <LinearLayout
+                    android:id="@+id/layoutRideInfo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="8dp"
+                    android:visibility="gone">
+
+                    <!-- Distance -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:gravity="center">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/distance"
+                            android:textSize="10sp"
+                            android:textColor="@color/gray_600"/>
+
+                        <TextView
+                            android:id="@+id/tvDistance"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/_0_00_km"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/gray_900"/>
+                    </LinearLayout>
+
+                    <!-- Price -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:gravity="center">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/price"
+                            android:textSize="10sp"
+                            android:textColor="@color/gray_600"/>
+
+                        <TextView
+                            android:id="@+id/tvPrice"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/_0_rsd"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="#10B981"/>
+                    </LinearLayout>
+
+                    <!-- Passengers -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:gravity="center">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/passengers"
+                            android:textSize="10sp"
+                            android:textColor="@color/gray_600"/>
+
+                        <TextView
+                            android:id="@+id/tvPassengers"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/gray_900"/>
+                    </LinearLayout>
+
+                </LinearLayout>
+
+                <!-- ── Action Controls (status-dependent buttons) ── -->
+                <LinearLayout
+                    android:id="@+id/layoutControls"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginBottom="8dp"
+                    android:visibility="gone">
+
+                    <!-- ACCEPTED state buttons -->
+                    <Button
+                        android:id="@+id/btnMoveToStart"
+                        android:layout_width="match_parent"
+                        android:layout_height="44dp"
+                        android:text="@string/go_to_pickup"
+                        android:textSize="13sp"
+                        android:backgroundTint="#6366f1"
+                        android:textColor="@android:color/white"
+                        android:layout_marginBottom="6dp"
+                        android:visibility="gone"/>
+
+                    <Button
+                        android:id="@+id/btnStartRide"
+                        android:layout_width="match_parent"
+                        android:layout_height="44dp"
+                        android:text="@string/start_ride"
+                        android:textSize="13sp"
+                        android:backgroundTint="#10B981"
+                        android:textColor="@android:color/white"
+                        android:layout_marginBottom="6dp"
+                        android:visibility="gone"/>
+
+                    <!-- IN_PROGRESS: Panic button (full width) -->
+                    <Button
+                        android:id="@+id/btnPanic"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:text="@string/panic_emoji"
+                        android:textSize="14sp"
+                        android:backgroundTint="#DC2626"
+                        android:textColor="@android:color/white"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="6dp"
+                        android:visibility="gone"/>
+
+                    <!-- Stop buttons container (built programmatically) -->
+                    <LinearLayout
+                        android:id="@+id/layoutStopButtons"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:background="#F9FAFB"
+                        android:padding="6dp"
+                        android:layout_marginBottom="6dp"
+                        android:visibility="gone"/>
+
+                    <!-- IN_PROGRESS: Finish Ride -->
+                    <Button
+                        android:id="@+id/btnFinishRide"
+                        android:layout_width="match_parent"
+                        android:layout_height="44dp"
+                        android:text="@string/finish_ride"
+                        android:textSize="13sp"
+                        android:backgroundTint="#10B981"
+                        android:textColor="@android:color/white"
+                        android:layout_marginBottom="6dp"
+                        android:visibility="gone"/>
+
+                    <!-- ACCEPTED: Cancel (outlined, danger) -->
+                    <Button
+                        android:id="@+id/btnCancelRide"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="44dp"
+                        android:text="@string/cancel_ride"
+                        android:textSize="13sp"
+                        android:textColor="#DC2626"
+                        app:strokeColor="#DC2626"
+                        android:visibility="gone"/>
+
+                </LinearLayout>
+
+                <!-- ── Divider ── -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@color/gray_200"
+                    android:layout_marginBottom="8dp"/>
+
+                <!-- ── Empty State Message (shown when no rides at all) ── -->
+                <TextView
+                    android:id="@+id/tvEmptyState"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/no_active_rides_or_pending_requests_nyou_ll_be_notified_when_new_rides_are_available"
+                    android:textSize="14sp"
+                    android:textColor="@color/gray_600"
+                    android:gravity="center"
+                    android:padding="24dp"
+                    android:visibility="gone"/>
+
+                <!-- ── My Rides section title ── -->
+                <TextView
+                    android:id="@+id/tvMyRidesTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/my_rides"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/gray_900"
+                    android:layout_marginBottom="6dp"/>
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvMyRides"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:nestedScrollingEnabled="false"
+                    android:visibility="gone"/>
+
+                <!-- ── Available Rides title (only shown when there are pending rides) ── -->
+                <TextView
+                    android:id="@+id/tvPendingRidesTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/available_rides"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/gray_900"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginBottom="6dp"
+                    android:visibility="gone"/>
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvPendingRides"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:nestedScrollingEnabled="false"
+                    android:visibility="gone"/>
+
+            </LinearLayout>
+        </ScrollView>
+    </LinearLayout>
+
+    <!-- ════════════════════════════════════
+         LAYER 3: Loading overlay (centered, no background — map still visible)
+         ════════════════════════════════════ -->
+    <LinearLayout
+        android:id="@+id/layoutLoading"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="24dp"
+        android:background="#CC000000"
+        android:visibility="gone">
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:indeterminateTint="@android:color/white"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/loading"
+            android:textSize="14sp"
+            android:textColor="@android:color/white"
+            android:layout_marginTop="8dp"/>
+    </LinearLayout>
+
+</FrameLayout>

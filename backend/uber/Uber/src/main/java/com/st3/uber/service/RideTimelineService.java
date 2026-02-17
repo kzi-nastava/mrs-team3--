@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class RideTimelineService {
@@ -93,11 +94,15 @@ public class RideTimelineService {
       res.setDriverName((name + surname).isBlank() ? "-" : name + " " + surname);
     }
 
-    res.setPassengerEmails(
-        ride.getPassengers().stream()
-            .map(Passenger::getEmail)
-            .toList()
-    );
+    List<String> passengerEmails = ride.getPassengers() == null ? List.of() : ride.getPassengers().stream()
+        .map(Passenger::getEmail)
+        .toList();
+
+    List<String> userEmails = ride.getInvites() == null ? List.of() : ride.getInvites().stream()
+        .map(RideInvite::getEmail)
+        .toList();
+
+    res.setPassengerEmails(Stream.concat(passengerEmails.stream(), userEmails.stream()).toList());
 
     res.setStops(
         ride.getRideStops() == null ? List.of() : ride.getRideStops()

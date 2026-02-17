@@ -4,23 +4,16 @@ import { FormsModule } from '@angular/forms';
 import * as L from 'leaflet';
 import { env } from '../../../env/env';
 import { Router } from '@angular/router';
-import { AdminHistoryService, AdminRideSummary, AdminRideDetails, Location } from '../../services/admin-history.service';
-import { RatingModule} from 'primeng/rating';
+import {
+  AdminHistoryService,
+  AdminRideSummary,
+  AdminRideDetails,
+  Location
+} from '../../services/admin-history.service';
+import { RatingModule } from 'primeng/rating';
 
-
-type SortOption =
-  | 'startTime-desc'
-  | 'startTime-asc'
-  | 'endTime-desc'
-  | 'endTime-asc'
-  | 'route-asc'
-  | 'route-desc'
-  | 'price-asc'
-  | 'price-desc'
-  | 'status-asc'
-  | 'status-desc'
-  | 'panic-asc'
-  | 'panic-desc';
+type SortField = 'startTime' | 'endTime' | 'route' | 'price' | 'status' | 'panic';
+type SortDir = 'asc' | 'desc';
 
 type RideForRouteText = {
   startLocation: { address: string };
@@ -44,10 +37,16 @@ export class AdminRideHistoryComponent implements OnInit, AfterViewInit {
 
   userId: number | null = null;
 
+  // Filters (ostavljeno kao string, minimal diff)
   startDate: string = '';
   endDate: string = '';
 
-  sortOption: SortOption = 'startTime-desc';
+  // ✅ NEW: jedan select key (npr. "price|asc")
+  sortKey: string = 'startTime|desc';
+
+  // Interno parsirano (field + dir)
+  private sortField: SortField = 'startTime';
+  private sortDir: SortDir = 'desc';
 
   private detailMap: L.Map | null = null;
   private mapMarkers: L.Marker[] = [];
@@ -60,6 +59,8 @@ export class AdminRideHistoryComponent implements OnInit, AfterViewInit {
   ) {}
 
   ngOnInit(): void {
+    // osiguraj da su sortField/sortDir inicijalno usklađeni sa sortKey
+    this.applySortKey(this.sortKey);
     this.loadRides();
   }
 
@@ -80,59 +81,60 @@ export class AdminRideHistoryComponent implements OnInit, AfterViewInit {
 
     const sorted = [...rides];
 
-    switch (this.sortOption) {
-      case 'startTime-asc':
-        sorted.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
-        break;
-      case 'startTime-desc':
-        sorted.sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
-        break;
+    const dirMul = this.sortDir === 'asc' ? 1 : -1;
+    const field = this.sortField;
 
-      case 'endTime-asc':
-        sorted.sort((a, b) => this.endMillis(a) - this.endMillis(b));
-        break;
-      case 'endTime-desc':
-        sorted.sort((a, b) => this.endMillis(b) - this.endMillis(a));
-        break;
+    sorted.sort((a, b) => {
+      switch (field) {
+        case 'startTime':
+          return dirMul * (new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
 
-      case 'route-asc':
-        sorted.sort((a, b) => this.routeText(a).localeCompare(this.routeText(b)));
-        break;
-      case 'route-desc':
-        sorted.sort((a, b) => this.routeText(b).localeCompare(this.routeText(a)));
-        break;
+        case 'endTime':
+          return dirMul * (this.endMillis(a) - this.endMillis(b));
 
-      case 'price-asc':
-        sorted.sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
-        break;
-      case 'price-desc':
-        sorted.sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
-        break;
+        case 'route':
+          return dirMul * this.routeText(a).localeCompare(this.routeText(b));
 
-      case 'status-asc':
-        sorted.sort((a, b) => (a.status ?? '').localeCompare(b.status ?? ''));
-        break;
-      case 'status-desc':
-        sorted.sort((a, b) => (b.status ?? '').localeCompare(a.status ?? ''));
-        break;
+        case 'price':
+          return dirMul * ((a.price ?? 0) - (b.price ?? 0));
 
-      case 'panic-asc':
-        sorted.sort((a, b) => Number(Boolean(a.panic)) - Number(Boolean(b.panic)));
-        break;
-      case 'panic-desc':
-        sorted.sort((a, b) => Number(Boolean(b.panic)) - Number(Boolean(a.panic)));
-        break;
-    }
+        case 'status':
+          return dirMul * ((a.status ?? '').localeCompare(b.status ?? ''));
+
+        case 'panic':
+          return dirMul * (Number(Boolean(a.panic)) - Number(Boolean(b.panic)));
+      }
+    });
 
     return sorted;
   });
 
-  protected onSortChange(): void {
+  // ✅ Pozovi ovo iz HTML-a na (ngModelChange)
+  protected onSortKeyChange(value: string): void {
+    this.sortKey = value;
+    this.applySortKey(value);
+
+    // Minimal diff: zadržavamo postojeći "refresh" pattern
     this.rides.set([...this.rides()]);
   }
 
   protected onFilterChange(): void {
+    // Minimal diff: zadržavamo postojeći "refresh" pattern
     this.rides.set([...this.rides()]);
+  }
+
+  private applySortKey(value: string): void {
+    const [fieldRaw, dirRaw] = (value || '').split('|');
+
+    const field = (fieldRaw as SortField) || 'startTime';
+    const dir = (dirRaw as SortDir) || 'desc';
+
+    // Bezbedni fallback (ako value nije validan)
+    const allowedFields: SortField[] = ['startTime', 'endTime', 'route', 'price', 'status', 'panic'];
+    const allowedDirs: SortDir[] = ['asc', 'desc'];
+
+    this.sortField = allowedFields.includes(field) ? field : 'startTime';
+    this.sortDir = allowedDirs.includes(dir) ? dir : 'desc';
   }
 
   protected loadRides(): void {
@@ -161,7 +163,6 @@ export class AdminRideHistoryComponent implements OnInit, AfterViewInit {
         console.error('getAdminRideDetails failed:', err);
         const fallback: AdminRideDetails = {
           ...ride,
-
           stops: [],
           driverName: '-',
           passengerEmails: [],
@@ -404,7 +405,6 @@ export class AdminRideHistoryComponent implements OnInit, AfterViewInit {
       favorite: Boolean(r?.favorite),
       price: Number(r?.price ?? 0),
       panic,
-
     };
   }
 
@@ -445,8 +445,111 @@ export class AdminRideHistoryComponent implements OnInit, AfterViewInit {
   protected resetFilters(): void {
     this.startDate = '';
     this.endDate = '';
-    this.sortOption = 'startTime-desc';
+
+    this.sortKey = 'startTime|desc';
+    this.applySortKey(this.sortKey);
 
     this.rides.set([...this.rides()]);
+  }
+
+  // --- Date Picker state ---
+  protected datePickerOpen = false;
+  private datePickerTarget: 'from' | 'to' = 'from';
+
+  // first day of the currently displayed month (local time)
+  private dpView = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+
+  protected dpMonthLabel = '';
+  protected dpCells: Array<null | { day: number; iso: string }> = [];
+
+  private buildDatePicker(): void {
+    const y = this.dpView.getFullYear();
+    const m = this.dpView.getMonth(); // 0-based
+
+    const monthNames = [
+      'January','February','March','April','May','June',
+      'July','August','September','October','November','December',
+    ];
+    this.dpMonthLabel = `${monthNames[m]} ${y}`;
+
+    const firstOfMonth = new Date(y, m, 1);
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+
+    // Make Monday=0 ... Sunday=6
+    const jsDay = firstOfMonth.getDay(); // Sun=0 ... Sat=6
+    const mondayIndex = (jsDay + 6) % 7;
+
+    const cells: Array<null | { day: number; iso: string }> = [];
+
+    // leading blanks
+    for (let i = 0; i < mondayIndex; i++) cells.push(null);
+
+    // actual days
+    for (let d = 1; d <= daysInMonth; d++) {
+      const iso = this.toISODate(new Date(y, m, d));
+      cells.push({ day: d, iso });
+    }
+
+    // trailing blanks to complete the last week row
+    while (cells.length % 7 !== 0) cells.push(null);
+
+    this.dpCells = cells;
+  }
+
+  private toISODate(date: Date): string {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  protected openDatePicker(target: 'from' | 'to', ev?: Event): void {
+    ev?.stopPropagation?.();
+    this.datePickerTarget = target;
+
+    // If target already has a date, open the calendar on that month
+    const value = target === 'from' ? this.startDate : this.endDate;
+    if (value) {
+      const [yy, mm] = value.split('-').map(Number);
+      if (yy && mm) this.dpView = new Date(yy, mm - 1, 1);
+    }
+
+    this.buildDatePicker();
+    this.datePickerOpen = true;
+  }
+
+  protected closeDatePicker(): void {
+    this.datePickerOpen = false;
+  }
+
+  protected dpPrevMonth(): void {
+    this.dpView = new Date(this.dpView.getFullYear(), this.dpView.getMonth() - 1, 1);
+    this.buildDatePicker();
+  }
+
+  protected dpNextMonth(): void {
+    this.dpView = new Date(this.dpView.getFullYear(), this.dpView.getMonth() + 1, 1);
+    this.buildDatePicker();
+  }
+
+  protected selectDate(iso: string): void {
+    if (this.datePickerTarget === 'from') this.startDate = iso;
+    else this.endDate = iso;
+
+    this.onFilterChange();
+    this.closeDatePicker();
+  }
+
+  protected clearDate(): void {
+    if (this.datePickerTarget === 'from') this.startDate = '';
+    else this.endDate = '';
+
+    this.onFilterChange();
+    this.closeDatePicker();
+  }
+
+  protected pickToday(): void {
+    const iso = this.toISODate(new Date());
+    this.selectDate(iso);
   }
 }

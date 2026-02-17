@@ -1,54 +1,53 @@
 <!-- driver-sidebar.component.html (UPDATED) -->
 
 <div class="icon-sidebar">
-  <button class="icon-btn" (click)="goHistory()" title="Ride History">
+  <button id="history-btn" class="icon-btn" (click)="goHistory()" title="Ride History">
     📊
   </button>
   
-  <button class="icon-btn" (click)="goMessages()" title="Messages">
+  <button id="messages-btn" class="icon-btn" (click)="goMessages()" title="Messages">
     💬
   </button>
 
-  <button class="icon-btn" (click)="goDriverDashboard()" title="Dashboard">
+  <button id="dashboard-btn" class="icon-btn" (click)="goDriverDashboard()" title="Dashboard">
     🚗
   </button>
 
-  <button class="icon-btn notification-btn" (click)="goNotifications()" title="Notifications">
+  <button id="notifications-btn" class="icon-btn notification-btn" (click)="goNotifications()" title="Notifications">
     <span class="bell-icon">🔔</span>
     @if (unreadCount > 0) {
     <span class="notification-badge">{{unreadCount}}</span>
     }
   </button>
 
-  <button class="icon-btn" (click)="goReport()" title="Analytics">
+  <button id="analytics-btn" class="icon-btn" (click)="goReport()" title="Analytics">
     📈
   </button>
 
 
   <div class="spacer"></div>
-  
-  <button class="icon-btn" (click)="toggleActiveStatus()" [title]="isActive ? 'Go Inactive' : 'Go Active'">
-    @if (isActive) {
-    <span>🟢</span>
-    }
-    @if (!isActive) {
+
+   <button id="active-status-btn" class="icon-btn" (click)="toggleActiveStatus()" [title]="isActive ? 'Go Inactive' : 'Go Active'">
+    @if (inRide || !isActive) {
     <span>🔴</span>
     }
+    @if (!inRide && isActive) {
+    <span>🟢</span>
+    }
+
   </button>
   
-  <button class="icon-btn" (click)="goProfile()" title="Profile">
+  <button id="profile-btn" class="icon-btn" (click)="goProfile()" title="Profile">
     👤
   </button>
   
-  <button class="icon-btn logout-btn" (click)="logout()" title="Logout">
+  <button id="logout-btn" class="icon-btn logout-btn" (click)="logout()" title="Logout">
     🚪
   </button>
 </div>
 
-<!-- Chat Popup Component -->
 <app-chat-popup></app-chat-popup>
 
-<!-- Logout Modal -->
 @if (showLogoutModal) {
 <app-logout-modal (confirm)="onLogoutConfirm()" (cancel)="onLogoutCancel()">
 </app-logout-modal>

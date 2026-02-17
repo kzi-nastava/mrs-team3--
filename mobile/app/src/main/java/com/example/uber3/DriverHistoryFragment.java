@@ -663,7 +663,7 @@ public class DriverHistoryFragment extends Fragment implements RideHistoryAdapte
                 reportCard.addView(tvReportDate);
 
                 TextView tvReportMessage = new TextView(requireContext());
-                tvReportMessage.setText(report.message);
+                tvReportMessage.setText(report.reportText);
                 tvReportMessage.setTextSize(14);
                 tvReportMessage.setPadding(0, 4, 0, 0);
                 reportCard.addView(tvReportMessage);

@@ -32,6 +32,7 @@ export class ChatPopupComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
   private refreshInterval: any;
+  private hasInitializedData = false;
 
   constructor(
     private chatService: ChatService,
@@ -48,6 +49,7 @@ export class ChatPopupComponent implements OnInit, OnDestroy {
 
     console.log('Current user:', this.currentUserId, 'Is Admin:', this.isAdmin);
 
+    // Always subscribe to incoming messages
     this.websocketService.chatMessages$
       .pipe(takeUntil(this.destroy$))
       .subscribe(message => {
@@ -55,12 +57,7 @@ export class ChatPopupComponent implements OnInit, OnDestroy {
         this.handleIncomingMessage(message);
       });
 
-    if (this.isAdmin && this.currentUserId) {
-      this.loadAdminChatRooms();
-      this.setupPeriodicRefresh();
-    } else {
-      this.setupNonAdminChat();
-    }
+    // Don't load data until chat is opened - initialization happens in open()
   }
 
   ngOnDestroy(): void {
@@ -103,6 +100,19 @@ export class ChatPopupComponent implements OnInit, OnDestroy {
 
   open(): void {
     this.isOpen = true;
+    
+    // Initialize data on first open
+    if (!this.hasInitializedData) {
+      this.hasInitializedData = true;
+      
+      if (this.isAdmin && this.currentUserId) {
+        this.loadAdminChatRooms();
+        this.setupPeriodicRefresh();
+      } else {
+        this.setupNonAdminChat();
+      }
+    }
+    
     setTimeout(() => this.scrollToBottom(), 100);
   }
 

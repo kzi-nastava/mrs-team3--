@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { DriverRideService, DriverRide, PendingRide, Location, CancelRideRequest } from '../services/driver-ride.service';
 import * as L from 'leaflet';
 import { env } from '../../env/env';
+import {DriverStatusComponent} from './driver-status';
+import {DriverService} from '../services/driver.service';
 
 interface Toast {
   id: number;
@@ -22,6 +24,7 @@ export class DriverDashboardComponent implements OnInit, OnDestroy {
   protected pendingRides = signal<PendingRide[]>([]);
   protected selectedRide = signal<DriverRide | PendingRide | null>(null);
   protected loading = signal<boolean>(true);
+  private pollingInterval: any = null;
 
   // Map
   private map: any = null;
@@ -40,13 +43,17 @@ export class DriverDashboardComponent implements OnInit, OnDestroy {
   protected toasts: Toast[] = [];
   private toastIdCounter = 0;
 
-  constructor(private service: DriverRideService) {}
+  constructor(private service: DriverRideService,
+              private driverStatusStore: DriverStatusComponent,
+              private driverService: DriverService) {}
 
   ngOnInit(): void {
     this.loadData();
+    this.startPolling();
   }
 
   ngOnDestroy(): void {
+    this.stopPolling();
     this.clearMap();
   }
 
@@ -115,9 +122,13 @@ export class DriverDashboardComponent implements OnInit, OnDestroy {
 
   protected startRide(): void {
     const ride = this.selectedRide() as DriverRide;
+
     this.service.startRide(ride.rideId).subscribe({
       next: () => {
         this.showToast('Ride started!', 'success');
+
+        this.driverStatusStore.setInRide(true);
+
         this.loadData();
       },
       error: () => {
@@ -125,6 +136,7 @@ export class DriverDashboardComponent implements OnInit, OnDestroy {
       }
     });
   }
+
 
   protected openFinishModal(): void {
     this.showFinishModal.set(true);
@@ -137,12 +149,30 @@ export class DriverDashboardComponent implements OnInit, OnDestroy {
   protected finishRide(): void {
     const ride = this.selectedRide() as DriverRide;
 
-    // FIXED: Pass the actual rideId
-    this.service.finishRide(ride.rideId, null).subscribe({
+    let currentLocation: Location | null = null;
+
+    if (this.driverMarker) {
+      const latlng = this.driverMarker.getLatLng();
+      currentLocation = {
+        lat: latlng.lat,
+        lng: latlng.lng,
+        address: 'Current Location'
+      };
+    }
+    else if (ride.driverCurrentLocation) {
+      currentLocation = ride.driverCurrentLocation;
+    }
+
+    this.service.finishRide(ride.rideId, currentLocation).subscribe({
       next: (response) => {
         this.closeFinishModal();
+        this.driverStatusStore.setInRide(false);
 
-        // Clear the map and selected ride to prevent residue
+        this.driverService.getStatus().subscribe(s => {
+          this.driverStatusStore.setActive(s.active);
+          this.driverStatusStore.setInRide(s.inRide);
+        });
+
         this.clearMap();
         this.selectedRide.set(null);
 
@@ -259,17 +289,29 @@ export class DriverDashboardComponent implements OnInit, OnDestroy {
     }).addTo(this.map).bindPopup('Destination: ' + ride.endLocation.address);
     this.markers.push(endMarker);
 
-    // Driver marker for IN_PROGRESS
-    if (this.isDriverRide(ride) && ride.status === 'IN_PROGRESS') {
-      this.driverMarker = L.marker([ride.startLocation.lat, ride.startLocation.lng], {
-        icon: L.divIcon({
-          className: 'car-marker',
-          html: '<div style="font-size: 30px;">🚗</div>',
-          iconSize: [30, 30],
-          iconAnchor: [15, 15]
-        })
-      }).addTo(this.map).bindPopup('You are here');
-    }
+   // Driver marker for IN_PROGRESS
+if (this.isDriverRide(ride) && ride.status === 'IN_PROGRESS') {
+  // Remove old driver marker first
+  if (this.driverMarker) {
+    this.map.removeLayer(this.driverMarker);
+    this.driverMarker = null;
+  }
+
+  // Use actual driver current location from backend if available
+  // Otherwise fall back to start location
+  const driverLocation = ride.driverCurrentLocation
+    ? { lat: ride.driverCurrentLocation.lat, lng: ride.driverCurrentLocation.lng }
+    : { lat: ride.startLocation.lat, lng: ride.startLocation.lng };
+
+  this.driverMarker = L.marker([driverLocation.lat, driverLocation.lng], {
+    icon: L.divIcon({
+      className: 'car-marker',
+      html: '<div style="font-size: 30px;">🚗</div>',
+      iconSize: [30, 30],
+      iconAnchor: [15, 15]
+    })
+  }).addTo(this.map).bindPopup('You are here');
+}
 
     if (this.markers.length > 0) {
       const group = L.featureGroup(this.markers);
@@ -471,5 +513,43 @@ export class DriverDashboardComponent implements OnInit, OnDestroy {
       }
     });
   }
+
+  private startPolling(): void {
+  this.pollingInterval = setInterval(() => {
+    const currentRide = this.selectedRide();
+    if (currentRide && this.isDriverRide(currentRide) &&
+        (currentRide.status === 'ACCEPTED' || currentRide.status === 'IN_PROGRESS')) {
+      this.loadDataSilently();
+    }
+  }, 20000);
+}
+
+private stopPolling(): void {
+  if (this.pollingInterval) {
+    clearInterval(this.pollingInterval);
+    this.pollingInterval = null;
+  }
+}
+
+private loadDataSilently(): void {
+  this.service.getMyRides().subscribe({
+    next: (rides) => {
+      this.myRides.set(rides);
+
+      const currentRide = this.selectedRide();
+      if (currentRide && this.isDriverRide(currentRide)) {
+        const updatedRide = rides.find(r => r.rideId === currentRide.rideId);
+        if (updatedRide) {
+          this.selectedRide.set(updatedRide);
+          this.addMarkers(updatedRide);
+          this.drawRoute(updatedRide);
+        }
+      }
+    },
+    error: (err) => {
+      console.error('Polling error:', err);
+    }
+  });
+}
 
 }

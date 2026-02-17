@@ -1,22 +1,25 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ChangeDetectorRef } from '@angular/core';
+import { Router } from '@angular/router';
 import { AdminUserService, AdminUser, ActiveDriver } from '../services/admin-user.service';
 import { BlockUserButtonComponent } from '../block-user-button/block-user-button';
 
 @Component({
   selector: 'app-admin-users',
   standalone: true,
-  imports: [CommonModule, BlockUserButtonComponent],
+  imports: [CommonModule, FormsModule, BlockUserButtonComponent],
   templateUrl: './admin-users.html',
   styleUrls: ['./admin-users.css']
 })
 export class AdminUsersComponent implements OnInit {
 
-  selectedTab: 'USERS' | 'DRIVERS' = 'USERS';
+  selectedTab: 'USERS' | 'DRIVERS' | 'PRICING' = 'USERS';
 
   users: AdminUser[] = [];
   drivers: ActiveDriver[] = [];
+  filteredDrivers: ActiveDriver[] = [];
 
   selectedUser: AdminUser | null = null;
   showUserModal = false;
@@ -24,14 +27,18 @@ export class AdminUsersComponent implements OnInit {
   loadingUsers = false;
   loadingDrivers = false;
 
-  constructor(private service: AdminUserService, private cdr: ChangeDetectorRef) { }
+  driverSearchQuery = '';
+
+  constructor(
+    private service: AdminUserService,
+    private cdr: ChangeDetectorRef,
+    private router: Router
+  ) { }
 
   ngOnInit() {
     this.loadUsers();
     this.loadDrivers();
   }
-
-
 
   loadUsers() {
     this.loadingUsers = true;
@@ -49,15 +56,37 @@ export class AdminUsersComponent implements OnInit {
 
     this.service.getActiveDrivers().subscribe(res => {
       this.drivers = res;
+      this.filteredDrivers = res;
       this.loadingDrivers = false;
 
       this.cdr.detectChanges();
     });
   }
 
+  filterDrivers() {
+    const query = this.driverSearchQuery.toLowerCase().trim();
 
+    if (!query) {
+      this.filteredDrivers = this.drivers;
+      return;
+    }
 
-  switchTab(tab: 'USERS' | 'DRIVERS') {
+    this.filteredDrivers = this.drivers.filter(driver => {
+      const fullName = `${driver.name} ${driver.surname}`.toLowerCase();
+      return fullName.includes(query);
+    });
+  }
+
+  clearSearch() {
+    this.driverSearchQuery = '';
+    this.filteredDrivers = this.drivers;
+  }
+
+  switchTab(tab: 'USERS' | 'DRIVERS' | 'PRICING') {
+    if (tab === 'PRICING') {
+      this.router.navigate(['/pricing-management']);
+      return;
+    }
     this.selectedTab = tab;
   }
 
@@ -78,6 +107,10 @@ export class AdminUsersComponent implements OnInit {
     if (this.selectedUser) {
       this.selectedUser.blocked = !this.selectedUser.blocked;
     }
+  }
+
+  trackDriverRide(driver: ActiveDriver) {
+    this.router.navigate(['/admin/ride-tracking', driver.id]);
   }
 
 }

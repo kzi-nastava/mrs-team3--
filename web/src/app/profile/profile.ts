@@ -120,7 +120,7 @@ export class ProfileComponent implements OnInit {
         address: response.address,
         role: 'DRIVER',
         profileImage: response.profileImage ?? '',
-        activeHours: 6,
+        activeHours: Math.round((response.activeMinutes24h || 0) / 60),
         vehicle: {
           model: response.vehicle.model,
           licensePlate: response.vehicle.registrationNumber,

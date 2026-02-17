@@ -8,6 +8,7 @@ import { ChatService } from '../../services/chat.service';
 import { LogoutModalComponent } from '../../logout-modal/logout-modal';
 import { ChatPopupComponent } from '../../chat/chat';
 import { Subject, takeUntil } from 'rxjs';
+import {DriverStatusComponent} from '../../driver-dashboard/driver-status';
 
 @Component({
   selector: 'app-driver-sidebar',
@@ -17,13 +18,14 @@ import { Subject, takeUntil } from 'rxjs';
   styleUrls: ['./driver-sidebar.css']
 })
 export class DriverSidebarComponent implements OnInit, OnDestroy {
-  
+
   @ViewChild(ChatPopupComponent) chatPopup!: ChatPopupComponent;
 
   unreadCount = 0;
   showLogoutModal = false;
   isActive = true;
-  
+  inRide = false;
+
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -32,11 +34,26 @@ export class DriverSidebarComponent implements OnInit, OnDestroy {
     private driverService: DriverService,
     private notificationService: NotificationService,
     private messageService: MessageService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private driverStatusStore: DriverStatusComponent
   ) { }
 
   ngOnInit(): void {
-    // Subscribe to notification count
+    this.driverStatusStore.inRide$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(v => {
+        this.inRide = v;
+        this.cdr.detectChanges();
+      });
+
+    this.driverStatusStore.active$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(v => {
+        this.isActive = v;
+        this.cdr.detectChanges();
+      });
+
+
     setTimeout(() => {
       this.notificationService.unreadCount$
         .pipe(takeUntil(this.destroy$))
@@ -69,7 +86,11 @@ export class DriverSidebarComponent implements OnInit, OnDestroy {
   }
 
   goMessages() {
-    this.chatPopup.toggle();
+    if (this.chatPopup) {
+      this.chatPopup.toggle();
+    } else {
+      console.warn('Chat popup not yet initialized');
+    }
   }
 
   goProfile() {
@@ -93,21 +114,44 @@ export class DriverSidebarComponent implements OnInit, OnDestroy {
   this.router.navigate(['/report']);
 }
 
+  isChangingStatus = false;
 
   toggleActiveStatus(): void {
-    const prev = this.isActive;
-    this.isActive = !this.isActive;
+    if (this.isChangingStatus) return;
+
+    this.isChangingStatus = true;
+
     this.driverService.setActiveStatus().subscribe({
-      next: () => {
+      next: (res) => {
+        this.driverStatusStore.setActive(res.active);
+
+        if (res.activityRequest) {
+          this.messageService.add({
+            severity: 'info',
+            summary: 'Request queued',
+            detail: 'Status will change after finishing the current ride.'
+          });
+        } else {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Status updated',
+            detail: res.active
+              ? 'You are now active.'
+              : 'You are now inactive.'
+          });
+        }
       },
       error: (err) => {
-        this.isActive = prev;
         this.messageService.add({
           severity: 'error',
           summary: 'Status Change Failed',
           detail: err.error?.message || 'Unable to change status.'
         });
+      },
+      complete: () => {
+        this.isChangingStatus = false;
       }
     });
   }
+
 }

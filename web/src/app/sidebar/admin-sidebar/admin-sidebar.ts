@@ -65,9 +65,7 @@ export class AdminSidebarComponent implements OnInit, OnDestroy {
   goProfile() {
     this.router.navigate(['/profile']);
   }
-  goPricing() {
-    this.router.navigate(['/pricing-management']);
-  }
+
   goMessages() {
     this.chatPopup.toggle();
   }

@@ -48,7 +48,6 @@
                     android:gravity="center"
                     android:paddingBottom="16dp"/>
 
-                <!-- PICKUP -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -84,7 +83,6 @@
                     android:orientation="vertical"
                     android:layout_marginTop="8dp"/>
 
-                <!-- DESTINATION -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -141,11 +139,10 @@
                     android:text="@string/pet_friendly"/>
 
 
-                <!-- INVITE PASSENGERS -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Invite passengers"
+                    android:text="@string/invite_passengers"
                     android:textStyle="bold"
                     android:layout_marginTop="16dp"/>
 
@@ -159,7 +156,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:hint="Passenger email"
+                        android:hint="@string/passenger_email"
                         android:inputType="textEmailAddress"/>
 
                     <ImageButton
@@ -234,7 +231,15 @@
                         android:text="@string/mock_reset"
                         app:cornerRadius="24dp"
                         style="@style/Widget.Material3.Button.TonalButton"/>
+
                 </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnFavorites"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:text="@string/favorites"
+                    android:layout_marginTop="8dp"/>
 
                 <LinearLayout
                     android:id="@+id/priceInfoLayout"
