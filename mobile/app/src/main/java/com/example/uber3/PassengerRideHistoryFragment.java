@@ -29,6 +29,8 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.uber3.ReviewDialog;
+import com.example.uber3.network.service.ReviewService;
 import com.example.uber3.adapter.PassengerRideHistoryAdapter;
 import com.example.uber3.network.api.ApiClient;
 import com.example.uber3.network.api.ApiService;
@@ -471,6 +473,7 @@ public class PassengerRideHistoryFragment extends Fragment implements PassengerR
         Button btnClose = dialog.findViewById(R.id.btnClose);
 
         Button btnOrderAgain = dialog.findViewById(R.id.btnOrderAgain);
+        Button btnLeaveReview = dialog.findViewById(R.id.btnLeaveReview);
 
         btnOrderAgain.setOnClickListener(v -> {
             androidx.fragment.app.FragmentActivity activity = getActivity();
@@ -479,6 +482,69 @@ public class PassengerRideHistoryFragment extends Fragment implements PassengerR
             dialog.dismiss();
             openOrderAgain(ride);
         });
+
+        if (ride.endTime != null && !ride.endTime.isEmpty()) {
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault());
+                Date endDate = sdf.parse(ride.endTime.substring(0, Math.min(19, ride.endTime.length())));
+
+                if (endDate != null) {
+                    long endMillis = endDate.getTime();
+                    long now = System.currentTimeMillis();
+                    long diff = now - endMillis;
+                    long threeDays = 3L * 24 * 60 * 60 * 1000;
+
+                    // ⭐ DEBUG LOGS - Check these in Logcat!
+                    android.util.Log.d("REVIEW_DEBUG", "=== REVIEW BUTTON DEBUG ===");
+                    android.util.Log.d("REVIEW_DEBUG", "Ride ID: " + ride.id);
+                    android.util.Log.d("REVIEW_DEBUG", "End Time: " + ride.endTime);
+                    android.util.Log.d("REVIEW_DEBUG", "Current Time: " + new Date(now));
+                    android.util.Log.d("REVIEW_DEBUG", "Difference (ms): " + diff);
+                    android.util.Log.d("REVIEW_DEBUG", "Difference (hours): " + (diff / 1000 / 60 / 60));
+                    android.util.Log.d("REVIEW_DEBUG", "Difference (days): " + (diff / 1000 / 60 / 60 / 24));
+                    android.util.Log.d("REVIEW_DEBUG", "Three days (ms): " + threeDays);
+                    android.util.Log.d("REVIEW_DEBUG", "diff >= 0: " + (diff >= 0));
+                    android.util.Log.d("REVIEW_DEBUG", "diff <= threeDays: " + (diff <= threeDays));
+                    android.util.Log.d("REVIEW_DEBUG", "ride.rideReview: " + ride.rideReview);
+                    android.util.Log.d("REVIEW_DEBUG", "ride.driverReview: " + ride.driverReview);
+
+                    if (diff >= 0 && diff <= threeDays) {
+                        android.util.Log.d("REVIEW_DEBUG", "✅ SHOWING BUTTON - Within 3 days!");
+                        btnLeaveReview.setVisibility(View.VISIBLE);
+
+                        if (ride.rideReview != null && ride.rideReview > 0) {
+                            android.util.Log.d("REVIEW_DEBUG", "Setting text: Update Review");
+                            btnLeaveReview.setText("✏️ Update Review");
+                        } else {
+                            android.util.Log.d("REVIEW_DEBUG", "Setting text: Leave Review");
+                            btnLeaveReview.setText("⭐ Leave Review");
+                        }
+
+                        btnLeaveReview.setOnClickListener(v -> {
+                            dialog.dismiss();
+                            ReviewDialog.show(requireContext(), ride.id, this::loadRideHistory);
+                        });
+                    } else {
+                        android.util.Log.d("REVIEW_DEBUG", "❌ HIDING BUTTON - Outside 3 day window");
+                        android.util.Log.d("REVIEW_DEBUG", "Reason: diff=" + diff + ", threeDays=" + threeDays);
+                        btnLeaveReview.setVisibility(View.GONE);
+                    }
+                } else {
+                    android.util.Log.d("REVIEW_DEBUG", "❌ HIDING BUTTON - endDate is null");
+                    btnLeaveReview.setVisibility(View.GONE);
+                }
+            } catch (Exception e) {
+                android.util.Log.e("REVIEW_DEBUG", "❌ EXCEPTION: " + e.getMessage());
+                e.printStackTrace();
+                btnLeaveReview.setVisibility(View.GONE);
+            }
+        } else {
+            android.util.Log.d("REVIEW_DEBUG", "❌ HIDING BUTTON - ride.endTime is null or empty");
+            android.util.Log.d("REVIEW_DEBUG", "ride.endTime: " + ride.endTime);
+            btnLeaveReview.setVisibility(View.GONE);
+        }
+
+        android.util.Log.d("REVIEW_DEBUG", "=== END DEBUG ===");
 
 
 
@@ -549,12 +615,19 @@ public class PassengerRideHistoryFragment extends Fragment implements PassengerR
             ORSRepository.getRoute(points, routePoints -> {
                 if (!routePoints.isEmpty() && isAdded()) {
                     requireActivity().runOnUiThread(() -> {
-                        Polyline line = new Polyline(mapView);
-                        line.setPoints(routePoints);
-                        line.setColor(Color.parseColor("#6366F1"));
-                        line.setWidth(8f);
-                        mapView.getOverlays().add(line);
-                        mapView.invalidate();
+                        if (mapView == null || mapView.getParent() == null) {
+                            return; // Dialog closed, don't draw
+                        }
+
+                        try {
+                            Polyline line = new Polyline(mapView);
+                            line.setPoints(routePoints);
+                            line.setColor(Color.parseColor("#6366F1"));
+                            line.setWidth(8f);
+                            mapView.getOverlays().add(line);
+                            mapView.invalidate();
+                        } catch (Exception e) {
+                        }
                     });
                 }
             });
