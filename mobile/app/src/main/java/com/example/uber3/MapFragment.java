@@ -18,6 +18,10 @@ import org.osmdroid.views.MapView;
 import org.osmdroid.events.MapEventsReceiver;
 import org.osmdroid.views.overlay.MapEventsOverlay;
 
+import com.example.uber3.network.model.location.ActiveVehicle;
+import com.example.uber3.network.service.VehicleService;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,6 +46,8 @@ public class MapFragment extends Fragment {
 
     private MapView mapView;
     private final List<Marker> markers = new ArrayList<>();
+
+    private final List<Marker> vehicleMarkers = new ArrayList<>();
 
     private Polyline routeLine;
 
@@ -396,6 +402,63 @@ public class MapFragment extends Fragment {
 
 
 
+    public void loadAndShowActiveVehicles() {
+        VehicleService.getActiveVehicles(requireContext(), new VehicleService.VehiclesCallback() {
+
+            @Override
+            public void onSuccess(List<ActiveVehicle> vehicles) {
+                requireActivity().runOnUiThread(() -> {
+                    clearVehicleMarkers();
+                    for (ActiveVehicle vehicle : vehicles) {
+                        addVehicleMarker(vehicle);
+                    }
+                    mapView.invalidate();
+                });
+            }
+
+            @Override
+            public void onError(String message) {
+                android.util.Log.e("MapFragment", "Vehicle load error: " + message);
+            }
+        });
+    }
+
+    private void addVehicleMarker(ActiveVehicle vehicle) {
+        GeoPoint point = new GeoPoint(vehicle.latitude, vehicle.longitude);
+
+        Marker marker = new Marker(mapView);
+        marker.setPosition(point);
+        marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+
+        // Green = available, Red = unavailable
+        int drawableRes = vehicle.available
+                ? R.drawable.ic_car_green
+                : R.drawable.ic_car_red;
+
+        Drawable icon = ContextCompat.getDrawable(requireContext(), drawableRes);
+        marker.setIcon(icon);
+
+        // Popup info
+        String status = vehicle.available ? "Available ✓" : "Unavailable";
+        marker.setTitle(vehicle.registrationNumber);
+        marker.setSnippet(status);
+        marker.setInfoWindow(new org.osmdroid.views.overlay.infowindow.BasicInfoWindow(
+                org.osmdroid.library.R.layout.bonuspack_bubble, mapView));
+
+        vehicleMarkers.add(marker);
+        mapView.getOverlays().add(marker);
+    }
+
+    private void clearVehicleMarkers() {
+        for (Marker m : vehicleMarkers) {
+            mapView.getOverlays().remove(m);
+        }
+        vehicleMarkers.clear();
+    }
+
+    public void refreshVehicles() {
+        loadAndShowActiveVehicles();
+    }
 
 
 
