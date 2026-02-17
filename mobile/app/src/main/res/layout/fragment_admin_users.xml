@@ -141,4 +141,16 @@
 
     </FrameLayout>
 
+    <!-- PRICING TAB CONTENT -->
+    <FrameLayout
+        android:id="@+id/layoutPricingTab"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:visibility="gone">
+
+        <include layout="@layout/layout_pricing_tab"/>
+
+    </FrameLayout>
+
 </LinearLayout>
