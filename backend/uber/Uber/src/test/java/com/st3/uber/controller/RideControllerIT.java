@@ -177,4 +177,68 @@ class RideControllerIT {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
+    void createRide_shouldReturn401_whenNoJwt() throws Exception {
+        CreateRideRequest request = getCreateRideRequest();
+
+        mockMvc.perform(post("/api/rides")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andDo(print())
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void createRide_shouldPersistRideInDatabase() throws Exception {
+
+        long before = rideRepository.count();
+
+        CreateRideRequest request = getCreateRideRequest();
+
+        mockMvc.perform(post("/api/rides")
+                        .with(jwt().jwt(jwt -> jwt.claim("uid", testPassenger.getId())))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated());
+
+        long after = rideRepository.count();
+
+        assertThat(after).isEqualTo(before + 1);
+    }
+
+    @Test
+    void createRide_shouldReturnCorrectData() throws Exception {
+
+        CreateRideRequest request = getCreateRideRequest();
+
+        mockMvc.perform(post("/api/rides")
+                        .with(jwt().jwt(jwt -> jwt.claim("uid", testPassenger.getId())))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.vehicleType").value("STANDARD"))
+                .andExpect(jsonPath("$.distanceKm").isNumber())
+                .andExpect(jsonPath("$.calculatedPrice").isNumber())
+                .andExpect(jsonPath("$.estimatedTimeMinutes").isNumber());
+    }
+
+    @Test
+    void createRide_shouldReturn409_whenPassengerAlreadyHasActiveRide() throws Exception {
+
+        CreateRideRequest request = getCreateRideRequest();
+
+        mockMvc.perform(post("/api/rides")
+                        .with(jwt().jwt(jwt -> jwt.claim("uid", testPassenger.getId())))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/api/rides")
+                        .with(jwt().jwt(jwt -> jwt.claim("uid", testPassenger.getId())))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict());
+    }
+
+
 }
