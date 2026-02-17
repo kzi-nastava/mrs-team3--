@@ -146,4 +146,48 @@ class RideRepositoryTest {
 
         assertThat(exists).isFalse();
     }
+
+    @Test
+    void find_by_status_and_scheduled_at_is_not_null() {
+        Passenger p = buildPassenger();
+
+        LocalDateTime now = LocalDateTime.now();
+
+        Ride ok = buildRide(p);
+        ok.setStatus(RideStatus.ACCEPTED);
+        ok.setScheduledAt(now.plusMinutes(10));
+        rideRepository.save(ok);
+
+        Ride nullScheduled = buildRide(p);
+        nullScheduled.setStatus(RideStatus.ACCEPTED);
+        nullScheduled.setScheduledAt(null);
+        rideRepository.save(nullScheduled);
+
+        Ride wrongStatus = buildRide(p);
+        wrongStatus.setStatus(RideStatus.PENDING);
+        wrongStatus.setScheduledAt(now.plusMinutes(10));
+        rideRepository.save(wrongStatus);
+
+        List<Ride> result = rideRepository.findByStatusAndScheduledAtIsNotNull(RideStatus.ACCEPTED);
+
+        assertThat(result).extracting(Ride::getId).containsExactly(ok.getId());
+    }
+
+    @Test
+    void find_by_id_with_lock_when_ride_exists() {
+        Passenger p = buildPassenger();
+        Ride r = buildRide(p);
+
+        var found = rideRepository.findByIdWithLock(r.getId());
+
+        assertThat(found).isPresent();
+        assertThat(found.get().getId()).isEqualTo(r.getId());
+    }
+
+    @Test
+    void find_by_id_with_lock_when_ride_not_exists() {
+        var found = rideRepository.findByIdWithLock(999999L);
+        assertThat(found).isEmpty();
+    }
+
 }
