@@ -223,6 +223,19 @@
             android:layout_marginBottom="16dp"/>
 
         <Button
+            android:id="@+id/btnLeaveReview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/leave_review"
+            android:textAllCaps="false"
+            android:textSize="15sp"
+            app:backgroundTint="#6366f1"
+            app:cornerRadius="8dp"
+            android:paddingVertical="12dp"
+            android:layout_marginBottom="12dp"
+            android:visibility="gone"/>
+
+        <Button
             android:id="@+id/btnOrderAgain"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
