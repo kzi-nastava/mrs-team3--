@@ -4,10 +4,11 @@ import com.st3.uber.e2e.s1.pages.*;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
-import org.testng.annotations.AfterSuite;
-import org.testng.annotations.BeforeSuite;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.Statement;
 
 import static org.testng.Assert.assertTrue;
 
@@ -20,7 +21,11 @@ public class OrderFromFavoriteTest {
     PassengerHistoryPage passengerHistoryPage;
     RideTrackingPage rideTrackingPage;
 
-    @BeforeSuite
+    private static final String DB_URL = "jdbc:mysql://localhost:3306/uberdb";
+    private static final String DB_USER = "uberuser";
+    private static final String DB_PASSWORD = "uberpass";
+
+    @BeforeMethod
     public void initialize() {
         ChromeOptions options = new ChromeOptions();
         options.addArguments("--start-maximized");
@@ -93,12 +98,60 @@ public class OrderFromFavoriteTest {
     @DataProvider
     Object[][] getData() {
         return new Object[][] {
-                {"prlincevic04@gmail.com", "Lukaprle123",0}
+                {"prlincevic04@gmail.com", "Lukaprle123",1}
         };
     }
 
-    @AfterSuite
-    public void deinitialize() {
-        this.driver.quit();
+
+    @AfterMethod
+    public void tearDown() {
+        if(this.driver != null) {
+            this.driver.quit();
+        }
     }
+
+    @AfterSuite
+    public void cleanupAfterTests() {
+
+        if(this.driver != null) {
+            this.driver.quit();
+        }
+
+        System.out.println("\nCleaning up after tests");
+
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+             Statement stmt = conn.createStatement()) {
+
+            stmt.execute("SET FOREIGN_KEY_CHECKS = 0");
+
+            stmt.execute("""
+                UPDATE rides
+                SET status = 'COMPLETED'
+                WHERE creator_id = 2
+                ORDER BY created_at DESC
+                LIMIT 1
+            """);
+
+
+            stmt.execute("""
+               UPDATE drivers
+                SET current_ride_id = NULL,
+                    free = 1,
+                    available = 1,
+                    active = 1
+               """);
+
+
+            stmt.execute("SET FOREIGN_KEY_CHECKS = 1");
+
+            System.out.println("Test data cleaned and last ride completed");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("ERROR during cleanup: " + e.getMessage());
+        }
+
+        System.out.println("Cleanup finished.");
+    }
+
 }

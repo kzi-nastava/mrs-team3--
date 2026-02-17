@@ -63,23 +63,19 @@
 
         public boolean selectFavoriteByExactRoute(String historyRoute) {
 
-            //Pretvaram u oblik za hash
             List<String> historyAddresses = normalizeRoute(historyRoute);
 
-            //Klikcem na omiljene
+            String historyStart = historyAddresses.get(0);
+            String historyEnd = historyAddresses.get(historyAddresses.size() - 1);
+
             wait.until(ExpectedConditions.elementToBeClickable(favoritesButton));
             favoritesButton.click();
 
-            //UCitavam rute iz omiljenih
             List<WebElement> favoriteCards =
                     wait.until(ExpectedConditions.visibilityOfAllElementsLocatedBy(
                             By.className("favorite-item")));
 
-
-            //Prolazim kroz omiljene i trazim poklapanje sa istorijom
             for (WebElement card : favoriteCards) {
-
-                List<String> favoriteAddresses = new ArrayList<>();
 
                 String routeText =
                         card.findElement(By.className("favorite-route"))
@@ -88,29 +84,14 @@
 
                 String[] mainParts = routeText.split("→");
 
-                favoriteAddresses.add(clean(mainParts[0]));
-                favoriteAddresses.add(clean(mainParts[1]));
+                String favStart = clean(mainParts[0]);
+                String favEnd = clean(mainParts[1]);
 
-                List<WebElement> stopsSection =
-                        card.findElements(By.className("favorite-stops"));
+                // 🔥 SAMO START I END POREĐENJE
+                if (historyStart.equals(favStart) &&
+                        historyEnd.equals(favEnd)) {
 
-                if (!stopsSection.isEmpty()) {
-
-                    String stopsText =
-                            stopsSection.get(0)
-                                    .findElement(By.className("stop"))
-                                    .getText();
-
-                    String[] stops = stopsText.split(",");
-
-                    for (String stop : stops) {
-                        favoriteAddresses.add(1, clean(stop));
-                    }
-                }
-
-
-                if (historyAddresses.equals(favoriteAddresses)) {
-                    System.out.println("EXACT MATCH FOUND!");
+                    System.out.println("MATCH (START-END) FOUND!");
 
                     card.findElement(By.className("use-btn")).click();
                     ((JavascriptExecutor) driver).executeScript("window.scrollTo(0, 0);");

@@ -7,6 +7,7 @@ import com.st3.uber.e2e.s3.pages.LoginPage;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
 
@@ -21,8 +22,8 @@ public class FilterAndSortAdminRideHistoryTest {
   HomePage homePage;
   AdminHistoryPage adminHistoryPage;
 
-  private String email = "admin@gmail.com";
-  private String password = "aaaaaa";
+  private String email = "lukaprle2004@gmail.com";
+  private String password = "Test123";
   private String startDate = "2026-02-10";
   private String endDate = "2026-02-15";
 
@@ -65,4 +66,11 @@ public class FilterAndSortAdminRideHistoryTest {
 
     this.adminHistoryPage.sortByValue(sortBy);
   }
+
+  @AfterSuite
+    public void tearDown() {
+        if (driver != null) {
+        driver.quit();
+        }
+    }
 }
