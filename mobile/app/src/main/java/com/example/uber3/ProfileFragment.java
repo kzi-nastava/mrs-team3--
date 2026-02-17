@@ -185,36 +185,35 @@ public class ProfileFragment extends Fragment {
     }
 
     private void showChangePasswordDialog() {
-        View dialogView = LayoutInflater.from(getContext())
-                .inflate(R.layout.dialog_change_password, null);
-
-        EditText etCurrent = dialogView.findViewById(R.id.etCurrentPassword);
-        EditText etNew = dialogView.findViewById(R.id.etNewPassword);
-        EditText etConfirm = dialogView.findViewById(R.id.etConfirmPassword);
 
         new AlertDialog.Builder(getContext())
-                .setView(dialogView)
-                .setPositiveButton("Save", (dialog, which) -> {
-                    String current = etCurrent.getText().toString().trim();
-                    String newPass = etNew.getText().toString().trim();
-                    String confirm = etConfirm.getText().toString().trim();
+                .setTitle("Change Password")
+                .setMessage("We will send a reset link to your email. Continue?")
+                .setPositiveButton("Send Email", (dialog, which) -> {
 
-                    if (current.isEmpty() || newPass.isEmpty() || confirm.isEmpty()) {
-                        Toast.makeText(getContext(), "All fields are required", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
+                    String email = tvEmail.getText().toString();
 
-                    if (!newPass.equals(confirm)) {
-                        Toast.makeText(getContext(), "Passwords do not match", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
+                    profileService.sendForgotPasswordEmail(
+                            email,
+                            new Callback<Void>() {
+                                @Override
+                                public void onResponse(@NonNull Call<Void> call,
+                                                       @NonNull Response<Void> response) {
 
-                    if (newPass.length() < 6) {
-                        Toast.makeText(getContext(), "Password must be at least 6 characters", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
+                                    Toast.makeText(getContext(),
+                                            "Reset email sent 📧",
+                                            Toast.LENGTH_LONG).show();
+                                }
 
-                    Toast.makeText(getContext(), "Password changed successfully", Toast.LENGTH_SHORT).show();
+                                @Override
+                                public void onFailure(@NonNull Call<Void> call,
+                                                      @NonNull Throwable t) {
+
+                                    Toast.makeText(getContext(),
+                                            "Network error",
+                                            Toast.LENGTH_SHORT).show();
+                                }
+                            });
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
