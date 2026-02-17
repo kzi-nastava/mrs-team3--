@@ -7,6 +7,7 @@ import com.example.uber3.network.api.ApiClient;
 import com.example.uber3.network.api.ApiService;
 import com.example.uber3.network.model.ProfileResponse;
 import com.example.uber3.network.model.UpdateProfileRequest;
+import com.example.uber3.network.model.mails.ForgotPasswordRequest;
 import com.example.uber3.network.model.user.BlockStatusDto;
 
 import java.io.ByteArrayOutputStream;
@@ -95,6 +96,14 @@ public class ProfileService {
         }
     }
 
+    public void sendForgotPasswordEmail(
+            String email,
+            Callback<Void> callback) {
+
+        api.forgotPassword(
+                new ForgotPasswordRequest(email)
+        ).enqueue(callback);
+    }
     public void submitDriverChangeRequest(
             DriverProfileChangeRequestDto dto,
             Callback<Void> callback
