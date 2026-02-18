@@ -23,6 +23,15 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
+import androidx.appcompat.app.AlertDialog;
+
+import java.util.ArrayList;
+import java.util.List;
+
+
+
 public class MainActivity extends AppCompatActivity {
 
     private DrawerLayout drawerLayout;
@@ -208,6 +217,17 @@ public class MainActivity extends AppCompatActivity {
                 loadRideTrackingFragmentWithToken(trackingToken);
             }
         }
+        else if (path != null && path.startsWith("/ride-tracking/")) {
+            String trackingToken = path.substring("/ride-tracking/".length());
+
+            int slash = trackingToken.indexOf('/');
+            if (slash != -1) trackingToken = trackingToken.substring(0, slash);
+
+            if (!trackingToken.isEmpty()) {
+                loadRideTrackingFragmentWithToken(trackingToken);
+            }
+        }
+
     }
 
     /**
