@@ -219,7 +219,7 @@ public class RideController {
     @RolesAllowed("PASSENGER")
     public ResponseEntity<SubmitRatingResponse> submitReview(
             @PathVariable Long rideId,
-            @RequestBody SubmitRatingRequest request,
+            @RequestBody @Valid SubmitRatingRequest request,
             @AuthenticationPrincipal Jwt jwt
     ) {
         Long passengerId = jwt.getClaim("uid");
