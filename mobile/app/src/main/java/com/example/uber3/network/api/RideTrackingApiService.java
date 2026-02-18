@@ -1,6 +1,9 @@
 package com.example.uber3.network.api;
 
 import com.example.uber3.network.model.tracking.*;
+
+import java.util.List;
+
 import retrofit2.Call;
 import retrofit2.http.*;
 
@@ -29,4 +32,10 @@ public interface RideTrackingApiService {
 
     @POST("api/ride-tracking/token/{token}/panic")
     Call<Void> panicByToken(@Path("token") String token);
+
+    @GET("api/rides/incoming-rides/passenger")
+    Call<List<IncomingRideResponse>> getAllIncomingRidesForPassenger();
+
+    @POST("api/rides/incoming-rides/passenger/{rideId}/cancel")
+    Call<Void> cancelRideByPassenger(@Path("rideId") Long rideId);
 }
