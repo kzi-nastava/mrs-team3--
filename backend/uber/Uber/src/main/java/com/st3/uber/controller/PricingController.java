@@ -4,6 +4,7 @@ import com.st3.uber.dto.pricing.PricingChangeRequest;
 import com.st3.uber.dto.pricing.PricingResponse;
 import com.st3.uber.exception.PricingValidationException;
 import com.st3.uber.service.RidePricingService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -35,7 +36,7 @@ public class PricingController {
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE
     )
-    public ResponseEntity<?> updatePricing(@RequestBody PricingChangeRequest request) {
+    public ResponseEntity<?> updatePricing(@RequestBody @Valid PricingChangeRequest request) {
         try {
             PricingResponse updatedPricing = pricingService.updatePricing(request);
             return ResponseEntity.ok(updatedPricing);
