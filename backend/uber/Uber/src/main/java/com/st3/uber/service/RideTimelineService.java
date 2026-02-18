@@ -104,9 +104,16 @@ public class RideTimelineService {
 
     res.setPassengerEmails(Stream.concat(passengerEmails.stream(), userEmails.stream()).toList());
 
-    res.setStops(
-        ride.getRideStops() == null ? List.of() : ride.getRideStops()
-    );
+    if(ride.getCancelledAt() != null){
+      res.setStops(
+          ride.getRideStops() == null ? List.of() : ride.getRideStops()
+      );
+    }
+    else {
+      res.setStops(ride.getActualRideStops() == null ? List.of() : ride.getActualRideStops());
+    }
+
+
 
     List<Review> reviews = ride.getReviews();
     if (reviews == null || reviews.isEmpty()) {
@@ -226,7 +233,12 @@ public class RideTimelineService {
     res.setEndTime(ride.getFinishedAt());
     res.setFavorite(favorite);
 
-    res.setStops(ride.getRideStops() == null ? List.of() : ride.getRideStops());
+    if(ride.getCancelledAt() != null){
+      res.setStops(ride.getRideStops() == null ? List.of() : ride.getRideStops());
+    }
+    else {
+      res.setStops(ride.getActualRideStops() == null ? List.of() : ride.getActualRideStops());
+    }
 
     if (ride.getDriver() == null){
       res.setDriverName("-");

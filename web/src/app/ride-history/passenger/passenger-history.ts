@@ -328,55 +328,41 @@ export class PassengerHistoryComponent implements OnInit, AfterViewInit {
       ride.endLocation,
     ];
 
-    this.drawFullRoute(waypoints, requestId);
+    for (let i = 0; i < waypoints.length - 1; i++) {
+      this.drawRouteBetween(waypoints[i], waypoints[i + 1], requestId);
+    }
+
+    if (this.mapMarkers.length > 0) {
+      const group = L.featureGroup(this.mapMarkers);
+      this.detailMap.fitBounds(group.getBounds().pad(0.1));
+    }
   }
 
-  private async drawFullRoute(waypoints: Location[], requestId: number): Promise<void> {
-    if (!this.detailMap) return;
+  private drawRouteBetween(start: Location, end: Location, requestId: number): void {
+    const apiKey = env.MAPS_KEY;
 
-    this.mapRouteLines.forEach(l => l.remove());
-    this.mapRouteLines = [];
+    const url =
+      `https://api.openrouteservice.org/v2/directions/driving-car` +
+      `?api_key=${apiKey}` +
+      `&start=${Number(start.lng)},${Number(start.lat)}` +
+      `&end=${Number(end.lng)},${Number(end.lat)}`;
 
-    const body = {
-      coordinates: waypoints.map(wp => [Number(wp.lng), Number(wp.lat)]),
-      instructions: false,
-    };
+    fetch(url)
+      .then(r => r.json())
+      .then(data => {
+        if (requestId !== this.routeRequestId) return;
 
-    try {
-      const res = await fetch(`${env.API_URL}/simple-routes/route?profile=driving-car`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/geo+json',
-        },
-        body: JSON.stringify(body),
-      });
+        const coords = data?.features?.[0]?.geometry?.coordinates;
+        if (!coords?.length) return;
 
-      if (requestId !== this.routeRequestId) return;
+        const routeCoords: [number, number][] = coords.map((c: [number, number]) => [c[1], c[0]]);
 
-      const raw = await res.text();
-      if (!res.ok) {
-        console.error('Proxy route failed:', res.status, raw);
-        return;
-      }
+        const routeLine = L.polyline(routeCoords, { weight: 5, opacity: 0.9 })
+          .addTo(this.detailMap!);
 
-      const data = JSON.parse(raw);
-      const coords = data?.features?.[0]?.geometry?.coordinates;
-      if (!coords?.length) return;
-
-      const latLngs: [number, number][] = coords.map(([lon, lat]: [number, number]) => [lat, lon]);
-
-      const routeLine = L.polyline(latLngs, { weight: 5, opacity: 0.9 })
-        .addTo(this.detailMap);
-
-      this.mapRouteLines.push(routeLine);
-
-      this.detailMap.fitBounds(routeLine.getBounds().pad(0.1));
-
-      setTimeout(() => this.detailMap?.invalidateSize(true), 0);
-    } catch (err) {
-      console.error('Error drawing full route:', err);
-    }
+        this.mapRouteLines.push(routeLine);
+      })
+      .catch(err => console.error('Error drawing route:', err));
   }
 
   private resetLeafletContainer(containerId: string): void {
