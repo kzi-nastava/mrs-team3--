@@ -22,6 +22,7 @@ import com.st3.uber.service.ReviewService;
 import com.st3.uber.service.RideTimelineService;
 import com.st3.uber.util.ComparatorUtils;
 import jakarta.annotation.security.RolesAllowed;
+import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -62,7 +63,7 @@ public class RideController {
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<RideResponse> createRide(
             @AuthenticationPrincipal Jwt jwt,
-            @RequestBody CreateRideRequest request
+            @RequestBody @Valid CreateRideRequest request
     ) {
         Long passengerId = jwt.getClaim("uid");
 
@@ -218,7 +219,7 @@ public class RideController {
     @RolesAllowed("PASSENGER")
     public ResponseEntity<SubmitRatingResponse> submitReview(
             @PathVariable Long rideId,
-            @RequestBody SubmitRatingRequest request,
+            @RequestBody @Valid SubmitRatingRequest request,
             @AuthenticationPrincipal Jwt jwt
     ) {
         Long passengerId = jwt.getClaim("uid");
@@ -234,7 +235,7 @@ public class RideController {
     @RolesAllowed({"PASSENGER", "DRIVER"})
     public ResponseEntity<CancelRideResponse> cancelRide(
             @PathVariable Long rideId,
-            @RequestBody(required = false) CancelRideRequest request
+            @Valid @RequestBody(required = false) CancelRideRequest request
     ) {
         if (request == null || request.getCancellationReason() == null || request.getCancelledBy() == null) {
             return ResponseEntity.badRequest().build();
@@ -251,7 +252,7 @@ public class RideController {
     @RolesAllowed("PASSENGER")
     public ResponseEntity<StopRideResponse> stopRide(
             @PathVariable Long rideId,
-            @RequestBody StopRideRequest request
+            @Valid @RequestBody StopRideRequest request
     ) {
         StopRideResponse response = new StopRideResponse(
                 rideId,

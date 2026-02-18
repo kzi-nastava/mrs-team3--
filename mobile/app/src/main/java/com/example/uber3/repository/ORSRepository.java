@@ -95,7 +95,7 @@ public class ORSRepository {
                                 }
 
                             } catch (Exception ex) {
-                                ex.printStackTrace();
+//                                ex.printStackTrace();
                             }
 
                             callback.onRouteReady(routePoints);
@@ -106,12 +106,12 @@ public class ORSRepository {
                                 Call<String> call,
                                 Throwable t
                         ) {
-                            t.printStackTrace();
+//                            t.printStackTrace();
                         }
                     });
 
         } catch (Exception e) {
-            e.printStackTrace();
+//            e.printStackTrace();
         }
     }
 
@@ -172,7 +172,7 @@ public class ORSRepository {
                             }
 
                         } catch (Exception e) {
-                            e.printStackTrace();
+//                            e.printStackTrace();
                         }
 
                         callback.onResult(results);

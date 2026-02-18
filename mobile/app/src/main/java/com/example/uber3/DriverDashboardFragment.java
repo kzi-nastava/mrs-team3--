@@ -186,19 +186,31 @@ public class DriverDashboardFragment extends Fragment {
         btnCancelRide.setOnClickListener(v -> showCancelModal());
         btnPanic.setOnClickListener(v -> confirmAndPanic());
 
-        // Map click → update driver location when IN_PROGRESS
+        // Map tap → update driver location when IN_PROGRESS.
+        // We only treat it as a tap (not a pan/zoom) if the finger barely moved.
+        final float[] touchDownXY = new float[2];
+        final float TAP_SLOP_PX = 20f; // pixels of movement allowed before it's a drag
         mapView.setOnTouchListener((v, event) -> {
-            if (android.view.MotionEvent.ACTION_UP == event.getAction()) {
-                if (selectedRide instanceof DriverRide) {
-                    DriverRide ride = (DriverRide) selectedRide;
-                    if ("IN_PROGRESS".equals(ride.status)) {
-                        GeoPoint tapped = (GeoPoint) mapView.getProjection()
-                                .fromPixels((int) event.getX(), (int) event.getY());
-                        if (tapped != null) {
-                            updateDriverLocationAndCenter(tapped.getLatitude(), tapped.getLongitude());
+            switch (event.getAction()) {
+                case android.view.MotionEvent.ACTION_DOWN:
+                    touchDownXY[0] = event.getX();
+                    touchDownXY[1] = event.getY();
+                    break;
+                case android.view.MotionEvent.ACTION_UP:
+                    float dx = Math.abs(event.getX() - touchDownXY[0]);
+                    float dy = Math.abs(event.getY() - touchDownXY[1]);
+                    boolean isTap = dx < TAP_SLOP_PX && dy < TAP_SLOP_PX;
+                    if (isTap && selectedRide instanceof DriverRide) {
+                        DriverRide ride = (DriverRide) selectedRide;
+                        if ("IN_PROGRESS".equals(ride.status)) {
+                            GeoPoint tapped = (GeoPoint) mapView.getProjection()
+                                    .fromPixels((int) event.getX(), (int) event.getY());
+                            if (tapped != null) {
+                                updateDriverLocationAndCenter(tapped.getLatitude(), tapped.getLongitude());
+                            }
                         }
                     }
-                }
+                    break;
             }
             return false; // let map still handle zoom/pan
         });
@@ -848,17 +860,13 @@ public class DriverDashboardFragment extends Fragment {
     }
 
     private void fitMapToBounds() {
-        // If driver marker exists, center on driver's location with padding for bottom sheet
+        // If driver marker exists, center on driver using the same reliable offset approach
         if (driverMarker != null) {
             GeoPoint driverPos = driverMarker.getPosition();
             mapView.post(() -> {
-                IMapController controller = mapView.getController();
-                controller.setCenter(driverPos);
-                controller.setZoom(15.0); // Closer zoom when centered on driver
-
-                // Add padding to keep driver marker visible above bottom sheet
-                // Bottom sheet is ~360dp max, so add padding to shift center up
-                mapView.setPadding(0, 0, 0, 400);
+                mapView.getController().setZoom(15.0);
+                // Post again after zoom is applied so the projection is accurate
+                mapView.post(() -> centerMapOnDriver(driverPos));
             });
             return;
         }
@@ -878,10 +886,8 @@ public class DriverDashboardFragment extends Fragment {
         }
         if (points.isEmpty()) return;
 
-        // Add bottom padding to account for bottom sheet
-        mapView.setPadding(40, 40, 40, 420);
         BoundingBox box = BoundingBox.fromGeoPoints(points);
-        mapView.post(() -> mapView.zoomToBoundingBox(box, true));
+        mapView.post(() -> mapView.zoomToBoundingBox(box, true, 80));
     }
 
     private void clearMap() {

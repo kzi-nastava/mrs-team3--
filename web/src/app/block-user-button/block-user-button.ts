@@ -35,6 +35,8 @@ export class BlockUserButtonComponent {
   ) {}
 
   openDialog() {
+    this.reason = '';
+
     if (this.isBlocked) {
       this.toggleBlock();
     } else {
@@ -67,14 +69,13 @@ export class BlockUserButtonComponent {
       )
       .subscribe({
         next: () => {
-          this.isBlocked = !this.isBlocked;
           this.reason = '';
           this.loading = false;
 
           this.messageService.add({
             severity: 'success',
             summary: 'Success',
-            detail: this.isBlocked ? 'User blocked' : 'User unblocked'
+            detail: this.isBlocked ? 'User unblocked' : 'User blocked'
           });
 
           this.blockChanged.emit();

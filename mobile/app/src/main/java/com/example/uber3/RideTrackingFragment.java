@@ -284,7 +284,17 @@ public class RideTrackingFragment extends Fragment {
         layoutLoading.setVisibility(View.GONE);
         layoutError.setVisibility(View.GONE);
         layoutEmpty.setVisibility(View.GONE);
-        mapView.setVisibility(View.VISIBLE);
+        // Hide map (and clear leftover overlays) once the ride is no longer active
+        boolean rideActive = "IN_PROGRESS".equals(currentRide.status)
+                || "ACCEPTED".equals(currentRide.status)
+                || "PENDING".equals(currentRide.status)
+                || "PANIC".equals(currentRide.status);
+        if (rideActive) {
+            mapView.setVisibility(View.VISIBLE);
+        } else {
+            mapView.setVisibility(View.GONE);
+            clearMap();
+        }
 
         // Update status badge
         tvStatus.setText(getStatusText(currentRide.status));
@@ -757,7 +767,13 @@ public class RideTrackingFragment extends Fragment {
 
             @Override
             public void onError(String message) {
-                // Silent failure on background polls
+                // If the server says there's no active ride (204 No Content),
+                // surface the empty state so the passenger sees the ride has ended.
+                if (message != null && message.contains("204")) {
+                    currentRide = null;
+                    showEmpty();
+                }
+                // Other errors: keep showing whatever was last displayed
             }
         };
 
@@ -807,6 +823,12 @@ public class RideTrackingFragment extends Fragment {
         layoutContent.setVisibility(View.GONE);
         layoutError.setVisibility(View.GONE);
         layoutEmpty.setVisibility(View.VISIBLE);
+        // Hide the map and wipe any leftover route/markers so the old
+        // route doesn't show behind the "no rides" message.
+        if (mapView != null) {
+            mapView.setVisibility(View.GONE);
+            clearMap();
+        }
     }
 
     private String getStatusText(String status) {

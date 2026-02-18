@@ -80,7 +80,7 @@
     <string name="panic">PANIC</string>
     <string name="home">Home</string>
     <string name="chat">Chat</string>
-    <string name="ride">Ride</string>
+    <string name="ride">Ride history</string>
     <string name="profile">Profile</string>
     <string name="logout">Logout</string>
     <string name="driver_profile_change_requests">Driver Profile Change Requests</string>
@@ -288,10 +288,47 @@
     <string name="cancel">Cancel</string>
     <string name="submit_review">✓ Submit Review</string>
     <string name="leave_review">⭐ Leave Review</string>
+    <string name="no_incoming_rides">No incoming rides</string>
+    <string name="incoming_ride_passenger">Incoming rides</string>
+    <string name="incoming_ride_time">🕒</string>
+    <string name="no_incoming_rides_passenger">No incoming rides</string>
+    <string name="incoming_ride_appearance">Your scheduled rides will appear here.</string>
+    <string name="cancel_ride_passenger">Cancel ride</string>
 
     <string-array name="vehicle_types">
         <item>STANDARD</item>
         <item>VAN</item>
         <item>LUXURY</item>
     </string-array>
+
+    <!-- ── Notifications ──────────────────────────────────────────── -->
+    <string name="notifications">Notifications</string>
+    <string name="notif_filter_all">All</string>
+    <string name="notif_filter_unread">Unread</string>
+    <string name="notif_filter_rides">Rides</string>
+    <string name="notif_filter_profile">Profile</string>
+    <string name="notif_mark_all_read">Mark All Read</string>
+    <string name="notif_empty_title">No notifications yet</string>
+    <string name="notif_empty_subtitle">You\'ll see ride updates and alerts here</string>
+    <string name="notif_mark_as_read">Mark as read</string>
+    <string name="notif_delete">Delete notification</string>
+    <string name="notif_unread_badge_prefix">Unread: </string>
+    <string name="notif_dialog_mark_all_title">Mark All as Read</string>
+    <string name="notif_dialog_mark_all_message">Mark all notifications as read?</string>
+    <string name="notif_dialog_yes">Yes</string>
+    <string name="notif_dialog_cancel">Cancel</string>
+    <string name="notif_dialog_delete_title">Delete Notification</string>
+    <string name="notif_dialog_delete_message">Delete this notification?</string>
+    <string name="notif_dialog_delete_confirm">Delete</string>
+    <string name="notif_type_ride_accepted">Ride Accepted</string>
+    <string name="notif_type_ride_declined">Ride Declined</string>
+    <string name="notif_type_ride_reminder">Ride Reminder</string>
+    <string name="notif_type_ride_finished">Ride Finished</string>
+    <string name="notif_type_ride_canceled">Ride Canceled</string>
+    <string name="notif_type_profile_update">Profile Update</string>
+    <string name="notif_type_emergency">🚨 Emergency Alert</string>
+    <string name="notif_type_default">Notification</string>
+    <string name="notif_channel_name">Ride Notifications</string>
+    <string name="notif_channel_description">Real-time ride and profile notifications</string>
+
 </resources>

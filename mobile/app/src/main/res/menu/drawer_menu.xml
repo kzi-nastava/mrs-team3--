@@ -22,6 +22,12 @@
             android:visible="false" />
 
         <item
+            android:id="@+id/nav_notifications"
+            android:title="@string/notifications"
+            android:icon="@drawable/ic_notifications"
+            android:visible="false" />
+
+        <item
             android:id="@+id/nav_driver_dashboard"
             android:title="@string/driver_dashboard"
             android:icon="@drawable/ic_car"
@@ -43,6 +49,13 @@
             android:title="@string/ride"
             android:icon="@drawable/ic_history"
             android:visible="false" />
+
+        <item
+            android:id="@+id/nav_incoming_rides"
+            android:title="@string/incoming_ride_passenger"
+            android:icon="@drawable/ic_history"
+            android:visible="false" />
+
 
     </group>
 

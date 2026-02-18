@@ -47,4 +47,20 @@
     <color name="route_stop_reached">#FBBF24</color>
     <color name="route_end">#EF4444</color>
 
+    <color name="colorPrimary">#667eea</color>
+    <color name="colorPrimaryDark">#764ba2</color>
+
+    <color name="text_primary">#1F2937</color>
+    <color name="text_secondary">#6B7280</color>
+    <color name="text_hint">#D1D5DB</color>
+
+    <color name="background_light">#F9FAFB</color>
+    <color name="notification_unread_bg">#EEF2FF</color>
+
+    <color name="notif_red">#DC2626</color>
+    <color name="notif_green">#059669</color>
+    <color name="notif_orange">#EA580C</color>
+    <color name="notif_blue">#2563EB</color>
+    <color name="notif_default">#6B7280</color>
+
 </resources>
