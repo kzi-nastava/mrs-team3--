@@ -9,7 +9,11 @@ import com.google.gson.Gson;
 import ua.naiksoftware.stomp.Stomp;
 import ua.naiksoftware.stomp.StompClient;
 import ua.naiksoftware.stomp.dto.StompHeader;
+import ua.naiksoftware.stomp.dto.LifecycleEvent;
+import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 
 import java.util.List;
 
@@ -20,12 +24,10 @@ public class ChatWebSocketManager {
     private StompClient stompClient;
     private final Gson gson = new Gson();
 
-    private UiMessageListener uiListener;
-    private Disposable messageSubscription;
-    private Disposable lifecycleSubscription;
+    private MessageListener messageListener;
+    private CompositeDisposable disposables = new CompositeDisposable();
 
     private static ChatWebSocketManager instance;
-    private boolean isSubscribed = false;
 
     public static ChatWebSocketManager getInstance() {
         if (instance == null) {
@@ -34,24 +36,29 @@ public class ChatWebSocketManager {
         return instance;
     }
 
-    public interface UiMessageListener {
+    private ChatWebSocketManager() {}
+
+
+    public interface MessageListener {
         void onMessage(ChatMessage message);
     }
 
-    public void setUiListener(UiMessageListener listener){
-        Log.d(TAG, "Setting UI listener: " + (listener != null ? "Active" : "Null"));
-        this.uiListener = listener;
+    public void setMessageListener(MessageListener listener) {
+        Log.d(TAG, "Setting message listener: " + (listener != null ? "Active" : "Null"));
+        this.messageListener = listener;
     }
+
 
     @SuppressLint("CheckResult")
     public void connect(String jwtToken) {
-
         if (stompClient != null && stompClient.isConnected()) {
-            Log.d(TAG, "Already connected, skipping reconnection");
+            Log.d(TAG, "Already connected — skipping");
             return;
         }
 
-        Log.d(TAG, "Connecting to WebSocket...");
+        Log.d(TAG, "Connecting to WebSocket for chat...");
+
+        disposables.clear();
 
         stompClient = Stomp.over(
                 Stomp.ConnectionProvider.OKHTTP,
@@ -60,103 +67,114 @@ public class ChatWebSocketManager {
 
         stompClient.withClientHeartbeat(10000).withServerHeartbeat(10000);
 
+        Disposable lifecycle = stompClient.lifecycle()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(event -> {
+                    Log.d(TAG, "Lifecycle: " + event.getType());
+                    switch (event.getType()) {
+                        case OPENED:
+                            Log.d(TAG, "✅ WebSocket OPENED");
+                            break;
+                        case CLOSED:
+                            Log.w(TAG, "⚠️ WebSocket CLOSED");
+                            break;
+                        case ERROR:
+                            Log.e(TAG, "❌ WebSocket ERROR: " + event.getException());
+                            break;
+                        default:
+                            break;
+                    }
+                }, throwable -> Log.e(TAG, "Lifecycle error", throwable));
+
+        disposables.add(lifecycle);
+
+        subscribeToMessages();
+
         stompClient.connect(
-                List.of(
-                        new StompHeader("Authorization", "Bearer " + jwtToken)
-                )
+                List.of(new StompHeader("Authorization", "Bearer " + jwtToken))
         );
-
-        if (lifecycleSubscription != null && !lifecycleSubscription.isDisposed()) {
-            lifecycleSubscription.dispose();
-        }
-
-        lifecycleSubscription = stompClient.lifecycle().subscribe(event -> {
-            Log.d(TAG, "Lifecycle event: " + event.getType());
-        });
     }
 
-    @SuppressLint("CheckResult")
-    public void subscribeToMessages() {
 
+    @SuppressLint("CheckResult")
+    private void subscribeToMessages() {
         if (stompClient == null) {
-            Log.e(TAG, "Cannot subscribe - stompClient is null");
+            Log.e(TAG, "subscribeToMessages: stompClient is null");
             return;
         }
 
-        if (messageSubscription != null && !messageSubscription.isDisposed()) {
-            Log.d(TAG, "Disposing old message subscription to prevent duplicates");
-            messageSubscription.dispose();
-        }
+        Log.d(TAG, "Registering subscription to /user/queue/messages");
 
-        Log.d(TAG, "Subscribing to /user/queue/messages");
-        isSubscribed = true;
+        Disposable sub = stompClient
+                .topic("/user/queue/messages")
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(frame -> {
+                    String payload = frame.getPayload();
+                    Log.d(TAG, "📨 Chat message received: " + payload);
 
-        messageSubscription = stompClient.topic("/user/queue/messages")
-                .subscribe(topicMessage -> {
+                    try {
+                        ChatMessage message = gson.fromJson(payload, ChatMessage.class);
+                        Log.d(TAG, "   From: " + message.fromUserId + " → To: " + message.toUserId);
+                        Log.d(TAG, "   Content: " + message.content);
 
-                    String payload = topicMessage.getPayload();
-                    Log.d(TAG, "📨 Received WebSocket message: " + payload);
+                        if (messageListener != null) {
+                            messageListener.onMessage(message);
+                        } else {
+                            Log.w(TAG, "⚠️ No listener set — storing in ChatService buffer");
+                        }
 
-                    ChatMessage cm = gson.fromJson(payload, ChatMessage.class);
 
-                    Log.d(TAG, "   From: " + cm.fromUserId);
-                    Log.d(TAG, "   To: " + cm.toUserId);
-                    Log.d(TAG, "   Content: " + cm.content);
+                        com.example.uber3.network.service.ChatService
+                                .getInstance()
+                                .onWebSocketMessage(message);
 
-                    if(uiListener != null){
-                        Log.d(TAG, "   ✅ Delivering to UI listener");
-                        uiListener.onMessage(cm);
-                    } else {
-                        Log.w(TAG, "   ⚠️ No UI listener set, message ignored");
+                    } catch (Exception e) {
+                        Log.e(TAG, "Failed to parse chat message payload", e);
                     }
 
-                }, throwable -> {
-                    Log.e(TAG, "Subscribe error", throwable);
-                    isSubscribed = false;
-                });
+                }, throwable -> Log.e(TAG, "Subscription error", throwable));
+
+        disposables.add(sub);
     }
 
-    @SuppressLint("CheckResult")
-    public void sendMessage(Object message) {
+
+    public void sendMessage(ChatMessage message) {
         if (stompClient == null || !stompClient.isConnected()) {
-            Log.e(TAG, "❌ Cannot send - not connected");
+            Log.e(TAG, "❌ Cannot send — not connected");
             return;
         }
 
         String json = gson.toJson(message);
-
         Log.d(TAG, "📤 Sending message: " + json);
 
-        stompClient.send("/app/chat.send", json).subscribe(
-                () -> Log.d(TAG, "✅ Message sent successfully"),
-                throwable -> Log.e(TAG, "❌ Send error", throwable)
-        );
+        Disposable send = stompClient
+                .send("/app/chat.send", json)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        () -> Log.d(TAG, "✅ Message sent successfully"),
+                        throwable -> Log.e(TAG, "❌ Send error", throwable)
+                );
+
+        disposables.add(send);
     }
 
-    public boolean isSubscribed() {
-        return isSubscribed && messageSubscription != null && !messageSubscription.isDisposed();
-    }
 
     public void disconnect() {
-        Log.d(TAG, "Disconnecting WebSocket...");
+        Log.d(TAG, "Disconnecting chat WebSocket...");
 
-        isSubscribed = false;
-
-        if (messageSubscription != null && !messageSubscription.isDisposed()) {
-            messageSubscription.dispose();
-            messageSubscription = null;
-        }
-
-        if (lifecycleSubscription != null && !lifecycleSubscription.isDisposed()) {
-            lifecycleSubscription.dispose();
-            lifecycleSubscription = null;
-        }
+        messageListener = null;
+        disposables.clear();
 
         if (stompClient != null) {
             stompClient.disconnect();
             stompClient = null;
         }
+    }
 
-        uiListener = null;
+    public boolean isConnected() {
+        return stompClient != null && stompClient.isConnected();
     }
 }

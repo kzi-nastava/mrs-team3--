@@ -20,6 +20,7 @@ import com.example.uber3.network.api.ApiClient;
 import com.example.uber3.network.api.ApiService;
 import com.example.uber3.network.manager.LogoutHelper;
 import com.example.uber3.network.manager.TokenManager;
+import com.example.uber3.network.service.ChatService;
 import com.example.uber3.network.service.NotificationService;
 import com.example.uber3.network.websocket.ChatWebSocketManager;
 import com.google.android.material.appbar.MaterialToolbar;
@@ -32,8 +33,9 @@ import retrofit2.Response;
 public class MainActivity extends AppCompatActivity {
 
     public static final String EXTRA_OPEN_NOTIFICATIONS = "open_notifications";
+    public static final String EXTRA_OPEN_CHAT          = "open_chat";
 
-    private DrawerLayout drawerLayout;
+    private DrawerLayout   drawerLayout;
     private MaterialToolbar topAppBar;
     private NavigationView navigationView;
     private String currentUserRole;
@@ -44,17 +46,19 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         currentUserRole = TokenManager.getRole(this);
-        String token = TokenManager.getToken(this);
+        String token    = TokenManager.getToken(this);
 
         if (token != null) {
             ChatWebSocketManager.getInstance().connect(token);
             NotificationService.getInstance().initialize(this, token);
+
+            ChatService.getInstance().initialize(this);
         }
 
         requestNotificationPermissionIfNeeded();
 
-        drawerLayout = findViewById(R.id.drawerLayout);
-        topAppBar = findViewById(R.id.topAppBar);
+        drawerLayout   = findViewById(R.id.drawerLayout);
+        topAppBar      = findViewById(R.id.topAppBar);
         navigationView = findViewById(R.id.navigationView);
 
         View header = navigationView.getHeaderView(0);
@@ -72,49 +76,37 @@ public class MainActivity extends AppCompatActivity {
 
             if (id == R.id.nav_home) {
                 handleHomeNavigation();
-            }
-            else if (id == R.id.nav_chat) {
+            } else if (id == R.id.nav_chat) {
                 handleChatNavigation();
-            }
-            else if (id == R.id.nav_ride) {
+            } else if (id == R.id.nav_ride) {
                 handleRideNavigation();
-            }
-            else if (id == R.id.nav_profile) {
+            } else if (id == R.id.nav_profile) {
                 topAppBar.setTitle("Profile");
                 loadFragment(ProfileFragment.newInstance(currentUserRole));
-            }
-            else if (id == R.id.nav_notifications) {
+            } else if (id == R.id.nav_notifications) {
                 topAppBar.setTitle("Notifications");
                 loadFragment(NotificationsFragment.newInstance());
-            }
-            else if (id == R.id.nav_track_ride) {
+            } else if (id == R.id.nav_track_ride) {
                 loadRideTrackingFragment();
-            }
-            else if (id == R.id.nav_driver_dashboard) {
+            } else if (id == R.id.nav_driver_dashboard) {
                 topAppBar.setTitle("Driver Dashboard");
                 loadFragment(DriverDashboardFragment.newInstance());
-            }
-            else if (id == R.id.nav_requests) {
+            } else if (id == R.id.nav_requests) {
                 topAppBar.setTitle("Change Requests");
                 loadFragment(new DriverChangeRequestFragment());
-            }
-            else if (id == R.id.nav_login) {
+            } else if (id == R.id.nav_login) {
                 topAppBar.setTitle("Login");
                 loadFragment(new LoginFragment());
-            }
-            else if (id == R.id.nav_logout) {
+            } else if (id == R.id.nav_logout) {
                 LogoutHelper.logout(this);
                 return true;
-            }
-            else if (id == R.id.nav_register_driver) {
+            } else if (id == R.id.nav_register_driver) {
                 topAppBar.setTitle("Register Driver");
                 loadFragment(new RegisterDriverFragment());
-            }
-            else if (id == R.id.nav_report) {
+            } else if (id == R.id.nav_report) {
                 topAppBar.setTitle("Reports");
                 loadFragment(new ReportFragment());
-            }
-            else if (id == R.id.nav_admin_users) {
+            } else if (id == R.id.nav_admin_users) {
                 topAppBar.setTitle("Users Management");
                 loadFragment(AdminUsersFragment.newInstance());
             }
@@ -127,6 +119,8 @@ public class MainActivity extends AppCompatActivity {
             if (getIntent().getBooleanExtra(EXTRA_OPEN_NOTIFICATIONS, false)) {
                 topAppBar.setTitle("Notifications");
                 loadFragment(NotificationsFragment.newInstance());
+            } else if (getIntent().getBooleanExtra(EXTRA_OPEN_CHAT, false)) {
+                handleChatNavigation();
             } else if (TokenManager.getToken(this) != null) {
                 handleHomeNavigation();
             } else {
@@ -137,7 +131,6 @@ public class MainActivity extends AppCompatActivity {
 
         handleDeepLink(getIntent());
     }
-
 
     @Override
     protected void onNewIntent(Intent intent) {
@@ -150,25 +143,29 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
+        if (intent.getBooleanExtra(EXTRA_OPEN_CHAT, false)) {
+            handleChatNavigation();
+            return;
+        }
+
         handleDeepLink(intent);
     }
+
 
     private void handleHomeNavigation() {
         if ("ADMIN".equals(currentUserRole)) {
             topAppBar.setTitle("Ride History");
             loadFragment(AdminRideHistoryFragment.newInstance());
-        }
-        else if ("DRIVER".equals(currentUserRole)) {
+        } else if ("DRIVER".equals(currentUserRole)) {
             topAppBar.setTitle("Driver Dashboard");
             loadFragment(DriverDashboardFragment.newInstance());
-        }
-        else {
+        } else {
             topAppBar.setTitle("Home");
             loadFragment(HomeFragment.newInstance(currentUserRole));
         }
     }
 
-    private void handleChatNavigation() {
+    public void handleChatNavigation() {
         topAppBar.setTitle("Chat");
         if ("ADMIN".equals(currentUserRole)) {
             loadFragment(new AdminChatListFragment());
@@ -179,7 +176,6 @@ public class MainActivity extends AppCompatActivity {
 
     private void handleRideNavigation() {
         topAppBar.setTitle("Ride History");
-
         if ("PASSENGER".equals(currentUserRole)) {
             loadFragment(new PassengerRideHistoryFragment());
         } else if ("DRIVER".equals(currentUserRole)) {
@@ -189,11 +185,12 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+
     private void handleDeepLink(Intent intent) {
         if (intent == null || intent.getData() == null) return;
 
-        Uri data = intent.getData();
-        String path = data.getPath();
+        Uri    data  = intent.getData();
+        String path  = data.getPath();
         String token = data.getQueryParameter("token");
 
         if (path == null) return;
@@ -201,19 +198,12 @@ public class MainActivity extends AppCompatActivity {
         if (path.startsWith("/reset-password")) {
             String mode = data.getQueryParameter("mode");
             if (token != null) {
-                loadFragment(
-                        ResetPasswordFragment.newInstance(
-                                token,
-                                mode != null ? mode : "RESET"
-                        )
-                );
+                loadFragment(ResetPasswordFragment.newInstance(token, mode != null ? mode : "RESET"));
                 topAppBar.setTitle("Set Password");
             }
-        }
-        else if (path.contains("/verify")) {
+        } else if (path.contains("/verify")) {
             handleEmailVerification(token);
-        }
-        else if (path.contains("/track")) {
+        } else if (path.contains("/track")) {
             String trackingToken = data.getQueryParameter("token");
             if (trackingToken != null) {
                 loadRideTrackingFragmentWithToken(trackingToken);
@@ -228,7 +218,6 @@ public class MainActivity extends AppCompatActivity {
         }
 
         ApiService apiService = ApiClient.getClient(this).create(ApiService.class);
-
         apiService.verifyEmail(token).enqueue(new Callback<Void>() {
             @Override
             public void onResponse(Call<Void> call, Response<Void> response) {
@@ -244,9 +233,7 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<Void> call, Throwable t) {
-                Toast.makeText(MainActivity.this,
-                        "Network error: " + t.getMessage(),
-                        Toast.LENGTH_LONG).show();
+                Toast.makeText(MainActivity.this, "Network error: " + t.getMessage(), Toast.LENGTH_LONG).show();
                 showVerificationResult("invalid");
             }
         });
@@ -284,16 +271,14 @@ public class MainActivity extends AppCompatActivity {
             navigationView.getMenu().findItem(R.id.nav_notifications).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_report).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_track_ride).setVisible(true);
-        }
-        else if ("DRIVER".equals(role)) {
+        } else if ("DRIVER".equals(role)) {
             navigationView.getMenu().findItem(R.id.nav_driver_dashboard).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_chat).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_ride).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_profile).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_notifications).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_report).setVisible(true);
-        }
-        else if ("ADMIN".equals(role)) {
+        } else if ("ADMIN".equals(role)) {
             navigationView.getMenu().findItem(R.id.nav_requests).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_chat).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_profile).setVisible(true);
@@ -303,7 +288,7 @@ public class MainActivity extends AppCompatActivity {
             navigationView.getMenu().findItem(R.id.nav_report).setVisible(true);
         }
     }
-
+    
     private void loadFragment(Fragment fragment) {
         if (fragment != null) {
             getSupportFragmentManager()
@@ -340,8 +325,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void requestNotificationPermissionIfNeeded() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this,
-                    Manifest.permission.POST_NOTIFICATIONS)
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
                     != PackageManager.PERMISSION_GRANTED) {
                 ActivityCompat.requestPermissions(this,
                         new String[]{Manifest.permission.POST_NOTIFICATIONS}, 101);

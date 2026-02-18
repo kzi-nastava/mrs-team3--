@@ -23,313 +23,50 @@ import com.example.uber3.adapter.ChatAdapter;
 import com.example.uber3.network.api.ApiClient;
 import com.example.uber3.network.api.ChatApiService;
 import com.example.uber3.network.manager.TokenManager;
-import com.example.uber3.network.model.chat.ChatMessage;
 import com.example.uber3.network.model.chat.AdminDto;
+import com.example.uber3.network.model.chat.ChatMessage;
+import com.example.uber3.network.service.ChatService;
 import com.example.uber3.network.websocket.ChatWebSocketManager;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
 
 public class ChatFragment extends Fragment {
 
     private static final String TAG = "ChatFragment";
 
-    private RecyclerView recyclerView;
-    private EditText inputMessage;
-    private ImageButton btnSend;
-    private ImageButton btnBack;
-    private TextView txtChatPartnerName;
+    private RecyclerView   recyclerView;
+    private EditText       inputMessage;
+    private ImageButton    btnSend;
+    private ImageButton    btnBack;
+    private TextView       txtChatPartnerName;
 
-    private Long targetUserId;
+    private Long   targetUserId;
     private String targetUserName;
-    private boolean showBackButton = false;
+    private boolean showBackButton;
 
     private Long myUserId;
     private ChatAdapter adapter;
-    private final List<ChatMessage> messages = Collections.synchronizedList(new ArrayList<>());
+    private final List<ChatMessage> messages =
+            Collections.synchronizedList(new ArrayList<>());
 
-    public ChatFragment() {}
+    private ChatService.IncomingMessageListener chatListener;
 
-    @Nullable
-    @Override
-    public View onCreateView(@NonNull LayoutInflater inflater,
-                             @Nullable ViewGroup container,
-                             @Nullable Bundle savedInstanceState) {
+    // ─── Factory methods ──────────────────────────────────────────────────────
 
-        Log.d(TAG, "========== onCreateView START ==========");
-
-        if(getArguments() != null){
-            targetUserId = getArguments().getLong("targetUserId", 0L);
-            targetUserName = getArguments().getString("targetUserName", null);
-            showBackButton = getArguments().getBoolean("showBackButton", false);
-        }
-
-        View view = inflater.inflate(R.layout.fragment_chat, container, false);
-
-        myUserId = TokenManager.getUserId(requireContext());
-
-        if(myUserId == null) {
-            Toast.makeText(getContext(), "Error: User not logged in", Toast.LENGTH_SHORT).show();
-            return view;
-        }
-
-        Log.d(TAG, "My User ID: " + myUserId);
-
-        // Initialize views
-        recyclerView = view.findViewById(R.id.recyclerMessages);
-        inputMessage = view.findViewById(R.id.inputMessage);
-        btnSend = view.findViewById(R.id.btnSend);
-        btnBack = view.findViewById(R.id.btnBack);
-        txtChatPartnerName = view.findViewById(R.id.txtChatPartnerName);
-
-        hideActionBar();
-
-        adapter = new ChatAdapter(messages, myUserId);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        recyclerView.setAdapter(adapter);
-
-        if(targetUserId == null || targetUserId == 0L) {
-            Log.d(TAG, "No target user specified, fetching admin from backend...");
-            fetchAdminAndInitialize();
-        } else {
-            Log.d(TAG, "Chat with: " + targetUserName + " (ID: " + targetUserId + ")");
-            initializeChat();
-        }
-
-        Log.d(TAG, "========== onCreateView END ==========");
-        return view;
+    public static ChatFragment forAdmin() {
+        ChatFragment f = new ChatFragment();
+        Bundle b = new Bundle();
+        b.putLong("targetUserId", 0L);
+        b.putBoolean("showBackButton", false);
+        f.setArguments(b);
+        return f;
     }
 
-    private void fetchAdminAndInitialize() {
-        ChatApiService api = ApiClient.getClient(requireContext())
-                .create(ChatApiService.class);
-
-        api.getFirstAdmin().enqueue(new retrofit2.Callback<AdminDto>() {
-            @Override
-            public void onResponse(
-                    @NonNull retrofit2.Call<AdminDto> call,
-                    @NonNull retrofit2.Response<AdminDto> res) {
-
-                if(res.isSuccessful() && res.body() != null) {
-                    AdminDto admin = res.body();
-
-                    targetUserId = admin.id;
-                    targetUserName = admin.name;
-
-                    Log.d(TAG, "✅ Admin fetched: " + targetUserName + " (ID: " + targetUserId + ")");
-
-                    if(isAdded()) {
-                        requireActivity().runOnUiThread(() -> {
-                            initializeChat();
-                        });
-                    }
-                } else {
-                    Log.e(TAG, "❌ Failed to fetch admin: " + res.code());
-                    Toast.makeText(getContext(), "Could not find admin", Toast.LENGTH_SHORT).show();
-                }
-            }
-
-            @Override
-            public void onFailure(
-                    @NonNull retrofit2.Call<AdminDto> call,
-                    @NonNull Throwable t) {
-                Log.e(TAG, "❌ Error fetching admin", t);
-                Toast.makeText(getContext(), "Network error", Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    private void initializeChat() {
-        if(txtChatPartnerName != null) {
-            txtChatPartnerName.setText(targetUserName);
-        }
-
-        if(btnBack != null) {
-            if(showBackButton) {
-                btnBack.setVisibility(View.VISIBLE);
-                btnBack.setOnClickListener(v -> {
-                    if(getActivity() != null) {
-                        getActivity().getSupportFragmentManager().popBackStack();
-                    }
-                });
-            } else {
-                btnBack.setVisibility(View.GONE);
-            }
-        }
-
-        loadHistory();
-        setupWebSocketListener();
-        setupSendButton();
-    }
-
-    private void setupWebSocketListener() {
-        Log.d(TAG, "Setting up WebSocket listener for chat with user " + targetUserId);
-
-        ChatWebSocketManager wsManager = ChatWebSocketManager.getInstance();
-
-        if (!wsManager.isSubscribed()) {
-            Log.d(TAG, "Not subscribed yet, subscribing now");
-            wsManager.subscribeToMessages();
-        }
-
-        wsManager.setUiListener(cm -> {
-
-            if(!isAdded()) {
-                Log.w(TAG, "Fragment not added, ignoring message");
-                return;
-            }
-
-            Log.d(TAG, "📨 WebSocket received:");
-            Log.d(TAG, "   From: " + cm.fromUserId + " → To: " + cm.toUserId);
-            Log.d(TAG, "   Content: " + cm.content);
-            Log.d(TAG, "   My ID: " + myUserId + ", Partner ID: " + targetUserId);
-
-            boolean isFromMyPartner = cm.fromUserId.equals(targetUserId) && cm.toUserId.equals(myUserId);
-            boolean isToMyPartner = cm.fromUserId.equals(myUserId) && cm.toUserId.equals(targetUserId);
-            boolean isRelevant = isFromMyPartner || isToMyPartner;
-
-            Log.d(TAG, "   Is from my partner? " + isFromMyPartner);
-            Log.d(TAG, "   Is to my partner (echo)? " + isToMyPartner);
-            Log.d(TAG, "   Is relevant? " + isRelevant);
-
-            if(!isRelevant) {
-                Log.d(TAG, "   ❌ Ignoring - not relevant to this chat");
-                return;
-            }
-
-            if(isToMyPartner) {
-                Log.d(TAG, "   ℹ️ Echo of my own message, already in UI");
-                return;
-            }
-
-            Log.d(TAG, "   ✅ Adding message to UI");
-
-            requireActivity().runOnUiThread(() -> {
-                boolean isDuplicate = messages.stream()
-                        .anyMatch(m ->
-                                m.fromUserId.equals(cm.fromUserId) &&
-                                        m.toUserId.equals(cm.toUserId) &&
-                                        m.content.equals(cm.content) &&
-                                        m.timestamp != null &&
-                                        cm.timestamp != null &&
-                                        Math.abs(
-                                                java.time.Instant.parse(m.timestamp).toEpochMilli() -
-                                                        java.time.Instant.parse(cm.timestamp).toEpochMilli()
-                                        ) < 1000 // Within 1 second
-                        );
-
-                if(isDuplicate) {
-                    Log.w(TAG, "   ⚠️ Duplicate message detected, skipping");
-                    return;
-                }
-
-                messages.add(cm);
-                adapter.notifyItemInserted(messages.size() - 1);
-                recyclerView.scrollToPosition(messages.size() - 1);
-
-                Log.d(TAG, "   Total messages now: " + messages.size());
-            });
-        });
-    }
-
-    private void setupSendButton() {
-        btnSend.setOnClickListener(v -> {
-            String text = inputMessage.getText().toString().trim();
-
-            if(text.isEmpty()) {
-                return;
-            }
-
-            Log.d(TAG, "📤 Sending message:");
-            Log.d(TAG, "   From: " + myUserId + " → To: " + targetUserId);
-            Log.d(TAG, "   Content: " + text);
-
-            ChatMessage local = new ChatMessage();
-            local.content = text;
-            local.fromUserId = myUserId;
-            local.toUserId = targetUserId;
-            local.timestamp = java.time.Instant.now().toString();
-
-            requireActivity().runOnUiThread(() -> {
-                messages.add(local);
-                adapter.notifyItemInserted(messages.size() - 1);
-                recyclerView.scrollToPosition(messages.size() - 1);
-                Log.d(TAG, "   ✅ Added to local UI, total: " + messages.size());
-            });
-
-            ChatMessage wsMessage = new ChatMessage();
-            wsMessage.toUserId = targetUserId;
-            wsMessage.content = text;
-            ChatWebSocketManager.getInstance().sendMessage(wsMessage);
-
-            inputMessage.setText("");
-        });
-    }
-
-    private void loadHistory(){
-        Log.d(TAG, "Loading chat history...");
-
-        ChatApiService api = ApiClient.getClient(requireContext())
-                .create(ChatApiService.class);
-
-        api.getHistory(myUserId, targetUserId)
-                .enqueue(new retrofit2.Callback<List<ChatMessage>>() {
-
-                    @SuppressLint("NotifyDataSetChanged")
-                    @Override
-                    public void onResponse(
-                            @NonNull retrofit2.Call<List<ChatMessage>> call,
-                            @NonNull retrofit2.Response<List<ChatMessage>> res){
-
-                        if(res.isSuccessful() && res.body() != null){
-                            List<ChatMessage> history = res.body();
-                            Log.d(TAG, "✅ Loaded " + history.size() + " messages from history");
-
-                            messages.clear();
-                            messages.addAll(history);
-
-                            if(isAdded()) {
-                                requireActivity().runOnUiThread(() -> {
-                                    adapter.notifyDataSetChanged();
-                                    if(messages.size() > 0) {
-                                        recyclerView.scrollToPosition(messages.size() - 1);
-                                    }
-                                });
-                            }
-                        } else {
-                            Log.e(TAG, "❌ History load failed: " + res.code());
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(
-                            @NonNull retrofit2.Call<List<ChatMessage>> call,
-                            @NonNull Throwable t){
-                        Log.e(TAG, "❌ History load error", t);
-                    }
-                });
-    }
-
-    private void hideActionBar() {
-        if(getActivity() != null && getActivity() instanceof AppCompatActivity) {
-            ActionBar actionBar = ((AppCompatActivity)getActivity()).getSupportActionBar();
-            if(actionBar != null) {
-                actionBar.hide();
-            }
-        }
-    }
-
-    private void showActionBar() {
-        if(getActivity() != null && getActivity() instanceof AppCompatActivity) {
-            ActionBar actionBar = ((AppCompatActivity)getActivity()).getSupportActionBar();
-            if(actionBar != null) {
-                actionBar.show();
-            }
-        }
-    }
-
-    public static ChatFragment forUser(Long userId, String userName){
+    public static ChatFragment forUser(Long userId, String userName) {
         ChatFragment f = new ChatFragment();
         Bundle b = new Bundle();
         b.putLong("targetUserId", userId);
@@ -339,32 +76,272 @@ public class ChatFragment extends Fragment {
         return f;
     }
 
-    public static ChatFragment forAdmin(){
-        ChatFragment f = new ChatFragment();
-        Bundle b = new Bundle();
-        b.putLong("targetUserId", 0L); // Will be fetched from backend
-        b.putString("targetUserName", null);
-        b.putBoolean("showBackButton", false);
-        f.setArguments(b);
-        return f;
+
+    @Nullable
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater,
+                             @Nullable ViewGroup container,
+                             @Nullable Bundle savedInstanceState) {
+
+        Log.d(TAG, "onCreateView");
+
+        if (getArguments() != null) {
+            targetUserId   = getArguments().getLong("targetUserId", 0L);
+            targetUserName = getArguments().getString("targetUserName", null);
+            showBackButton = getArguments().getBoolean("showBackButton", false);
+        }
+
+        View view = inflater.inflate(R.layout.fragment_chat, container, false);
+
+        myUserId = TokenManager.getUserId(requireContext());
+        if (myUserId == null) {
+            Toast.makeText(getContext(), "Error: Not logged in", Toast.LENGTH_SHORT).show();
+            return view;
+        }
+
+        recyclerView       = view.findViewById(R.id.recyclerMessages);
+        inputMessage       = view.findViewById(R.id.inputMessage);
+        btnSend            = view.findViewById(R.id.btnSend);
+        btnBack            = view.findViewById(R.id.btnBack);
+        txtChatPartnerName = view.findViewById(R.id.txtChatPartnerName);
+
+        hideActionBar();
+
+        adapter = new ChatAdapter(messages, myUserId);
+        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        recyclerView.setAdapter(adapter);
+
+        if (targetUserId == null || targetUserId == 0L) {
+            fetchAdminAndInitialize();
+        } else {
+            initializeChat();
+        }
+
+        return view;
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        Log.d(TAG, "onResume - re-establishing WebSocket listener");
+        Log.d(TAG, "onResume");
+        ChatService.getInstance().setChatUiVisible(true);
 
-        // FIXED: Re-establish listener when returning to this fragment
-        if(targetUserId != null && targetUserId != 0L) {
-            setupWebSocketListener();
+        // Re-register listener in case we navigated away and back
+        if (targetUserId != null && targetUserId != 0L) {
+            registerChatListener();
         }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        ChatService.getInstance().setChatUiVisible(false);
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        Log.d(TAG, "onDestroyView - removing listener");
-        ChatWebSocketManager.getInstance().setUiListener(null);
+        Log.d(TAG, "onDestroyView");
+
+        if (chatListener != null) {
+            ChatService.getInstance().removeUiListener(chatListener);
+            chatListener = null;
+        }
+
+        ChatService.getInstance().setChatUiVisible(false);
         showActionBar();
+    }
+
+
+    private void fetchAdminAndInitialize() {
+        ChatApiService api = ApiClient.getClient(requireContext())
+                .create(ChatApiService.class);
+
+        api.getFirstAdmin().enqueue(new retrofit2.Callback<AdminDto>() {
+            @Override
+            public void onResponse(@NonNull retrofit2.Call<AdminDto> call,
+                                   @NonNull retrofit2.Response<AdminDto> res) {
+                if (res.isSuccessful() && res.body() != null) {
+                    AdminDto admin = res.body();
+                    targetUserId   = admin.id;
+                    targetUserName = admin.name;
+                    Log.d(TAG, "✅ Admin fetched: " + targetUserName + " (ID: " + targetUserId + ")");
+
+                    if (isAdded()) {
+                        requireActivity().runOnUiThread(() -> initializeChat());
+                    }
+                } else {
+                    Log.e(TAG, "❌ Failed to fetch admin: " + res.code());
+                    if (isAdded()) {
+                        Toast.makeText(getContext(), "Could not find support", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull retrofit2.Call<AdminDto> call, @NonNull Throwable t) {
+                Log.e(TAG, "❌ Network error fetching admin", t);
+                if (isAdded()) {
+                    Toast.makeText(getContext(), "Network error", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+    }
+
+    private void initializeChat() {
+        // Set header name
+        if (txtChatPartnerName != null && targetUserName != null) {
+            txtChatPartnerName.setText(targetUserName);
+        }
+
+        if (btnBack != null) {
+            if (showBackButton) {
+                btnBack.setVisibility(View.VISIBLE);
+                btnBack.setOnClickListener(v -> {
+                    if (getActivity() != null) {
+                        getActivity().getSupportFragmentManager().popBackStack();
+                    }
+                });
+            } else {
+                btnBack.setVisibility(View.GONE);
+            }
+        }
+
+        loadHistory();
+        registerChatListener();
+        setupSendButton();
+
+        ChatService.getInstance().setChatUiVisible(true);
+    }
+
+    private void registerChatListener() {
+        Log.d(TAG, "Registering chat listener for partner: " + targetUserId);
+
+        chatListener = message -> {
+            if (!isAdded()) return;
+
+            boolean fromPartner = message.fromUserId != null
+                    && message.fromUserId.equals(targetUserId)
+                    && message.toUserId != null
+                    && message.toUserId.equals(myUserId);
+
+            if (!fromPartner) {
+                Log.d(TAG, "Ignoring message — not from current partner");
+                return;
+            }
+
+            boolean duplicate = isDuplicate(message);
+            if (duplicate) {
+                Log.d(TAG, "Duplicate message — skipping");
+                return;
+            }
+
+            Log.d(TAG, "✅ Adding incoming message to UI");
+            messages.add(message);
+            adapter.notifyItemInserted(messages.size() - 1);
+            recyclerView.scrollToPosition(messages.size() - 1);
+        };
+
+        ChatService.getInstance().setUiListener(chatListener);
+    }
+
+
+    private void setupSendButton() {
+        btnSend.setOnClickListener(v -> sendMessage());
+    }
+
+    private void sendMessage() {
+        String text = inputMessage.getText().toString().trim();
+        if (text.isEmpty() || targetUserId == null) return;
+
+        Log.d(TAG, "📤 Sending: \"" + text + "\" to " + targetUserId);
+
+        ChatMessage local = new ChatMessage();
+        local.fromUserId = myUserId;
+        local.toUserId   = targetUserId;
+        local.content    = text;
+        local.timestamp  = Instant.now().toString();
+
+        messages.add(local);
+        adapter.notifyItemInserted(messages.size() - 1);
+        recyclerView.scrollToPosition(messages.size() - 1);
+
+        ChatMessage wsMsg = new ChatMessage();
+        wsMsg.toUserId = targetUserId;
+        wsMsg.content  = text;
+        ChatWebSocketManager.getInstance().sendMessage(wsMsg);
+
+        inputMessage.setText("");
+    }
+
+
+    @SuppressLint("NotifyDataSetChanged")
+    private void loadHistory() {
+        Log.d(TAG, "Loading history for " + myUserId + " ↔ " + targetUserId);
+
+        ChatApiService api = ApiClient.getClient(requireContext())
+                .create(ChatApiService.class);
+
+        api.getHistory(myUserId, targetUserId)
+                .enqueue(new retrofit2.Callback<List<ChatMessage>>() {
+                    @Override
+                    public void onResponse(
+                            @NonNull retrofit2.Call<List<ChatMessage>> call,
+                            @NonNull retrofit2.Response<List<ChatMessage>> res) {
+
+                        if (res.isSuccessful() && res.body() != null) {
+                            Log.d(TAG, "✅ History: " + res.body().size() + " messages");
+                            if (isAdded()) {
+                                requireActivity().runOnUiThread(() -> {
+                                    messages.clear();
+                                    messages.addAll(res.body());
+                                    adapter.notifyDataSetChanged();
+                                    if (!messages.isEmpty()) {
+                                        recyclerView.scrollToPosition(messages.size() - 1);
+                                    }
+                                });
+                            }
+                        } else {
+                            Log.e(TAG, "❌ History failed: " + res.code());
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(
+                            @NonNull retrofit2.Call<List<ChatMessage>> call,
+                            @NonNull Throwable t) {
+                        Log.e(TAG, "❌ History network error", t);
+                    }
+                });
+    }
+
+
+    private boolean isDuplicate(ChatMessage incoming) {
+        if (incoming.timestamp == null) return false;
+        long incomingMs = Instant.parse(incoming.timestamp).toEpochMilli();
+
+        for (ChatMessage m : messages) {
+            if (m.fromUserId == null || m.content == null || m.timestamp == null) continue;
+            if (!m.fromUserId.equals(incoming.fromUserId)) continue;
+            if (!m.content.equals(incoming.content)) continue;
+
+            long existingMs = Instant.parse(m.timestamp).toEpochMilli();
+            if (Math.abs(existingMs - incomingMs) < 2000) return true;
+        }
+        return false;
+    }
+
+    private void hideActionBar() {
+        if (getActivity() instanceof AppCompatActivity) {
+            ActionBar ab = ((AppCompatActivity) getActivity()).getSupportActionBar();
+            if (ab != null) ab.hide();
+        }
+    }
+
+    private void showActionBar() {
+        if (getActivity() instanceof AppCompatActivity) {
+            ActionBar ab = ((AppCompatActivity) getActivity()).getSupportActionBar();
+            if (ab != null) ab.show();
+        }
     }
 }
