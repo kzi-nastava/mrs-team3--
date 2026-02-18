@@ -19,6 +19,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -602,6 +603,7 @@ public class DriverService {
         ride.setCancelledAt(LocalDateTime.now());
         ride.setCancelledBy(CancelledBy.DRIVER);
         ride.setTerminationReason(reason.getCancellationReason());
+        ride.setActualRideStops(new ArrayList<>(ride.getRideStops()));
 
         driver.setActive(true);
         driver.setAvailable(true);

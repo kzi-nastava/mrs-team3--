@@ -416,6 +416,7 @@
             ride.setStatus(RideStatus.CANCELLED_BY_PASSENGER);
             ride.setCancelledAt(LocalDateTime.now());
             ride.setCancelledBy(CancelledBy.PASSENGER);
+            ride.setActualRideStops(new ArrayList<>(ride.getRideStops()));
 
             rideRepository.save(ride);
         }
