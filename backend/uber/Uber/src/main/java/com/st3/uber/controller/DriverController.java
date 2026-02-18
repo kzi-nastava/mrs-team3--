@@ -390,7 +390,7 @@ public class DriverController {
     }
 
     @PostMapping("/{rideId}/cancel")
-    public void cancelRideByDriver(@RequestBody DriverCancelRideRequest reason,
+    public void cancelRideByDriver(@Valid @RequestBody DriverCancelRideRequest reason,
                                    @AuthenticationPrincipal Jwt jwt,
                                    @PathVariable Long rideId) {
         Long driverId = jwt.getClaim("uid");

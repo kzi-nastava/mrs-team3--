@@ -235,7 +235,7 @@ public class RideController {
     @RolesAllowed({"PASSENGER", "DRIVER"})
     public ResponseEntity<CancelRideResponse> cancelRide(
             @PathVariable Long rideId,
-            @RequestBody(required = false) CancelRideRequest request
+            @Valid @RequestBody(required = false) CancelRideRequest request
     ) {
         if (request == null || request.getCancellationReason() == null || request.getCancelledBy() == null) {
             return ResponseEntity.badRequest().build();
@@ -252,7 +252,7 @@ public class RideController {
     @RolesAllowed("PASSENGER")
     public ResponseEntity<StopRideResponse> stopRide(
             @PathVariable Long rideId,
-            @RequestBody StopRideRequest request
+            @Valid @RequestBody StopRideRequest request
     ) {
         StopRideResponse response = new StopRideResponse(
                 rideId,
