@@ -1,5 +1,6 @@
 package com.example.uber3.network.api;
 
+import com.example.uber3.network.model.driver.DriverStatusResponse;
 import com.example.uber3.network.model.history.DriverRideHistoryDetailResponse;
 import com.example.uber3.network.model.history.DriverRideHistoryResponse;
 import com.example.uber3.network.model.register.RegisterDriverRequest;
@@ -10,6 +11,7 @@ import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.GET;
 import retrofit2.http.POST;
+import retrofit2.http.PUT;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
 
@@ -31,5 +33,11 @@ public interface DriverApi {
             @Path("driverId") Long driverId,
             @Path("rideId") Long rideId
     );
+
+    @PUT("api/drivers/change-active-status")
+    Call<DriverStatusResponse> toggleDriverActiveStatus();
+
+    @GET("api/drivers/status")
+    Call<DriverStatusResponse> getDriverStatus();
 
 }
