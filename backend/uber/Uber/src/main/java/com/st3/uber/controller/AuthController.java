@@ -9,6 +9,7 @@ import com.st3.uber.exception.TokenException;
 import com.st3.uber.exception.TokenExpiredException;
 import com.st3.uber.exception.TokenInvalidException;
 import com.st3.uber.service.AuthService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,23 +32,23 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public Passenger registerPassenger(@RequestBody RegisterPassengerRequest req) {
+    public Passenger registerPassenger(@Valid @RequestBody RegisterPassengerRequest req) {
         return authService.createPassenger(req);
     }
 
     @PostMapping("/login")
-    public LoginResponse login(@RequestBody LoginRequest req) {
+    public LoginResponse login(@Valid @RequestBody LoginRequest req) {
         return authService.login(req);
     }
 
     @PostMapping("/forgot-password")
-    public ResponseEntity<Void> forgotPassword(@RequestBody ForgotPasswordRequest req) {
+    public ResponseEntity<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest req) {
         return authService.forgotPassword(req);
     }
 
     // POST /api/auth/email-validation - Validate email availability
     @PostMapping("/email-validation")
-    public EmailValidationResponse validateEmail(@RequestBody EmailValidationRequest request) {
+    public EmailValidationResponse validateEmail(@Valid @RequestBody EmailValidationRequest request) {
         // Dummy logika - proverava samo format
         boolean isValidFormat = request.email() != null
                 && request.email().contains("@")
@@ -79,7 +80,7 @@ public class AuthController {
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity<Void> resetPassword(@RequestBody ResetPasswordRequest req) {
+    public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest req) {
         try{
             authService.resetPassword(req);
             return ResponseEntity.ok().build();
