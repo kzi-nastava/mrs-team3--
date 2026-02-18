@@ -112,7 +112,7 @@ public class MainActivity extends AppCompatActivity {
                 topAppBar.setTitle("Login");
                 loadFragment(new LoginFragment());
             } else if (id == R.id.nav_logout) {
-                LogoutHelper.logout(this);
+                safeLogout();
                 return true;
             } else if (id == R.id.nav_register_driver) {
                 topAppBar.setTitle("Register Driver");
@@ -482,6 +482,45 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call<DriverStatusResponse> call, Throwable t) {
                 Log.e("DriverStatus", "Failed to load status: " + t.getMessage());
+            }
+        });
+    }
+
+    private void safeLogout() {
+        if (TokenManager.getToken(this) == null) {
+            LogoutHelper.logout(this);
+            return;
+        }
+
+        if (!"DRIVER".equals(currentUserRole)) {
+            LogoutHelper.logout(this);
+            return;
+        }
+
+        ApiService api = ApiClient.getClient(this).create(ApiService.class);
+
+        api.getDriverStatus().enqueue(new Callback<DriverStatusResponse>() {
+            @Override
+            public void onResponse(Call<DriverStatusResponse> call, Response<DriverStatusResponse> response) {
+                if (!response.isSuccessful() || response.body() == null) {
+                    Toast.makeText(MainActivity.this, "Couldn't verify ride status. Try again.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                DriverStatusResponse st = response.body();
+
+                if (st.isInRide()) {
+                    Toast.makeText(MainActivity.this,
+                            "You can't log out while a ride is active.", Toast.LENGTH_LONG).show();
+                    return;
+                }
+                LogoutHelper.logout(MainActivity.this);
+            }
+
+            @Override
+            public void onFailure(Call<DriverStatusResponse> call, Throwable t) {
+                Toast.makeText(MainActivity.this,
+                        "Network error. Couldn't verify ride status.", Toast.LENGTH_SHORT).show();
             }
         });
     }
