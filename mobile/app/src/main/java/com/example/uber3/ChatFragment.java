@@ -33,7 +33,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-
 public class ChatFragment extends Fragment {
 
     private static final String TAG = "ChatFragment";
@@ -126,7 +125,6 @@ public class ChatFragment extends Fragment {
         Log.d(TAG, "onResume");
         ChatService.getInstance().setChatUiVisible(true);
 
-        // Re-register listener in case we navigated away and back
         if (targetUserId != null && targetUserId != 0L) {
             registerChatListener();
         }
@@ -318,17 +316,37 @@ public class ChatFragment extends Fragment {
 
     private boolean isDuplicate(ChatMessage incoming) {
         if (incoming.timestamp == null) return false;
-        long incomingMs = Instant.parse(incoming.timestamp).toEpochMilli();
+
+        long incomingMs;
+        try {
+            incomingMs = parseTimestamp(incoming.timestamp);
+        } catch (Exception e) {
+            Log.w(TAG, "Could not parse incoming timestamp: " + incoming.timestamp);
+            return false; // Can't determine — allow it through
+        }
 
         for (ChatMessage m : messages) {
             if (m.fromUserId == null || m.content == null || m.timestamp == null) continue;
             if (!m.fromUserId.equals(incoming.fromUserId)) continue;
             if (!m.content.equals(incoming.content)) continue;
 
-            long existingMs = Instant.parse(m.timestamp).toEpochMilli();
-            if (Math.abs(existingMs - incomingMs) < 2000) return true;
+            try {
+                long existingMs = parseTimestamp(m.timestamp);
+                if (Math.abs(existingMs - incomingMs) < 2000) return true;
+            } catch (Exception e) {
+                // Ignore unparseable existing timestamp
+            }
         }
         return false;
+    }
+
+
+    private long parseTimestamp(String timestamp) {
+        // Ensure the string ends with Z so Instant.parse() accepts it
+        if (!timestamp.endsWith("Z")) {
+            timestamp = timestamp + "Z";
+        }
+        return Instant.parse(timestamp).toEpochMilli();
     }
 
     private void hideActionBar() {

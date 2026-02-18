@@ -288,7 +288,7 @@ public class MainActivity extends AppCompatActivity {
             navigationView.getMenu().findItem(R.id.nav_report).setVisible(true);
         }
     }
-    
+
     private void loadFragment(Fragment fragment) {
         if (fragment != null) {
             getSupportFragmentManager()
