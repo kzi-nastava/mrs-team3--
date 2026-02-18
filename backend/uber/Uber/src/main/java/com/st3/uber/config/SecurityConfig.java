@@ -2,6 +2,7 @@ package com.st3.uber.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.config.Customizer;
@@ -33,7 +34,25 @@ public class SecurityConfig {
     }
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    @Order(1)
+    SecurityFilterChain swaggerSecurityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .securityMatcher(
+                        "/swagger-ui.html",
+                        "/swagger-ui/**",
+                        "/v3/api-docs/**",
+                        "/v3/api-docs",
+                        "/webjars/**"
+                )
+                .csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+
+        return http.build();
+    }
+
+    @Bean
+    @Order(2)
+    SecurityFilterChain apiSecurityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
 
@@ -47,18 +66,12 @@ public class SecurityConfig {
                 )
 
                 .cors(Customizer.withDefaults())
-
                 .sessionManagement(sm ->
                         sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-
                 .authorizeHttpRequests(auth -> auth
-
                         .requestMatchers("/uploads/**").permitAll()
-
-
                         .requestMatchers("/api/auth/**", "/ws/**").permitAll()
-
                         .requestMatchers("/api/vehicles/**").permitAll()
                         .requestMatchers("/simple-routes/**").permitAll()
                         .requestMatchers(
@@ -66,12 +79,9 @@ public class SecurityConfig {
                                 "/api/ride-tracking/token/**"
                         ).permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-
                         .anyRequest().authenticated()
                 )
-
                 .oauth2ResourceServer(oauth -> oauth
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
                 );
@@ -82,7 +92,7 @@ public class SecurityConfig {
     @Bean
     public Converter<Jwt, ? extends AbstractAuthenticationToken> jwtAuthenticationConverter() {
         return jwt -> {
-            String role = jwt.getClaimAsString("role"); // ADMIN / DRIVER / PASSENGER
+            String role = jwt.getClaimAsString("role");
 
             var authorities = (role == null)
                     ? List.<SimpleGrantedAuthority>of()
@@ -91,7 +101,6 @@ public class SecurityConfig {
             return new JwtAuthenticationToken(jwt, authorities, jwt.getSubject());
         };
     }
-
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
