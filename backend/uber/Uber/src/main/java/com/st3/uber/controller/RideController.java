@@ -22,6 +22,7 @@ import com.st3.uber.service.ReviewService;
 import com.st3.uber.service.RideTimelineService;
 import com.st3.uber.util.ComparatorUtils;
 import jakarta.annotation.security.RolesAllowed;
+import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -62,7 +63,7 @@ public class RideController {
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<RideResponse> createRide(
             @AuthenticationPrincipal Jwt jwt,
-            @RequestBody CreateRideRequest request
+            @RequestBody @Valid CreateRideRequest request
     ) {
         Long passengerId = jwt.getClaim("uid");
 

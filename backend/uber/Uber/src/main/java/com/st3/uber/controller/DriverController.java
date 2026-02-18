@@ -16,6 +16,7 @@ import com.st3.uber.service.DriverRegistrationService;
 import com.st3.uber.service.DriverRideHistoryService;
 import com.st3.uber.service.DriverService;
 import com.st3.uber.service.RideService;
+import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -62,7 +63,7 @@ public class DriverController {
     )
     @ResponseStatus(HttpStatus.CREATED)
     public RegisterDriverResponse registerDriver(
-            @RequestBody RegisterDriverRequest req
+            @RequestBody @Valid RegisterDriverRequest req
     ) {
         return driverRegistrationService.register(req);
     }
