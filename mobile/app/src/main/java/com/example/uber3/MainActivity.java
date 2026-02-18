@@ -118,6 +118,11 @@ public class MainActivity extends AppCompatActivity {
                 topAppBar.setTitle("Users Management");
                 loadFragment(AdminUsersFragment.newInstance());
             }
+            else if (id == R.id.nav_incoming_rides) {
+                topAppBar.setTitle("Incoming rides");
+                loadFragment(new IncomingRideFragment());
+            }
+
 
             drawerLayout.close();
             return true;
@@ -305,11 +310,13 @@ public class MainActivity extends AppCompatActivity {
         navigationView.getMenu().findItem(R.id.nav_report).setVisible(false);
         navigationView.getMenu().findItem(R.id.nav_track_ride).setVisible(false);
         navigationView.getMenu().findItem(R.id.nav_driver_dashboard).setVisible(false);
+        navigationView.getMenu().findItem(R.id.nav_incoming_rides).setVisible(false);
 
         // Show items based on role
         if ("PASSENGER".equals(role)) {
             navigationView.getMenu().findItem(R.id.nav_chat).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_ride).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_incoming_rides).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_profile).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_report).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_track_ride).setVisible(true);
