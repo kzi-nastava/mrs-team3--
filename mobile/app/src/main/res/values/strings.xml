@@ -80,7 +80,7 @@
     <string name="panic">PANIC</string>
     <string name="home">Home</string>
     <string name="chat">Chat</string>
-    <string name="ride">Ride</string>
+    <string name="ride">Ride history</string>
     <string name="profile">Profile</string>
     <string name="logout">Logout</string>
     <string name="driver_profile_change_requests">Driver Profile Change Requests</string>
@@ -288,6 +288,12 @@
     <string name="cancel">Cancel</string>
     <string name="submit_review">✓ Submit Review</string>
     <string name="leave_review">⭐ Leave Review</string>
+    <string name="no_incoming_rides">No incoming rides</string>
+    <string name="incoming_ride_passenger">Incoming rides</string>
+    <string name="incoming_ride_time">🕒</string>
+    <string name="no_incoming_rides_passenger">No incoming rides</string>
+    <string name="incoming_ride_appearance">Your scheduled rides will appear here.</string>
+    <string name="cancel_ride_passenger">Cancel ride</string>
 
     <string-array name="vehicle_types">
         <item>STANDARD</item>
