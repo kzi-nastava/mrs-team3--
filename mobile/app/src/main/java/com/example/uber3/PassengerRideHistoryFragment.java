@@ -508,7 +508,13 @@ public class PassengerRideHistoryFragment extends Fragment implements PassengerR
                     android.util.Log.d("REVIEW_DEBUG", "ride.rideReview: " + ride.rideReview);
                     android.util.Log.d("REVIEW_DEBUG", "ride.driverReview: " + ride.driverReview);
 
-                    if (diff >= 0 && diff <= threeDays) {
+                    String status = ride.status == null ? "" : ride.status.toUpperCase(Locale.ROOT);
+
+                    boolean canReviewByStatus =
+                            status.equals("COMPLETED") || status.equals("FINISHED_EARLY");
+
+
+                    if (diff >= 0 && diff <= threeDays && canReviewByStatus) {
                         android.util.Log.d("REVIEW_DEBUG", "✅ SHOWING BUTTON - Within 3 days!");
                         btnLeaveReview.setVisibility(View.VISIBLE);
 

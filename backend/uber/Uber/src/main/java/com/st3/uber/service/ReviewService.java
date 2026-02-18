@@ -115,7 +115,7 @@ public class ReviewService {
         }
 
         // Validate ride is completed
-        if (ride.getStatus() != RideStatus.COMPLETED) {
+        if (ride.getStatus() != RideStatus.COMPLETED && ride.getStatus() != RideStatus.FINISHED_EARLY) {
             throw new IllegalArgumentException("Cannot review a ride that is not completed");
         }
 
