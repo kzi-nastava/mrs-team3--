@@ -24,8 +24,11 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.uber3.adapter.DriverRidesAdapter;
+import com.example.uber3.network.api.ApiClient;
+import com.example.uber3.network.api.ApiService;
 import com.example.uber3.network.model.driver.CancelRideRequest;
 import com.example.uber3.network.model.driver.DriverRide;
+import com.example.uber3.network.model.driver.DriverStatusResponse;
 import com.example.uber3.network.model.driver.FinishRideResponse;
 import com.example.uber3.network.model.driver.Location;
 import com.example.uber3.network.model.driver.PendingRide;
@@ -352,6 +355,10 @@ public class DriverDashboardFragment extends Fragment {
                     public void onSuccess(DriverRide accepted) {
                         showToast("✅ Ride accepted!", Toast.LENGTH_SHORT);
                         loadData();
+                        if (isAdded() && getActivity() instanceof MainActivity) {
+                            ((MainActivity) getActivity()).loadDriverStatus();
+                        }
+
                     }
 
                     @Override
@@ -468,7 +475,6 @@ public class DriverDashboardFragment extends Fragment {
                     public void onSuccess(FinishRideResponse response) {
                         if (!isAdded()) return;
 
-                        // Clear everything before loading new data
                         clearMap();
                         selectedRide = null;
                         updateControlsVisibility();
@@ -478,15 +484,64 @@ public class DriverDashboardFragment extends Fragment {
                         } else {
                             showToast("🎉 Ride completed! You are now available for new rides.", Toast.LENGTH_LONG);
                         }
+
                         loadData();
+
+                        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                            if (!isAdded()) return;
+
+                            ApiService api = ApiClient.getClient(requireContext()).create(ApiService.class);
+
+                            api.getDriverStatus().enqueue(new retrofit2.Callback<DriverStatusResponse>() {
+                                @Override
+                                public void onResponse(retrofit2.Call<DriverStatusResponse> call,
+                                                       retrofit2.Response<DriverStatusResponse> resp) {
+                                    if (!isAdded() || !resp.isSuccessful() || resp.body() == null) return;
+
+                                    DriverStatusResponse st = resp.body();
+
+                                    // If ride is finished AND there is a pending request -> apply it
+                                    if (!st.isInRide() && st.isActivityRequest()) {
+                                        api.toggleDriverActiveStatus().enqueue(new retrofit2.Callback<DriverStatusResponse>() {
+                                            @Override
+                                            public void onResponse(retrofit2.Call<DriverStatusResponse> call2,
+                                                                   retrofit2.Response<DriverStatusResponse> resp2) {
+                                                if (!isAdded()) return;
+
+                                                if (resp2.isSuccessful() && resp2.body() != null) {
+                                                    showToast("🔄 Driver status updated.", Toast.LENGTH_SHORT);
+
+                                                    if (getActivity() instanceof MainActivity) {
+                                                        ((MainActivity) getActivity()).loadDriverStatus();
+                                                    }
+                                                }
+                                            }
+
+                                            @Override
+                                            public void onFailure(retrofit2.Call<DriverStatusResponse> call2, Throwable t) { }
+                                        });
+                                    } else {
+                                        if (getActivity() instanceof MainActivity) {
+                                            ((MainActivity) getActivity()).loadDriverStatus();
+                                        }
+                                    }
+                                }
+
+                                @Override
+                                public void onFailure(retrofit2.Call<DriverStatusResponse> call, Throwable t) { }
+                            });
+
+                        }, 400);
                     }
 
                     @Override
                     public void onError(String message) {
+                        if (!isAdded()) return;
                         showToast("Failed to finish ride: " + message, Toast.LENGTH_LONG);
                     }
                 });
     }
+
 
     private void showCancelModal() {
         if (!(selectedRide instanceof DriverRide)) return;
@@ -549,6 +604,11 @@ public class DriverDashboardFragment extends Fragment {
                         selectedRide = null;
                         clearMap();
                         loadData();
+
+                        if (isAdded() && getActivity() instanceof MainActivity) {
+                            ((MainActivity) getActivity()).loadDriverStatus();
+                        }
+
                     }
 
                     @Override

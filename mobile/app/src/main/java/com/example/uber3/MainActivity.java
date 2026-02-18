@@ -6,6 +6,8 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -20,6 +22,7 @@ import com.example.uber3.network.api.ApiClient;
 import com.example.uber3.network.api.ApiService;
 import com.example.uber3.network.manager.LogoutHelper;
 import com.example.uber3.network.manager.TokenManager;
+import com.example.uber3.network.model.driver.DriverStatusResponse;
 import com.example.uber3.network.service.ChatService;
 import com.example.uber3.network.service.NotificationService;
 import com.example.uber3.network.websocket.ChatWebSocketManager;
@@ -30,15 +33,6 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
-import androidx.appcompat.app.AlertDialog;
-
-import java.util.ArrayList;
-import java.util.List;
-
-
-
 public class MainActivity extends AppCompatActivity {
 
     public static final String EXTRA_OPEN_NOTIFICATIONS = "open_notifications";
@@ -48,6 +42,12 @@ public class MainActivity extends AppCompatActivity {
     private MaterialToolbar topAppBar;
     private NavigationView navigationView;
     private String currentUserRole;
+
+    private boolean isDriverActive = false;
+    private boolean inRide = false;
+    private boolean activityRequest = false;
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,6 +79,11 @@ public class MainActivity extends AppCompatActivity {
 
         updateMenuVisibility();
         updateMenuByRole();
+
+        if ("DRIVER".equals(currentUserRole)) {
+            loadDriverStatus();
+        }
+
 
         navigationView.setNavigationItemSelectedListener(item -> {
             int id = item.getItemId();
@@ -123,7 +128,11 @@ public class MainActivity extends AppCompatActivity {
                 topAppBar.setTitle("Incoming rides");
                 loadFragment(new IncomingRideFragment());
             }
-
+            else if (id == R.id.nav_driver_status) {
+                toggleDriverStatus();
+                drawerLayout.close();
+                return true;
+            }
 
             drawerLayout.close();
             return true;
@@ -305,6 +314,8 @@ public class MainActivity extends AppCompatActivity {
             navigationView.getMenu().findItem(R.id.nav_profile).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_notifications).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_report).setVisible(true);
+            navigationView.getMenu().findItem(R.id.nav_driver_status).setVisible(true);
+
         } else if ("ADMIN".equals(role)) {
             navigationView.getMenu().findItem(R.id.nav_requests).setVisible(true);
             navigationView.getMenu().findItem(R.id.nav_chat).setVisible(true);
@@ -359,4 +370,121 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
+
+    public void applyPendingDriverStatusIfNeeded() {
+        ApiService api = ApiClient.getClient(this).create(ApiService.class);
+
+        api.getDriverStatus().enqueue(new Callback<DriverStatusResponse>() {
+            @Override
+            public void onResponse(Call<DriverStatusResponse> call, Response<DriverStatusResponse> response) {
+                if (!response.isSuccessful() || response.body() == null) return;
+
+                DriverStatusResponse st = response.body();
+
+                isDriverActive = st.isActive();
+                inRide = st.isInRide();
+                activityRequest = st.isActivityRequest();
+                updateDriverStatusMenuItem();
+
+                if (!inRide && activityRequest) {
+                    api.toggleDriverActiveStatus().enqueue(new Callback<DriverStatusResponse>() {
+                        @Override
+                        public void onResponse(Call<DriverStatusResponse> call2, Response<DriverStatusResponse> resp2) {
+                            if (resp2.isSuccessful() && resp2.body() != null) {
+                                DriverStatusResponse st2 = resp2.body();
+                                isDriverActive = st2.isActive();
+                                inRide = st2.isInRide();
+                                activityRequest = st2.isActivityRequest();
+                                updateDriverStatusMenuItem();
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(Call<DriverStatusResponse> call2, Throwable t) {
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onFailure(Call<DriverStatusResponse> call, Throwable t) {
+            }
+        });
+    }
+
+
+    private void toggleDriverStatus() {
+        ApiService apiService = ApiClient.getClient(this).create(ApiService.class);
+
+        apiService.toggleDriverActiveStatus().enqueue(new Callback<DriverStatusResponse>() {
+            @Override
+            public void onResponse(Call<DriverStatusResponse> call, Response<DriverStatusResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    DriverStatusResponse body = response.body();
+                    isDriverActive = body.isActive();
+                    inRide = body.isInRide();
+                    activityRequest = body.isActivityRequest();
+
+                    updateDriverStatusMenuItem();
+                } else {
+                    Toast.makeText(MainActivity.this, "Failed: " + response.code(), Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<DriverStatusResponse> call, Throwable t) {
+                Toast.makeText(MainActivity.this, "Failed to change status: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void updateDriverStatusMenuItem() {
+        MenuItem item = navigationView.getMenu().findItem(R.id.nav_driver_status);
+        if (item == null) return;
+
+        if (inRide && activityRequest) {
+            item.setTitle("Pending (after ride)");
+            item.setIcon(R.drawable.ic_circle_red);
+            return;
+        }
+        if (!isDriverActive) {
+            item.setTitle("Inactive");
+            item.setIcon(R.drawable.ic_circle_red);
+        } else {
+            item.setTitle("Active");
+            item.setIcon(R.drawable.ic_circle_green);
+        }
+    }
+
+    public void loadDriverStatus() {
+
+        ApiService apiService = ApiClient.getClient(this).create(ApiService.class);
+
+        apiService.getDriverStatus().enqueue(new Callback<DriverStatusResponse>() {
+            @Override
+            public void onResponse(Call<DriverStatusResponse> call,
+                                   Response<DriverStatusResponse> response) {
+
+                if (!response.isSuccessful() || response.body() == null) {
+                    Log.e("DriverStatus", "Failed: " + response.code());
+                    return;
+                }
+
+                DriverStatusResponse st = response.body();
+
+                isDriverActive = st.isActive();
+                inRide = st.isInRide();
+                activityRequest = st.isActivityRequest();
+
+                updateDriverStatusMenuItem();
+            }
+
+            @Override
+            public void onFailure(Call<DriverStatusResponse> call, Throwable t) {
+                Log.e("DriverStatus", "Failed to load status: " + t.getMessage());
+            }
+        });
+    }
+
+
 }
