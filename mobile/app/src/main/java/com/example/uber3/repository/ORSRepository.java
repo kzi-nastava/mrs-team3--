@@ -191,4 +191,68 @@ public class ORSRepository {
     }
 
 
+    public interface RouteDetailsCallback {
+        void onReady(double distanceKm, int durationMinutes);
+    }
+
+    public static void getRouteWithDetails(
+            List<GeoPoint> points,
+            RouteDetailsCallback callback
+    ) {
+        try {
+            JSONObject body = new JSONObject();
+            JSONArray coords = new JSONArray();
+
+            for (GeoPoint p : points) {
+                JSONArray arr = new JSONArray();
+                arr.put(p.getLongitude());
+                arr.put(p.getLatitude());
+                coords.put(arr);
+            }
+
+            body.put("coordinates", coords);
+
+            RequestBody requestBody = RequestBody.create(
+                    body.toString(),
+                    MediaType.parse("application/json")
+            );
+
+            ORSService service = ORSRetrofitClient.getInstance().create(ORSService.class);
+
+            service.getRoute(API_KEY, requestBody).enqueue(new Callback<String>() {
+                @Override
+                public void onResponse(Call<String> call, Response<String> response) {
+                    try {
+                        JSONObject json = new JSONObject(response.body());
+                        JSONObject summary = json
+                                .getJSONArray("features")
+                                .getJSONObject(0)
+                                .getJSONObject("properties")
+                                .getJSONArray("segments")
+                                .getJSONObject(0);
+
+                        double distanceM = summary.getDouble("distance");
+                        double durationS = summary.getDouble("duration");
+
+                        double distanceKm = distanceM / 1000.0;
+                        int durationMinutes = (int) Math.ceil(durationS / 60.0);
+
+                        callback.onReady(distanceKm, durationMinutes);
+                    } catch (Exception e) {
+                        callback.onReady(0, 0);
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<String> call, Throwable t) {
+                    callback.onReady(0, 0);
+                }
+            });
+
+        } catch (Exception e) {
+            callback.onReady(0, 0);
+        }
+    }
+
+
 }

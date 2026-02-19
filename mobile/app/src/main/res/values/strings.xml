@@ -331,5 +331,10 @@
     <string name="notif_channel_name">Ride Notifications</string>
     <string name="notif_channel_description">Real-time ride and profile notifications</string>
     <string name="inactive_driver_status">Inactive</string>
+    <string name="register_or_log_in_to_book_a_ride">Register or log in to book a ride</string>
+    <string name="get_price_estimate">Get price estimate</string>
+    <string name="dest">Destination</string>
+    <string name="pickup_location1">Pickup location</string>
+    <string name="get_a_price_estimate">Get a price estimate</string>
 
 </resources>
