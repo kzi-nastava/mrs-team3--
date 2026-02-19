@@ -330,5 +330,6 @@
     <string name="notif_type_default">Notification</string>
     <string name="notif_channel_name">Ride Notifications</string>
     <string name="notif_channel_description">Real-time ride and profile notifications</string>
+    <string name="inactive_driver_status">Inactive</string>
 
 </resources>

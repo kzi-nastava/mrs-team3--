@@ -21,6 +21,7 @@ import com.example.uber3.network.model.LoginRequest;
 import com.example.uber3.network.model.LoginResponse;
 import com.example.uber3.network.model.auth.RegisterRequest;
 import com.example.uber3.network.model.auth.RegisterResponse;
+import com.example.uber3.network.model.driver.DriverStatusResponse;
 import com.example.uber3.network.model.favorite.FavoriteRouteRequest;
 import com.example.uber3.network.model.favorite.FavoriteRouteResponse;
 import com.example.uber3.network.model.mails.ForgotPasswordRequest;
@@ -122,7 +123,9 @@ public interface ApiService {
     @GET("api/favorites")
     Call<List<FavoriteRouteResponse>> getFavorites();
 
+    @PUT("api/drivers/change-active-status")
+    Call<DriverStatusResponse> toggleDriverActiveStatus();
 
-
-
+    @GET("api/drivers/status")
+    Call<DriverStatusResponse> getDriverStatus();
 }

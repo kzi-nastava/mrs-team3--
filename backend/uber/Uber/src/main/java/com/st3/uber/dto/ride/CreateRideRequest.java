@@ -21,7 +21,6 @@ public record CreateRideRequest(
         @Valid
         List<@Valid LocationRequest> stops,
 
-        @NotEmpty(message = "At least one passenger is required")
         List<@Email(message = "Invalid passenger email") String> passengerEmails,
 
         @NotNull(message = "Vehicle type is required")
