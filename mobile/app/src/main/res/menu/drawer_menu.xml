@@ -34,6 +34,13 @@
             android:visible="false" />
 
         <item
+            android:id="@+id/nav_driver_status"
+            android:title="@string/inactive_driver_status"
+            android:icon="@drawable/ic_circle_red"
+            android:visible="false" />
+
+
+        <item
             android:id="@+id/nav_track_ride"
             android:icon="@drawable/ic_car"
             android:title="@string/track_ride"
