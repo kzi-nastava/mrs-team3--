@@ -502,10 +502,18 @@ public class MainActivity extends AppCompatActivity {
         api.getDriverStatus().enqueue(new Callback<DriverStatusResponse>() {
             @Override
             public void onResponse(Call<DriverStatusResponse> call, Response<DriverStatusResponse> response) {
+
+                if (response.code() == 401) {
+                    LogoutHelper.logout(MainActivity.this);
+                    return;
+                }
+
                 if (!response.isSuccessful() || response.body() == null) {
                     Toast.makeText(MainActivity.this, "Couldn't verify ride status. Try again.", Toast.LENGTH_SHORT).show();
                     return;
                 }
+
+
 
                 DriverStatusResponse st = response.body();
 
@@ -521,6 +529,8 @@ public class MainActivity extends AppCompatActivity {
             public void onFailure(Call<DriverStatusResponse> call, Throwable t) {
                 Toast.makeText(MainActivity.this,
                         "Network error. Couldn't verify ride status.", Toast.LENGTH_SHORT).show();
+
+                LogoutHelper.logout(MainActivity.this);
             }
         });
     }

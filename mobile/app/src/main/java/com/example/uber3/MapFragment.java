@@ -18,12 +18,14 @@ import org.osmdroid.views.MapView;
 import org.osmdroid.events.MapEventsReceiver;
 import org.osmdroid.views.overlay.MapEventsOverlay;
 
+import com.example.uber3.network.manager.TokenManager;
 import com.example.uber3.network.model.location.ActiveVehicle;
 import com.example.uber3.network.service.VehicleService;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.osmdroid.views.overlay.Polyline;
 import android.graphics.Color;
@@ -114,6 +116,23 @@ public class MapFragment extends Fragment {
         MapEventsReceiver mReceive = new MapEventsReceiver() {
             @Override
             public boolean singleTapConfirmedHelper(GeoPoint p) {
+
+                String role = TokenManager.getRole(requireContext());
+                boolean isGuest = role == null || role.equals("null") || role.isEmpty() || role.equals("GUEST");
+
+                if (isGuest && selectedPoints.size() >= 2) {
+                    for (Marker m : markers) {
+                        mapView.getOverlays().remove(m);
+                    }
+                    markers.clear();
+                    selectedPoints.clear();
+
+                    if (routeLine != null) {
+                        mapView.getOverlays().remove(routeLine);
+                        routeLine = null;
+                    }
+                }
+
 
                 selectedPoints.add(p);
 
