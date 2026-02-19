@@ -44,11 +44,21 @@ public class HomeFragment extends Fragment {
         fab.setOnClickListener(v -> {
             fab.hide();
 
-            RideBookingFragment sheet = RideBookingFragment.newInstance();
-            sheet.setOnDismissCallback(fab::show);
-            MapFragment.setOnLocationSelectedListener(sheet::setPickupFromMap);
+            String role = getArguments() != null ? getArguments().getString(ARG_ROLE, null) : null;
 
-            sheet.show(getParentFragmentManager(), "RideBooking");
+
+            assert role != null;
+            if (role.equals("GUEST")) {
+                GuestRideBookingFragment sheet = GuestRideBookingFragment.newInstance();
+                sheet.setOnDismissCallback(fab::show);
+                MapFragment.setOnLocationSelectedListener(sheet::setPickupFromMap);
+                sheet.show(getParentFragmentManager(), "GuestRideBooking");
+            } else {
+                RideBookingFragment sheet = RideBookingFragment.newInstance();
+                sheet.setOnDismissCallback(fab::show);
+                MapFragment.setOnLocationSelectedListener(sheet::setPickupFromMap);
+                sheet.show(getParentFragmentManager(), "RideBooking");
+            }
         });
 
         return view;
